@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/moderation/reapply-timeouts",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/chat/poll",
+      "schedule": "*/1 * * * *"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-key",
+    "MERCADOPAGO_ACCESS_TOKEN": "@mercadopago-token",
+    "TWITCH_CLIENT_ID": "@twitch-client-id",
+    "TWITCH_CLIENT_SECRET": "@twitch-secret",
+    "YOUTUBE_API_KEY": "@youtube-api-key",
+    "KICK_API_KEY": "@kick-api-key",
+    "DISCORD_BOT_TOKEN": "@discord-token",
+    "DISCORD_GUILD_ID": "@discord-guild-id"
+  }
+}
