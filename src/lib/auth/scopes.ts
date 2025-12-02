@@ -5,7 +5,7 @@
 
 // Versão dos escopos - incrementar quando adicionar novos escopos obrigatórios
 export const SCOPES_VERSION = {
-  twitch: 4, // Incrementado para incluir channel:manage:moderators
+  twitch: 5, // Incrementado para incluir user:manage:whispers
   youtube: 1,
   kick: 1
 }
@@ -18,7 +18,8 @@ export const REQUIRED_SCOPES = {
     'chat:edit',
     'moderator:manage:banned_users',
     'user:read:moderated_channels', // Para verificar em quais canais o usuário é moderador
-    'channel:manage:moderators' // Para adicionar/remover moderadores (requer token do broadcaster)
+    'channel:manage:moderators', // Para adicionar/remover moderadores (requer token do broadcaster)
+    'user:manage:whispers' // Para enviar whispers (mensagens privadas)
   ],
   youtube: [
     'https://www.googleapis.com/auth/youtube.readonly',

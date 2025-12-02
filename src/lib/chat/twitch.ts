@@ -1,5 +1,6 @@
 import tmi, { Client as TmiClient } from 'tmi.js'
 import { chatHub, moderationHub } from './hub'
+import { processCommand } from './commands'
 
 let readerClient: TmiClient | null = null
 let readerConnecting = false
@@ -14,7 +15,7 @@ export async function startTwitchReader(): Promise<void> {
   })
   
   // Listener para mensagens do chat
-  client.on('message', (_channel, userstate, message, self) => {
+  client.on('message', async (_channel, userstate, message, self) => {
     if (self) return
     const username = userstate['display-name'] || userstate['username'] || 'twitch-user'
     const userId = userstate['user-id'] || 'unknown'
@@ -40,6 +41,7 @@ export async function startTwitchReader(): Promise<void> {
     // Remover duplicatas
     const uniqueBadges = [...new Set(badges)]
     
+    // Publicar mensagem no hub
     chatHub.publish({
       id: `${Date.now()}-${Math.random()}`,
       platform: 'twitch',
@@ -49,6 +51,19 @@ export async function startTwitchReader(): Promise<void> {
       timestamp: Date.now(),
       badges: uniqueBadges
     })
+    
+    // Processar comandos (ex: !testsub)
+    if (message.startsWith('!')) {
+      processCommand({
+        username,
+        userId,
+        message,
+        platform: 'twitch',
+        badges: uniqueBadges
+      }).catch(err => {
+        console.error('[Twitch] Erro ao processar comando:', err)
+      })
+    }
   })
   
   // Listener para quando alguém é promovido a moderador

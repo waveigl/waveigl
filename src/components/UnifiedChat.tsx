@@ -57,8 +57,39 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   const [showCustomTimeout, setShowCustomTimeout] = useState(false)
   const [localMessages, setLocalMessages] = useState<LocalMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  const [youtubeIsLive, setYoutubeIsLive] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  
+  // Verificar status do YouTube periodicamente
+  useEffect(() => {
+    const checkYouTubeStatus = async () => {
+      try {
+        const res = await fetch('/api/youtube/status')
+        const data = await res.json()
+        const isLive = data.isLive === true
+        setYoutubeIsLive(isLive)
+        
+        // Se YouTube ficou offline e estava selecionado, mudar para Kick
+        if (!isLive && sendPlatform === 'youtube') {
+          setSendPlatform('kick')
+        }
+      } catch {
+        setYoutubeIsLive(false)
+        if (sendPlatform === 'youtube') {
+          setSendPlatform('kick')
+        }
+      }
+    }
+    
+    // Verificar imediatamente
+    checkYouTubeStatus()
+    
+    // Verificar a cada 30 segundos
+    const interval = setInterval(checkYouTubeStatus, 30000)
+    
+    return () => clearInterval(interval)
+  }, [sendPlatform])
   
   // Obtém o ID do usuário na plataforma selecionada (para envio)
   const getCurrentPlatformUserId = useCallback(() => {
@@ -424,10 +455,13 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           <Button
             size="sm"
             variant={sendPlatform === 'youtube' ? 'default' : 'outline'}
-            onClick={() => setSendPlatform('youtube')}
-            className={sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+            onClick={() => youtubeIsLive && setSendPlatform('youtube')}
+            disabled={!youtubeIsLive}
+            className={`${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Não há live ativa'}
           >
             YouTube
+            {!youtubeIsLive && <span className="ml-1 text-[10px]">(offline)</span>}
           </Button>
         </div>
       )}

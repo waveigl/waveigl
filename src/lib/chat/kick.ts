@@ -447,3 +447,75 @@ export function stopKickReader(): void {
   }
   readerStarted = false
 }
+
+/**
+ * Renova o token de acesso da Kick usando o refresh token
+ * 
+ * @param refreshToken - Refresh token da Kick
+ * @param userId - ID do usuário no sistema
+ * @param db - Instância do Supabase
+ * @returns Novo access token ou null se falhar
+ */
+export async function refreshKickToken(
+  refreshToken: string,
+  userId: string,
+  db: ReturnType<typeof import('@/lib/supabase/server').getSupabaseAdmin>
+): Promise<string | null> {
+  try {
+    const clientId = process.env.KICK_CLIENT_ID
+    const clientSecret = process.env.KICK_CLIENT_SECRET
+    
+    if (!clientId || !clientSecret) {
+      console.error('[Kick] Client ID ou Secret não configurados')
+      return null
+    }
+    
+    const tokenResponse = await fetch('https://id.kick.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      }),
+    })
+    
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text()
+      console.error('[Kick] Erro ao renovar token:', tokenResponse.status, errorText)
+      return null
+    }
+    
+    const tokenData = await tokenResponse.json()
+    
+    if (!tokenData.access_token) {
+      console.error('[Kick] Resposta de token inválida:', tokenData)
+      return null
+    }
+    
+    // Atualizar o token no banco de dados
+    const { error: updateError } = await db
+      .from('linked_accounts')
+      .update({
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token || refreshToken, // Manter o antigo se não vier novo
+      })
+      .eq('user_id', userId)
+      .eq('platform', 'kick')
+    
+    if (updateError) {
+      console.error('[Kick] Erro ao salvar novo token:', updateError)
+    } else {
+      console.log('[Kick] Token renovado com sucesso')
+    }
+    
+    return tokenData.access_token
+    
+  } catch (error) {
+    console.error('[Kick] Erro ao renovar token:', error)
+    return null
+  }
+}

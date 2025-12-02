@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { chatHub, moderationHub } from '@/lib/chat/hub'
 import { startTwitchReader } from '@/lib/chat/twitch'
 import { startKickReader } from '@/lib/chat/kick'
+import { startYouTubeReader } from '@/lib/chat/youtube'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,11 @@ export async function GET(_req: NextRequest) {
     // Iniciar leitor da Kick
     startKickReader().catch((err) => {
       console.error('[Chat Stream] Erro ao iniciar Kick reader:', err)
+    })
+    
+    // Iniciar leitor do YouTube
+    startYouTubeReader().catch((err) => {
+      console.error('[Chat Stream] Erro ao iniciar YouTube reader:', err)
     })
   }
   const stream = new ReadableStream({
