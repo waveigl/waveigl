@@ -23,15 +23,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-sm border-white/20">
+    <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-amber-950 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-card/90 border border-border/60">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-lg"></div>
-            <span className="text-2xl font-bold text-white">WaveIGL</span>
-          </div>
-          <CardTitle className="text-white text-2xl">Entrar no Clube</CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardTitle className="text-white text-2xl">Acesse sua conta</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Conecte-se com uma das suas contas para acessar o clube exclusivo
           </CardDescription>
         </CardHeader>
@@ -64,16 +60,16 @@ export default function LoginPage() {
           </Button>
 
           <div className="text-center pt-4">
-            <p className="text-gray-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Não tem uma conta?{' '}
-              <Link href="/auth/register" className="text-purple-400 hover:text-purple-300">
+              <Link href="/auth/register" className="text-primary hover:text-primary/80">
                 Criar conta
               </Link>
             </p>
           </div>
 
           <div className="pt-4">
-            <Badge className="w-full justify-center bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+            <Badge className="w-full justify-center bg-gradient-to-r from-amber-500 to-yellow-400 text-black">
               🎉 Oferta de Lançamento: R$9,90/mês
             </Badge>
           </div>

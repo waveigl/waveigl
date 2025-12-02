@@ -1,0 +1,111 @@
+{
+  "$schema": "https://cursor.tasks.schema/v1.json",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "setup-tests",
+      "title": "Configurar Vitest, Testing Library, MSW e Playwright",
+      "steps": [
+        { "type": "command", "run": "npm install" },
+        { "type": "command", "run": "npx playwright install --with-deps" },
+        { "type": "command", "run": "npm run test:unit" },
+        { "type": "command", "run": "npm run test:integration" },
+        { "type": "command", "run": "npm run test:e2e" },
+        { "type": "doc", "file": "docs/diagrams/setup-tests.md", "mermaid": "flowchart TD; A[Install]-->B[Config]; B-->C[Run];" }
+      ]
+    },
+    {
+      "id": "db-unique-linked-per-platform",
+      "title": "Garantir 1 conta por plataforma por usuário",
+      "steps": [
+        { "type": "open", "file": "supabase/migrations/002_unique_linked_per_platform.sql" },
+        { "type": "command", "run": "npm run db:push" },
+        { "type": "doc", "file": "docs/diagrams/db-unique-linked-per-platform.md" }
+      ]
+    },
+    {
+      "id": "db-pending-unlinks",
+      "title": "Criar tabela pending_unlinks e cron",
+      "steps": [
+        { "type": "open", "file": "supabase/migrations/003_pending_unlinks.sql" },
+        { "type": "command", "run": "npm run db:push" },
+        { "type": "doc", "file": "docs/diagrams/db-pending-unlinks.md" }
+      ]
+    },
+    {
+      "id": "auth-scopes-update",
+      "title": "Atualizar escopos OAuth (YouTube write, Twitch chat:edit) e Kick",
+      "steps": [
+        { "type": "open", "file": "src/app/api/auth/youtube/route.ts" },
+        { "type": "command", "run": "npm run test:integration -t YouTube OAuth route" }
+      ]
+    },
+    {
+      "id": "unlink-delay-flow",
+      "title": "Desvinculação com delay",
+      "steps": [
+        { "type": "open", "file": "src/app/api/auth/unlink/route.ts" },
+        { "type": "open", "file": "src/app/api/auth/unlink/process/route.ts" },
+        { "type": "command", "run": "npm run test:integration -t Unlink route" },
+        { "type": "doc", "file": "docs/diagrams/unlink-delay-flow.md" }
+      ]
+    },
+    {
+      "id": "chat-hub-sse",
+      "title": "Hub SSE/WS",
+      "steps": [
+        { "type": "open", "file": "src/app/api/chat/stream/route.ts" },
+        { "type": "open", "file": "src/lib/chat/hub.ts" },
+        { "type": "command", "run": "npm run test:unit -t chatHub" },
+        { "type": "doc", "file": "docs/diagrams/chat-hub-sse.md" }
+      ]
+    },
+    {
+      "id": "chat-adapters",
+      "title": "Adapters Twitch/YouTube/Kick",
+      "steps": [
+        { "type": "open", "file": "src/lib/chat/twitch.ts" },
+        { "type": "open", "file": "src/lib/chat/youtube.ts" },
+        { "type": "open", "file": "src/lib/chat/kick.ts" },
+        { "type": "command", "run": "npm run test:unit -t adapters exportam" }
+      ]
+    },
+    {
+      "id": "chat-ui-platform-send",
+      "title": "UI seleção de envio",
+      "steps": [
+        { "type": "open", "file": "src/components/UnifiedChat.tsx" },
+        { "type": "command", "run": "npm run test:e2e -g 'landing page'" }
+      ]
+    },
+    {
+      "id": "moderation",
+      "title": "Serviço de moderação e reaplicação",
+      "steps": [
+        { "type": "open", "file": "src/app/api/moderation/timeout/route.ts" },
+        { "type": "open", "file": "src/app/api/moderation/reapply-timeouts/route.ts" },
+        { "type": "command", "run": "npm run test:integration -t moderation" }
+      ]
+    },
+    {
+      "id": "subscription",
+      "title": "Assinatura Mercado Pago",
+      "steps": [
+        { "type": "open", "file": "src/app/api/subscription/create/route.ts" },
+        { "type": "open", "file": "src/app/api/subscription/webhook/route.ts" },
+        { "type": "command", "run": "npm run test:integration -t Subscription" },
+        { "type": "doc", "file": "docs/diagrams/subscription-preapproval.md" }
+      ]
+    },
+    {
+      "id": "discord-sync-roles",
+      "title": "Sync de cargos Discord",
+      "steps": [
+        { "type": "open", "file": "src/app/api/discord/sync-roles/route.ts" },
+        { "type": "command", "run": "npm run test:integration -t Discord sync roles" }
+      ]
+    }
+  ]
+}
+
+

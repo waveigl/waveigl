@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     for (const platform of platforms) {
       try {
         const messages = await pollPlatformMessages(platform)
-        
+
         if (messages && messages.length > 0) {
           // Inserir mensagens no Supabase
           const { error } = await getSupabaseAdmin()
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `${totalMessages} mensagens coletadas`,
       totalMessages
     })
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Erro no chat poll:', error)
     return NextResponse.json(
-      { error: 'Falha ao fazer polling do chat' }, 
+      { error: 'Falha ao fazer polling do chat' },
       { status: 500 }
     )
   }

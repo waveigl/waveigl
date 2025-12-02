@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { parseSessionCookie } from '@/lib/auth/session'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -27,18 +28,22 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refreshing the auth token
+  // Refreshing the auth token (se usarmos Supabase Auth futuramente)
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Suporte a sessão custom via cookie assinado
+  const session = await parseSessionCookie(request.headers.get('cookie'))
+  const isLogged = Boolean(user) || Boolean(session)
+
   // Proteger rotas do dashboard
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  if (request.nextUrl.pathname.startsWith('/dashboard') && !isLogged) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
   // Redirecionar usuários autenticados da página de login
-  if (request.nextUrl.pathname.startsWith('/auth/login') && user) {
+  if ((request.nextUrl.pathname.startsWith('/auth/login') || request.nextUrl.pathname === '/') && isLogged) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

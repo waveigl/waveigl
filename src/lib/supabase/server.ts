@@ -33,7 +33,12 @@ export function getSupabaseAdmin(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !serviceKey) {
-    // Evita erro em tempo de build; só falha quando realmente usado sem envs
+    // Ambiente de dev sem envs: cria client apontando para localhost (supabase start)
+    if (process.env.NODE_ENV !== 'production' && process.env.SUPABASE_LOCAL_URL && process.env.SUPABASE_LOCAL_SERVICE_KEY) {
+      return createClient(process.env.SUPABASE_LOCAL_URL, process.env.SUPABASE_LOCAL_SERVICE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      })
+    }
     throw new Error('Supabase admin env vars ausentes')
   }
   return createClient(url, serviceKey, {

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Buscar usuário e contas vinculadas
     const { data: user, error: userError } = await getSupabaseAdmin()
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
@@ -64,23 +64,23 @@ export async function POST(request: NextRequest) {
         // Aqui você precisaria do Discord ID do usuário
         // Por simplicidade, vamos assumir que temos uma forma de mapear
         const discordUserId = await getDiscordUserId(userId)
-        
+
         if (discordUserId) {
           const member = await guild.members.fetch(discordUserId)
           await member.roles.add(role)
 
           // Atualizar flag no banco
           await getSupabaseAdmin()
-            .from('users')
+            .from('profiles')
             .update({ discord_synced: true })
             .eq('id', userId)
 
           console.log(`Cargo atribuído no Discord para usuário: ${userId}`)
         }
 
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Cargo atribuído com sucesso' 
+        return NextResponse.json({
+          success: true,
+          message: 'Cargo atribuído com sucesso'
         })
 
       } catch (error) {
@@ -88,16 +88,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Falha ao atribuir cargo' }, { status: 500 })
       }
     } else {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Usuário não atende aos critérios para cargo Discord' 
+      return NextResponse.json({
+        success: true,
+        message: 'Usuário não atende aos critérios para cargo Discord'
       })
     }
 
   } catch (error) {
     console.error('Erro no sync-roles:', error)
     return NextResponse.json(
-      { error: 'Falha ao sincronizar cargos' }, 
+      { error: 'Falha ao sincronizar cargos' },
       { status: 500 }
     )
   }
@@ -109,7 +109,7 @@ async function getDiscordUserId(userId: string): Promise<string | null> {
   // 1. Armazenar Discord ID durante o processo de vinculação
   // 2. Usar OAuth do Discord para obter o ID
   // 3. Pedir para o usuário fornecer o Discord ID
-  
+
   // Por enquanto, retornar null
   return null
 }

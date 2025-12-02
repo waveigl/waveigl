@@ -1,12 +1,12 @@
 import { LinkedAccount, UserRole } from '@/types'
 
-const OWNER_ACCOUNTS = {
+export const OWNER_ACCOUNTS = {
   twitch: 'waveigl',
   youtube: '@waveigl',
   kick: 'waveigloficial'
 }
 
-const ADMIN_ACCOUNTS = {
+export const ADMIN_ACCOUNTS = {
   twitch: 'ogabrieltoth',
   youtube: 'OGabrielToth',
   kick: 'OGabrielToth'
@@ -57,4 +57,15 @@ export function isAdmin(role: UserRole): boolean {
 
 export function isModerator(role: UserRole): boolean {
   return role === 'moderator'
+}
+
+export function isProtectedLinkedAccounts(linkedAccounts: LinkedAccount[]): boolean {
+  // Usuários protegidos: owner e OGabrielToth (admin permanente)
+  if (linkedAccounts.some(a => OWNER_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase())) {
+    return true
+  }
+  if (linkedAccounts.some(a => ADMIN_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase())) {
+    return true
+  }
+  return false
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { ModerationActionType } from '@/types'
+import { getUserRole, canModerate, isProtectedLinkedAccounts } from '@/lib/permissions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,8 +10,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
+    const db = getSupabaseAdmin()
+
+    // Validar permissão do moderador
+    const { data: modLinked } = await db
+      .from('linked_accounts')
+      .select('*')
+      .eq('user_id', moderatorId)
+    const modRole = getUserRole(modLinked || [])
+    if (!canModerate(modRole)) {
+      return NextResponse.json({ error: 'Sem permissão para moderar' }, { status: 403 })
+    }
+
     // Buscar todas as contas vinculadas do usuário alvo
-    const { data: linkedAccounts, error: accountsError } = await getSupabaseAdmin()
+    const { data: linkedAccounts, error: accountsError } = await db
       .from('linked_accounts')
       .select('*')
       .eq('user_id', targetUserId)
@@ -25,8 +37,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuário não possui contas vinculadas' }, { status: 404 })
     }
 
+    // Bloquear punição para usuários protegidos
+    if (isProtectedLinkedAccounts(linkedAccounts)) {
+      return NextResponse.json({ error: 'Usuário protegido não pode ser punido' }, { status: 403 })
+    }
+
     // Criar ação de moderação
-    const { data: moderationAction, error: actionError } = await getSupabaseAdmin()
+    const { data: moderationAction, error: actionError } = await db
       .from('moderation_actions')
       .insert({
         user_id: targetUserId,
@@ -50,9 +67,9 @@ export async function POST(request: NextRequest) {
       try {
         // Aplicar timeout na plataforma (implementar chamadas para APIs específicas)
         await applyPlatformTimeout(account.platform, account.platform_user_id, durationSeconds)
-        
+
         // Criar registro de timeout ativo
-        await getSupabaseAdmin()
+        await db
           .from('active_timeouts')
           .insert({
             moderation_action_id: moderationAction.id,
@@ -69,16 +86,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Timeout aplicado com sucesso',
-      action_id: moderationAction.id 
+      action_id: moderationAction.id
     })
 
   } catch (error) {
     console.error('Erro no timeout:', error)
     return NextResponse.json(
-      { error: 'Falha ao aplicar timeout' }, 
+      { error: 'Falha ao aplicar timeout' },
       { status: 500 }
     )
   }

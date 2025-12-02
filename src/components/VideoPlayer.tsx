@@ -1,10 +1,43 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { VideoPlayerProps } from '@/types'
+
+interface YouTubeLiveInfo {
+  isLive: boolean
+  videoId: string | null
+  title: string | null
+}
 
 export function VideoPlayer({ platform, channelId = 'waveigl', className }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null)
+  const [isYoutubeLive, setIsYoutubeLive] = useState(false)
+  const [youtubeTitle, setYoutubeTitle] = useState<string | null>(null)
+
+  // Buscar live do YouTube automaticamente
+  useEffect(() => {
+    if (platform !== 'youtube') return
+
+    const fetchYouTubeLive = async () => {
+      try {
+        const res = await fetch('/api/youtube/live')
+        const data: YouTubeLiveInfo = await res.json()
+        
+        setIsYoutubeLive(data.isLive)
+        setYoutubeVideoId(data.videoId)
+        setYoutubeTitle(data.title)
+      } catch (error) {
+        console.error('Erro ao buscar live YouTube:', error)
+      }
+    }
+
+    fetchYouTubeLive()
+    
+    // Atualizar a cada 30 segundos
+    const interval = setInterval(fetchYouTubeLive, 30000)
+    return () => clearInterval(interval)
+  }, [platform])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -26,19 +59,49 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className }: Vide
           break
 
         case 'youtube':
-          const youtubeEmbed = document.createElement('iframe')
-          youtubeEmbed.src = `https://www.youtube.com/embed/${channelId}?autoplay=1&mute=0`
-          youtubeEmbed.width = '100%'
-          youtubeEmbed.height = '100%'
-          youtubeEmbed.frameBorder = '0'
-          youtubeEmbed.allowFullscreen = true
-          youtubeEmbed.allow = 'autoplay; fullscreen'
-          containerRef.current?.appendChild(youtubeEmbed)
+          if (youtubeVideoId) {
+            // Embed da live atual
+            const youtubeEmbed = document.createElement('iframe')
+            youtubeEmbed.src = `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0`
+            youtubeEmbed.width = '100%'
+            youtubeEmbed.height = '100%'
+            youtubeEmbed.frameBorder = '0'
+            youtubeEmbed.allowFullscreen = true
+            youtubeEmbed.allow = 'autoplay; fullscreen; encrypted-media'
+            containerRef.current?.appendChild(youtubeEmbed)
+          } else {
+            // Sem live - mostrar embed do canal
+            const noLiveDiv = document.createElement('div')
+            noLiveDiv.className = 'flex flex-col items-center justify-center h-full bg-card border border-border rounded-lg p-6'
+            noLiveDiv.innerHTML = `
+              <div class="text-center text-foreground">
+                <div class="text-6xl mb-4">📺</div>
+                <h3 class="text-xl font-semibold mb-2">Canal WaveIGL</h3>
+                <p class="text-muted-foreground mb-4">
+                  ${isYoutubeLive ? 'Carregando live...' : 'Nenhuma live ativa no momento'}
+                </p>
+                <a 
+                  href="https://www.youtube.com/@waveigl/live" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  Abrir Canal no YouTube
+                </a>
+              </div>
+            `
+            containerRef.current?.appendChild(noLiveDiv)
+          }
           break
 
         case 'kick':
           const kickEmbed = document.createElement('iframe')
-          kickEmbed.src = `https://player.kick.com/${channelId}`
+          // Canal da Kick corrigido: waveigloficial
+          const kickChannel = channelId === 'waveigl' ? 'waveigloficial' : channelId
+          kickEmbed.src = `https://player.kick.com/${kickChannel}`
           kickEmbed.width = '100%'
           kickEmbed.height = '100%'
           kickEmbed.frameBorder = '0'
@@ -48,12 +111,12 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className }: Vide
 
         default:
           const defaultDiv = document.createElement('div')
-          defaultDiv.className = 'flex items-center justify-center h-full bg-gray-800 rounded-lg'
+          defaultDiv.className = 'flex items-center justify-center h-full bg-card border border-border rounded-lg'
           defaultDiv.innerHTML = `
-            <div class="text-center text-white">
+            <div class="text-center text-foreground">
               <div class="text-6xl mb-4">📺</div>
               <h3 class="text-xl font-semibold mb-2">Player de Vídeo</h3>
-              <p class="text-gray-400">Selecione uma plataforma para começar</p>
+              <p class="text-muted-foreground">Selecione uma plataforma para começar</p>
             </div>
           `
           containerRef.current?.appendChild(defaultDiv)
@@ -61,12 +124,30 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className }: Vide
     }
 
     createEmbed()
-  }, [platform, channelId])
+  }, [platform, channelId, youtubeVideoId, isYoutubeLive])
 
   return (
-    <div 
-      ref={containerRef}
-      className={`w-full h-full ${className}`}
-    />
+    <div className="relative w-full h-full">
+      {/* Título da live (se disponível) */}
+      {platform === 'youtube' && youtubeTitle && (
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-3 z-10">
+          <div className="flex items-center gap-2">
+            {isYoutubeLive && (
+              <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded animate-pulse">
+                AO VIVO
+              </span>
+            )}
+            <span className="text-white text-sm font-medium truncate">
+              {youtubeTitle}
+            </span>
+          </div>
+        </div>
+      )}
+      
+      <div 
+        ref={containerRef}
+        className={`w-full h-full ${className}`}
+      />
+    </div>
   )
 }
