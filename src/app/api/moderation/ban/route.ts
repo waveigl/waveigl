@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { getUserRole, canModerate, isProtectedLinkedAccounts } from '@/lib/permissions'
-import { applyPlatformTimeout } from '@/lib/moderation/actions'
+import { applyPlatformBan } from '@/lib/moderation/actions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { targetUserId, durationSeconds, reason, moderatorId } = await request.json()
+    const { targetUserId, reason, moderatorId } = await request.json()
 
-    if (!targetUserId || !durationSeconds || !moderatorId) {
+    if (!targetUserId || !moderatorId) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
@@ -49,10 +49,8 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: targetUserId,
         moderator_id: moderatorId,
-        action_type: 'timeout',
-        duration_seconds: durationSeconds,
-        reason: reason || 'Timeout aplicado via chat unificado',
-        expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
+        action_type: 'ban',
+        reason: reason || 'Ban aplicado via chat unificado',
         platforms: linkedAccounts.map(account => account.platform)
       })
       .select()
@@ -63,46 +61,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Falha ao criar ação de moderação' }, { status: 500 })
     }
 
-    // Aplicar timeout em cada plataforma e criar registros de timeout ativo
+    // Aplicar ban em cada plataforma
     const results: Record<string, { success: boolean; error?: string }> = {}
     
     for (const account of linkedAccounts) {
       try {
-        // Aplicar timeout na plataforma
-        const result = await applyPlatformTimeout(account.platform, account.platform_user_id, durationSeconds, reason)
+        const result = await applyPlatformBan(account.platform, account.platform_user_id, reason)
         results[account.platform] = result
-
-        // Criar registro de timeout ativo se bem-sucedido
-        if (result.success) {
-          await db
-            .from('active_timeouts')
-            .insert({
-              moderation_action_id: moderationAction.id,
-              user_id: targetUserId,
-              platform: account.platform,
-              platform_user_id: account.platform_user_id,
-              expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
-              last_applied_at: new Date().toISOString(),
-              status: 'active'
-            })
-        }
       } catch (error) {
-        console.error(`Erro ao aplicar timeout na plataforma ${account.platform}:`, error)
+        console.error(`Erro ao aplicar ban na plataforma ${account.platform}:`, error)
         results[account.platform] = { success: false, error: String(error) }
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Timeout aplicado',
+      message: 'Ban aplicado',
       action_id: moderationAction.id,
       results
     })
 
   } catch (error) {
-    console.error('Erro no timeout:', error)
+    console.error('Erro no ban:', error)
     return NextResponse.json(
-      { error: 'Falha ao aplicar timeout' },
+      { error: 'Falha ao aplicar ban' },
       { status: 500 }
     )
   }

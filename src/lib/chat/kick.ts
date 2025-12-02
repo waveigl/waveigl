@@ -8,9 +8,19 @@ import WebSocket from 'ws'
 
 const KICK_CHANNEL = 'waveigloficial'
 
-let readerStarted = false
-let ws: WebSocket | null = null
-let cachedChatroomId: number | null = null
+// Usar globalThis para persistir estado entre HMR
+declare global {
+  // eslint-disable-next-line no-var
+  var __kickReaderStarted: boolean
+  // eslint-disable-next-line no-var
+  var __kickWs: WebSocket | null
+  // eslint-disable-next-line no-var
+  var __kickCachedChatroomId: number | null
+}
+
+globalThis.__kickReaderStarted = globalThis.__kickReaderStarted || false
+globalThis.__kickWs = globalThis.__kickWs || null
+globalThis.__kickCachedChatroomId = globalThis.__kickCachedChatroomId || null
 
 interface KickChatMessage {
   id: string
@@ -33,8 +43,11 @@ interface KickChatMessage {
  * Inicia o leitor de chat da Kick via WebSocket
  */
 export async function startKickReader(): Promise<void> {
-  if (readerStarted) return
-  readerStarted = true
+  if (globalThis.__kickReaderStarted || globalThis.__kickWs) {
+    console.log('[Kick] Reader já iniciado (globalThis), ignorando...')
+    return
+  }
+  globalThis.__kickReaderStarted = true
 
   console.log('[Kick] Iniciando leitor de chat...')
 
@@ -45,7 +58,7 @@ export async function startKickReader(): Promise<void> {
     if (!chatroomId) {
       console.error('[Kick] Não foi possível obter o chatroom_id')
       console.error('[Kick] Configure KICK_CHATROOM_ID no .env.local')
-      readerStarted = false
+      globalThis.__kickReaderStarted = false
       return
     }
 
@@ -56,7 +69,7 @@ export async function startKickReader(): Promise<void> {
 
   } catch (error) {
     console.error('[Kick] Erro ao iniciar leitor:', error)
-    readerStarted = false
+    globalThis.__kickReaderStarted = false
   }
 }
 
@@ -66,15 +79,15 @@ export async function startKickReader(): Promise<void> {
  */
 async function getChatroomId(channelSlug: string): Promise<number | null> {
   // Usar cache se disponível
-  if (cachedChatroomId) {
-    return cachedChatroomId
+  if (globalThis.__kickCachedChatroomId) {
+    return globalThis.__kickCachedChatroomId
   }
 
   // Se tiver configurado via env, usar diretamente
   if (process.env.KICK_CHATROOM_ID) {
-    cachedChatroomId = parseInt(process.env.KICK_CHATROOM_ID, 10)
-    console.log('[Kick] Usando KICK_CHATROOM_ID do env:', cachedChatroomId)
-    return cachedChatroomId
+    globalThis.__kickCachedChatroomId = parseInt(process.env.KICK_CHATROOM_ID, 10)
+    console.log('[Kick] Usando KICK_CHATROOM_ID do env:', globalThis.__kickCachedChatroomId)
+    return globalThis.__kickCachedChatroomId
   }
 
   try {
@@ -99,8 +112,8 @@ async function getChatroomId(channelSlug: string): Promise<number | null> {
     console.log('[Kick] Dados do canal recebidos, chatroom:', data?.chatroom?.id)
     
     if (data?.chatroom?.id) {
-      cachedChatroomId = data.chatroom.id
-      return cachedChatroomId
+      globalThis.__kickCachedChatroomId = data.chatroom.id
+      return globalThis.__kickCachedChatroomId
     }
 
     console.error('[Kick] chatroom.id não encontrado na resposta')
@@ -122,9 +135,9 @@ function connectWebSocket(chatroomId: number): void {
 
   console.log('[Kick] Conectando ao WebSocket...', wsUrl)
 
-  ws = new WebSocket(wsUrl)
+  globalThis.__kickWs = new WebSocket(wsUrl)
 
-  ws.on('open', () => {
+  globalThis.__kickWs.on('open', () => {
     console.log('[Kick] WebSocket conectado!')
     
     // Subscrever ao canal de chat
@@ -136,10 +149,10 @@ function connectWebSocket(chatroomId: number): void {
       }
     })
     console.log('[Kick] Subscrevendo ao canal:', `chatrooms.${chatroomId}.v2`)
-    ws?.send(subscribeMessage)
+    globalThis.__kickWs?.send(subscribeMessage)
   })
 
-  ws.on('message', (rawData) => {
+  globalThis.__kickWs.on('message', (rawData) => {
     try {
       const data = JSON.parse(rawData.toString())
       
@@ -177,16 +190,16 @@ function connectWebSocket(chatroomId: number): void {
     }
   })
 
-  ws.on('error', (error) => {
+  globalThis.__kickWs.on('error', (error) => {
     console.error('[Kick] WebSocket erro:', error.message)
   })
 
-  ws.on('close', (code, reason) => {
+  globalThis.__kickWs.on('close', (code, reason) => {
     console.log('[Kick] WebSocket desconectado, código:', code, 'razão:', reason.toString())
     console.log('[Kick] Reconectando em 5s...')
-    ws = null
+    globalThis.__kickWs = null
     setTimeout(() => {
-      readerStarted = false
+      globalThis.__kickReaderStarted = false
       startKickReader()
     }, 5000)
   })
@@ -441,11 +454,11 @@ async function getBroadcasterUserId(): Promise<number | null> {
  * Para o leitor de chat
  */
 export function stopKickReader(): void {
-  if (ws) {
-    ws.close()
-    ws = null
+  if (globalThis.__kickWs) {
+    globalThis.__kickWs.close()
+    globalThis.__kickWs = null
   }
-  readerStarted = false
+  globalThis.__kickReaderStarted = false
 }
 
 /**

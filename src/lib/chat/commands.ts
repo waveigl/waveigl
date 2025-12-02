@@ -10,12 +10,50 @@ import tmi from 'tmi.js'
 const TWITCH_CHANNEL = process.env.WAVEIGL_TWITCH_CHANNEL || 'waveigl'
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || ''
 
+// Cache para evitar processamento duplicado de comandos
+// Armazena hash do comando -> timestamp
+const processedCommands = new Map<string, number>()
+const COMMAND_COOLDOWN_MS = 5000 // 5 segundos de cooldown entre comandos iguais do mesmo usuário
+
 interface CommandContext {
   username: string
   userId: string
   message: string
   platform: 'twitch' | 'kick' | 'youtube'
   badges: string[]
+}
+
+/**
+ * Gera um hash único para o comando
+ */
+function getCommandHash(ctx: CommandContext): string {
+  return `${ctx.platform}:${ctx.userId}:${ctx.message.toLowerCase().trim()}`
+}
+
+/**
+ * Verifica se o comando já foi processado recentemente (debounce)
+ */
+function isCommandDuplicate(ctx: CommandContext): boolean {
+  const hash = getCommandHash(ctx)
+  const lastProcessed = processedCommands.get(hash)
+  const now = Date.now()
+  
+  if (lastProcessed && (now - lastProcessed) < COMMAND_COOLDOWN_MS) {
+    console.log(`[Commands] Comando duplicado ignorado: ${ctx.message} de ${ctx.username}`)
+    return true
+  }
+  
+  // Registrar este comando
+  processedCommands.set(hash, now)
+  
+  // Limpar comandos antigos (mais de 1 minuto)
+  for (const [key, timestamp] of processedCommands.entries()) {
+    if (now - timestamp > 60000) {
+      processedCommands.delete(key)
+    }
+  }
+  
+  return false
 }
 
 /**
@@ -246,6 +284,11 @@ export async function processCommand(ctx: CommandContext): Promise<boolean> {
   
   // Verificar se é um comando (começa com !)
   if (!message.startsWith('!')) {
+    return false
+  }
+  
+  // Verificar se é comando duplicado (debounce)
+  if (isCommandDuplicate(ctx)) {
     return false
   }
   

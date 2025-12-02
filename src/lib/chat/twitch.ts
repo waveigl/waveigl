@@ -2,12 +2,33 @@ import tmi, { Client as TmiClient } from 'tmi.js'
 import { chatHub, moderationHub } from './hub'
 import { processCommand } from './commands'
 
-let readerClient: TmiClient | null = null
-let readerConnecting = false
+// Usar globalThis para persistir estado entre HMR (Hot Module Replacement)
+// Isso evita múltiplas conexões quando o Next.js recarrega módulos
+declare global {
+  // eslint-disable-next-line no-var
+  var __twitchReaderClient: TmiClient | null
+  // eslint-disable-next-line no-var
+  var __twitchReaderStarted: boolean
+  // eslint-disable-next-line no-var
+  var __twitchProcessedMessageIds: Set<string>
+}
+
+// Inicializar no globalThis se não existir
+globalThis.__twitchReaderClient = globalThis.__twitchReaderClient || null
+globalThis.__twitchReaderStarted = globalThis.__twitchReaderStarted || false
+globalThis.__twitchProcessedMessageIds = globalThis.__twitchProcessedMessageIds || new Set<string>()
+
+const MAX_PROCESSED_IDS = 1000 // Limitar tamanho do cache
 
 export async function startTwitchReader(): Promise<void> {
-  if (readerClient || readerConnecting) return
-  readerConnecting = true
+  // Verificar se já está iniciado usando globalThis
+  if (globalThis.__twitchReaderStarted || globalThis.__twitchReaderClient) {
+    console.log('[Twitch] Reader já iniciado (globalThis), ignorando...')
+    return
+  }
+  globalThis.__twitchReaderStarted = true
+  console.log('[Twitch] Iniciando leitor de chat...')
+  
   const channel = process.env.WAVEIGL_TWITCH_CHANNEL || 'waveigl'
   const client = new tmi.Client({
     channels: [channel],
@@ -17,6 +38,26 @@ export async function startTwitchReader(): Promise<void> {
   // Listener para mensagens do chat
   client.on('message', async (_channel, userstate, message, self) => {
     if (self) return
+    
+    // Usar o ID único da mensagem do Twitch para deduplicar
+    const messageId = userstate['id'] || `${Date.now()}-${Math.random()}`
+    
+    // Verificar se já processamos esta mensagem
+    if (globalThis.__twitchProcessedMessageIds.has(messageId)) {
+      console.log(`[Twitch] Mensagem duplicada ignorada: ${messageId}`)
+      return
+    }
+    
+    // Adicionar ao cache
+    globalThis.__twitchProcessedMessageIds.add(messageId)
+    
+    // Limpar cache se ficar muito grande
+    if (globalThis.__twitchProcessedMessageIds.size > MAX_PROCESSED_IDS) {
+      const idsArray = Array.from(globalThis.__twitchProcessedMessageIds)
+      const toRemove = idsArray.slice(0, 500) // Remover os 500 mais antigos
+      toRemove.forEach(id => globalThis.__twitchProcessedMessageIds.delete(id))
+    }
+    
     const username = userstate['display-name'] || userstate['username'] || 'twitch-user'
     const userId = userstate['user-id'] || 'unknown'
     
@@ -90,11 +131,11 @@ export async function startTwitchReader(): Promise<void> {
   
   try {
     await client.connect()
-    readerClient = client
-  } catch {
-    // ignore failure; will retry on next subscribe
-  } finally {
-    readerConnecting = false
+    globalThis.__twitchReaderClient = client
+    console.log(`[Twitch] ✅ Conectado ao canal: ${channel}`)
+  } catch (err) {
+    console.error('[Twitch] Erro ao conectar:', err)
+    globalThis.__twitchReaderStarted = false // Permitir retry
   }
 }
 

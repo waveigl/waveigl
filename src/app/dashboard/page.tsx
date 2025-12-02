@@ -376,8 +376,57 @@ export default function DashboardPage() {
     console.log('Enviando mensagem:', message)
   }
 
-  const handleModerate = (userId: string, action: string, duration?: number, reason?: string) => {
+  const handleModerate = async (userId: string, action: string, duration?: number, reason?: string) => {
     console.log('Moderando usuário:', userId, action, duration, reason)
+    
+    if (!user?.id) {
+      console.error('Usuário não autenticado')
+      return
+    }
+    
+    try {
+      // Determinar qual endpoint chamar baseado na ação
+      let endpoint = ''
+      let body: Record<string, unknown> = {}
+      
+      if (action === 'timeout') {
+        endpoint = '/api/moderation/timeout'
+        body = {
+          targetUserId: userId,
+          durationSeconds: duration || 600, // 10 minutos padrão
+          reason: reason || 'Timeout via chat unificado',
+          moderatorId: user.id
+        }
+      } else if (action === 'ban') {
+        endpoint = '/api/moderation/ban'
+        body = {
+          targetUserId: userId,
+          reason: reason || 'Ban via chat unificado',
+          moderatorId: user.id
+        }
+      } else {
+        console.error('Ação de moderação desconhecida:', action)
+        return
+      }
+      
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok) {
+        console.log('Moderação aplicada com sucesso:', data)
+      } else {
+        console.error('Erro ao aplicar moderação:', data.error)
+        alert(`Erro: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Erro ao moderar:', error)
+      alert('Erro ao aplicar moderação')
+    }
   }
 
   const handleLogout = () => {
