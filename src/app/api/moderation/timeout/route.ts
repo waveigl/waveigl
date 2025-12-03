@@ -5,9 +5,9 @@ import { applyPlatformTimeout } from '@/lib/moderation/actions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { targetUserId, durationSeconds, reason, moderatorId } = await request.json()
+    const { targetPlatformUserId, targetPlatform, durationSeconds, reason, moderatorId } = await request.json()
 
-    if (!targetUserId || !durationSeconds || !moderatorId) {
+    if (!targetPlatformUserId || !targetPlatform || !durationSeconds || !moderatorId) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
@@ -23,80 +23,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Sem permissão para moderar' }, { status: 403 })
     }
 
-    // Buscar todas as contas vinculadas do usuário alvo
-    const { data: linkedAccounts, error: accountsError } = await db
+    // Buscar conta vinculada do alvo pelo platform_user_id
+    const { data: targetAccount } = await db
       .from('linked_accounts')
       .select('*')
-      .eq('user_id', targetUserId)
+      .eq('platform', targetPlatform)
+      .eq('platform_user_id', targetPlatformUserId)
+      .maybeSingle()
 
-    if (accountsError) {
-      console.error('Erro ao buscar contas vinculadas:', accountsError)
-      return NextResponse.json({ error: 'Falha ao buscar contas do usuário' }, { status: 500 })
+    // Se o usuário estiver cadastrado no sistema, verificar proteção
+    if (targetAccount) {
+      const { data: allTargetAccounts } = await db
+        .from('linked_accounts')
+        .select('*')
+        .eq('user_id', targetAccount.user_id)
+      
+      if (allTargetAccounts && isProtectedLinkedAccounts(allTargetAccounts)) {
+        return NextResponse.json({ error: 'Usuário protegido não pode ser punido' }, { status: 403 })
+      }
     }
 
-    if (!linkedAccounts || linkedAccounts.length === 0) {
-      return NextResponse.json({ error: 'Usuário não possui contas vinculadas' }, { status: 404 })
+    // Aplicar timeout na plataforma
+    const result = await applyPlatformTimeout(targetPlatform, targetPlatformUserId, durationSeconds, reason)
+
+    if (!result.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: result.error || 'Falha ao aplicar timeout na plataforma' 
+      }, { status: 400 })
     }
 
-    // Bloquear punição para usuários protegidos
-    if (isProtectedLinkedAccounts(linkedAccounts)) {
-      return NextResponse.json({ error: 'Usuário protegido não pode ser punido' }, { status: 403 })
-    }
+    // Registrar ação se o usuário estiver no sistema
+    if (targetAccount) {
+      const { data: moderationAction } = await db
+        .from('moderation_actions')
+        .insert({
+          user_id: targetAccount.user_id,
+          moderator_id: moderatorId,
+          action_type: 'timeout',
+          duration_seconds: durationSeconds,
+          reason: reason || 'Timeout aplicado via chat unificado',
+          expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
+          platforms: [targetPlatform]
+        })
+        .select()
+        .single()
 
-    // Criar ação de moderação
-    const { data: moderationAction, error: actionError } = await db
-      .from('moderation_actions')
-      .insert({
-        user_id: targetUserId,
-        moderator_id: moderatorId,
-        action_type: 'timeout',
-        duration_seconds: durationSeconds,
-        reason: reason || 'Timeout aplicado via chat unificado',
-        expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
-        platforms: linkedAccounts.map(account => account.platform)
-      })
-      .select()
-      .single()
-
-    if (actionError) {
-      console.error('Erro ao criar ação de moderação:', actionError)
-      return NextResponse.json({ error: 'Falha ao criar ação de moderação' }, { status: 500 })
-    }
-
-    // Aplicar timeout em cada plataforma e criar registros de timeout ativo
-    const results: Record<string, { success: boolean; error?: string }> = {}
-    
-    for (const account of linkedAccounts) {
-      try {
-        // Aplicar timeout na plataforma
-        const result = await applyPlatformTimeout(account.platform, account.platform_user_id, durationSeconds, reason)
-        results[account.platform] = result
-
-        // Criar registro de timeout ativo se bem-sucedido
-        if (result.success) {
-          await db
-            .from('active_timeouts')
-            .insert({
-              moderation_action_id: moderationAction.id,
-              user_id: targetUserId,
-              platform: account.platform,
-              platform_user_id: account.platform_user_id,
-              expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
-              last_applied_at: new Date().toISOString(),
-              status: 'active'
-            })
-        }
-      } catch (error) {
-        console.error(`Erro ao aplicar timeout na plataforma ${account.platform}:`, error)
-        results[account.platform] = { success: false, error: String(error) }
+      if (moderationAction) {
+        await db
+          .from('active_timeouts')
+          .insert({
+            moderation_action_id: moderationAction.id,
+            user_id: targetAccount.user_id,
+            platform: targetPlatform,
+            platform_user_id: targetPlatformUserId,
+            expires_at: new Date(Date.now() + durationSeconds * 1000).toISOString(),
+            last_applied_at: new Date().toISOString(),
+            status: 'active'
+          })
       }
     }
 
     return NextResponse.json({
       success: true,
       message: 'Timeout aplicado',
-      action_id: moderationAction.id,
-      results
+      platform: targetPlatform,
+      result
     })
 
   } catch (error) {

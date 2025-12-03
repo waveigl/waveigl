@@ -37,7 +37,12 @@ export async function startTwitchReader(): Promise<void> {
   
   // Listener para mensagens do chat
   client.on('message', async (_channel, userstate, message, self) => {
-    if (self) return
+    console.log(`[Twitch] Mensagem recebida de ${userstate['display-name']}: ${message.substring(0, 50)}`)
+    
+    if (self) {
+      console.log('[Twitch] Mensagem própria ignorada')
+      return
+    }
     
     // Usar o ID único da mensagem do Twitch para deduplicar
     const messageId = userstate['id'] || `${Date.now()}-${Math.random()}`

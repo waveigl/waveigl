@@ -32,11 +32,13 @@ class ChatHub {
   }
 
   publish(event: ChatMessage): void {
+    console.log(`[ChatHub] Publicando mensagem de ${event.username} (${event.platform}): ${event.message.substring(0, 30)}...`)
+    console.log(`[ChatHub] Subscribers ativos: ${this.subscribers.size}`)
     for (const sub of this.subscribers) {
       try {
         sub(event)
-      } catch {
-        // ignore subscriber errors
+      } catch (err) {
+        console.error('[ChatHub] Erro no subscriber:', err)
       }
     }
   }
@@ -71,7 +73,23 @@ class ModerationHub {
   }
 }
 
-export const chatHub = new ChatHub()
-export const moderationHub = new ModerationHub()
+// Usar globalThis para persistir hubs entre HMR
+declare global {
+  // eslint-disable-next-line no-var
+  var __chatHub: ChatHub | undefined
+  // eslint-disable-next-line no-var
+  var __moderationHub: ModerationHub | undefined
+}
+
+// Criar ou reutilizar instâncias existentes
+if (!globalThis.__chatHub) {
+  globalThis.__chatHub = new ChatHub()
+}
+if (!globalThis.__moderationHub) {
+  globalThis.__moderationHub = new ModerationHub()
+}
+
+export const chatHub = globalThis.__chatHub
+export const moderationHub = globalThis.__moderationHub
 
 

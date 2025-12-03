@@ -380,18 +380,18 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     })
   }
 
-  const handleModeration = (userId: string, action: string, duration?: number) => {
-    onModerate(userId, action as any, duration, 'Moderação via chat unificado')
+  const handleModeration = (userId: string, platform: Platform, action: string, duration?: number) => {
+    onModerate(userId, platform, action as any, duration, 'Moderação via chat unificado')
     setShowModerationMenu(null)
     setShowCustomTimeout(false)
     setCustomTimeoutInput('')
   }
 
-  const handleCustomTimeout = (userId: string) => {
+  const handleCustomTimeout = (userId: string, platform: Platform) => {
     const days = parseInt(customTimeoutInput)
     if (days > 0 && days <= 14) {
       const seconds = days * 24 * 60 * 60
-      handleModeration(userId, 'timeout', seconds)
+      handleModeration(userId, platform, 'timeout', seconds)
     }
   }
 
@@ -559,7 +559,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, 'timeout', 86400)}
+                      onClick={() => handleModeration(message.userId, message.platform, 'timeout', 86400)}
                       className="h-7 px-2 text-xs text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
                       title="Timeout 1 dia"
                     >
@@ -569,7 +569,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, 'timeout', 1209600)}
+                      onClick={() => handleModeration(message.userId, message.platform, 'timeout', 1209600)}
                       className="h-7 px-2 text-xs text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
                       title="Timeout 14 dias"
                     >
@@ -628,7 +628,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleCustomTimeout(message.userId)}
+                          onClick={() => handleCustomTimeout(message.userId, message.platform)}
                           disabled={!customTimeoutInput || parseInt(customTimeoutInput) < 1 || parseInt(customTimeoutInput) > 14}
                           className="h-7 text-xs"
                         >
@@ -642,7 +642,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, 'ban')}
+                      onClick={() => handleModeration(message.userId, message.platform, 'ban')}
                       className="w-full justify-start text-destructive hover:bg-destructive/10"
                     >
                       <Ban className="w-3 h-3 mr-2" />

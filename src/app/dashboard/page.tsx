@@ -212,6 +212,7 @@ export default function DashboardPage() {
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([])
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [accountsNeedingReauth, setAccountsNeedingReauth] = useState<Array<{ platform: string; missingScopes: string[] }>>([])
+  const [isChatEnabled, setIsChatEnabled] = useState(true) // Controle de chat para o streamer
 
   // Carregar dados do usuário
   const loadUser = async () => {
@@ -376,8 +377,8 @@ export default function DashboardPage() {
     console.log('Enviando mensagem:', message)
   }
 
-  const handleModerate = async (userId: string, action: string, duration?: number, reason?: string) => {
-    console.log('Moderando usuário:', userId, action, duration, reason)
+  const handleModerate = async (userId: string, platform: string, action: string, duration?: number, reason?: string) => {
+    console.log('Moderando usuário:', userId, 'plataforma:', platform, 'ação:', action, 'duração:', duration, 'motivo:', reason)
     
     if (!user?.id) {
       console.error('Usuário não autenticado')
@@ -392,7 +393,8 @@ export default function DashboardPage() {
       if (action === 'timeout') {
         endpoint = '/api/moderation/timeout'
         body = {
-          targetUserId: userId,
+          targetPlatformUserId: userId,
+          targetPlatform: platform,
           durationSeconds: duration || 600, // 10 minutos padrão
           reason: reason || 'Timeout via chat unificado',
           moderatorId: user.id
@@ -400,7 +402,8 @@ export default function DashboardPage() {
       } else if (action === 'ban') {
         endpoint = '/api/moderation/ban'
         body = {
-          targetUserId: userId,
+          targetPlatformUserId: userId,
+          targetPlatform: platform,
           reason: reason || 'Ban via chat unificado',
           moderatorId: user.id
         }
@@ -627,30 +630,55 @@ export default function DashboardPage() {
         {/* Chat Section */}
         <div className="w-96 border-l border-border bg-card flex flex-col shrink-0">
           <div className="p-4 border-b border-border shrink-0">
-            <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
-            <p className="text-sm text-muted-foreground">
-              Mensagens de Twitch, YouTube e Kick
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
+                <p className="text-sm text-muted-foreground">
+                  Mensagens de Twitch, YouTube e Kick
+                </p>
+              </div>
+              {/* Botão para streamer/admin desativar chat quando offline */}
+              {user?.role && (user.role === 'streamer' || user.role === 'admin') && (
+                <Button
+                  size="sm"
+                  variant={isChatEnabled ? 'default' : 'outline'}
+                  onClick={() => setIsChatEnabled(!isChatEnabled)}
+                  className={isChatEnabled ? 'bg-green-600 hover:bg-green-700' : 'border-red-500 text-red-500'}
+                  title={isChatEnabled ? 'Chat ativo - Clique para desativar' : 'Chat desativado - Clique para ativar'}
+                >
+                  {isChatEnabled ? '🟢 Ativo' : '🔴 Offline'}
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="flex-1 min-h-0">
-            <UnifiedChat
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isModerator={isModerator}
-              onModerate={handleModerate}
-              isLogged={!!user}
-              currentUser={user ? {
-                id: user.id,
-                is_moderator: isModerator,
-                linkedAccounts: linkedAccounts.map(acc => ({
-                  platform: acc.platform as Platform,
-                  platform_user_id: acc.platform_user_id,
-                  platform_username: acc.platform_username,
-                  is_moderator: acc.is_moderator
-                }))
-              } : undefined}
-            />
+            {isChatEnabled ? (
+              <UnifiedChat
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isModerator={isModerator}
+                onModerate={handleModerate}
+                isLogged={!!user}
+                currentUser={user ? {
+                  id: user.id,
+                  is_moderator: isModerator,
+                  linkedAccounts: linkedAccounts.map(acc => ({
+                    platform: acc.platform as Platform,
+                    platform_user_id: acc.platform_user_id,
+                    platform_username: acc.platform_username,
+                    is_moderator: acc.is_moderator
+                  }))
+                } : undefined}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                  <p className="text-lg mb-2">💤 Chat desativado</p>
+                  <p className="text-sm">O streamer desativou o chat enquanto está offline.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

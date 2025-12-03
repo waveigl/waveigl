@@ -276,6 +276,133 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
 }
 
 /**
+ * Processa o comando !testmod (apenas Kick)
+ * Verifica se o usuário está cadastrado e é moderador, então concede mod na Kick
+ */
+async function handleTestModCommand(ctx: CommandContext): Promise<void> {
+  console.log(`[Commands] Processando !testmod de ${ctx.username} na ${ctx.platform}`)
+  
+  // Comando só funciona na Kick
+  if (ctx.platform !== 'kick') {
+    console.log(`[Commands] !testmod ignorado - plataforma ${ctx.platform} não suportada`)
+    return
+  }
+  
+  const supabase = getSupabaseAdmin()
+  
+  // 1. Verificar se o usuário está cadastrado no sistema
+  const { data: linkedAccount } = await supabase
+    .from('linked_accounts')
+    .select('user_id, is_moderator, platform_username')
+    .eq('platform', 'kick')
+    .eq('platform_user_id', ctx.userId)
+    .maybeSingle()
+  
+  if (!linkedAccount) {
+    console.log(`[Commands] !testmod: Usuário ${ctx.username} não está cadastrado no sistema`)
+    // Enviar mensagem na Kick informando que precisa se cadastrar
+    await sendKickMessage(`@${ctx.username} você precisa vincular sua conta Kick no nosso sistema para usar !testmod`)
+    return
+  }
+  
+  // 2. Verificar se o usuário é moderador no sistema
+  if (!linkedAccount.is_moderator) {
+    console.log(`[Commands] !testmod: Usuário ${ctx.username} não é moderador no sistema`)
+    await sendKickMessage(`@${ctx.username} você não tem status de moderador no sistema. Vincule uma conta onde você é moderador primeiro.`)
+    return
+  }
+  
+  // 3. Usuário é moderador! Conceder mod na Kick
+  console.log(`[Commands] !testmod: Usuário ${ctx.username} é moderador! Concedendo mod na Kick...`)
+  
+  // Buscar token do broadcaster da Kick
+  const { data: broadcasterAccount } = await supabase
+    .from('linked_accounts')
+    .select('access_token, platform_user_id')
+    .eq('platform', 'kick')
+    .ilike('platform_username', 'waveigloficial')
+    .maybeSingle()
+  
+  if (!broadcasterAccount?.access_token) {
+    console.error('[Commands] !testmod: Token do broadcaster Kick não encontrado')
+    await sendKickMessage(`@${ctx.username} erro interno: não foi possível conceder moderação. Entre em contato com o streamer.`)
+    return
+  }
+  
+  // Tentar adicionar como moderador na Kick
+  // Nota: A API pública da Kick pode não suportar adicionar moderadores
+  // Vamos verificar se há endpoint disponível
+  try {
+    // Kick não tem endpoint público para adicionar moderadores via API
+    // Então vamos apenas confirmar o status e notificar
+    console.log(`[Commands] !testmod: Kick não suporta adicionar moderadores via API pública`)
+    
+    // Enviar mensagem no chat da Kick
+    await sendKickMessage(`@${ctx.username} você usou !testmod e foi identificado como moderador no sistema WaveIGL! 🎉 (Nota: A Kick não permite adicionar mods via API, o streamer precisa usar /mod manualmente)`)
+    
+    // Enviar notificação no Discord
+    await sendDiscordNotification(
+      '',
+      '🛡️ Comando !testmod executado na Kick',
+      `**Usuário:** ${ctx.username}\n**Status:** ✅ Identificado como moderador no sistema\n**Ação:** Notificado no chat (Kick não suporta /mod via API)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
+    )
+    
+  } catch (error) {
+    console.error('[Commands] !testmod: Erro ao processar:', error)
+    await sendKickMessage(`@${ctx.username} erro ao processar !testmod. Tente novamente mais tarde.`)
+  }
+}
+
+/**
+ * Envia mensagem no chat da Kick como broadcaster
+ */
+async function sendKickMessage(message: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin()
+  
+  // Buscar token do broadcaster da Kick
+  const { data: broadcasterAccount } = await supabase
+    .from('linked_accounts')
+    .select('access_token, platform_user_id')
+    .eq('platform', 'kick')
+    .ilike('platform_username', 'waveigloficial')
+    .maybeSingle()
+  
+  if (!broadcasterAccount?.access_token) {
+    console.error('[Commands] sendKickMessage: Token do broadcaster Kick não encontrado')
+    return false
+  }
+  
+  try {
+    const response = await fetch('https://api.kick.com/public/v1/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${broadcasterAccount.access_token}`,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        broadcaster_user_id: parseInt(broadcasterAccount.platform_user_id),
+        content: message,
+        type: 'user'
+      })
+    })
+    
+    if (response.ok) {
+      console.log('[Commands] ✅ Mensagem enviada na Kick')
+      return true
+    }
+    
+    const errorData = await response.json().catch(() => ({}))
+    console.error('[Commands] Erro ao enviar mensagem na Kick:', response.status, errorData)
+    return false
+    
+  } catch (error) {
+    console.error('[Commands] Erro ao enviar mensagem na Kick:', error)
+    return false
+  }
+}
+
+/**
  * Processa uma mensagem do chat e verifica se é um comando
  * Retorna true se era um comando e foi processado
  */
@@ -301,7 +428,9 @@ export async function processCommand(ctx: CommandContext): Promise<boolean> {
       await handleTestSubCommand(ctx)
       return true
     
-    // Adicionar mais comandos aqui no futuro
+    case '!testmod':
+      await handleTestModCommand(ctx)
+      return true
     
     default:
       return false

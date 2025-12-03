@@ -4,6 +4,7 @@
  */
 
 import { chatHub } from './hub'
+import { processCommand } from './commands'
 import WebSocket from 'ws'
 
 const KICK_CHANNEL = 'waveigloficial'
@@ -240,15 +241,32 @@ function handleChatMessage(message: KickChatMessage): void {
     console.log('[Kick] Badges do usuário', message.sender?.username, ':', badges)
   }
   
+  const username = message.sender?.username || 'Anônimo'
+  const userId = String(message.sender?.id || 'unknown')
+  const content = message.content
+  
   chatHub.broadcast({
     id: message.id,
     platform: 'kick',
-    username: message.sender?.username || 'Anônimo',
-    userId: String(message.sender?.id || 'unknown'),
-    message: message.content,
+    username,
+    userId,
+    message: content,
     timestamp: new Date(message.created_at).getTime(),
     badges
   })
+  
+  // Processar comandos (ex: !testmod)
+  if (content.startsWith('!')) {
+    processCommand({
+      username,
+      userId,
+      message: content,
+      platform: 'kick',
+      badges
+    }).catch(err => {
+      console.error('[Kick] Erro ao processar comando:', err)
+    })
+  }
 }
 
 /**

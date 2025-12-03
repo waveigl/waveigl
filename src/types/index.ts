@@ -97,5 +97,5 @@ export interface UnifiedChatProps {
   messages: UnifiedMessage[]
   onSendMessage: (message: string) => void
   isModerator: boolean
-  onModerate: (userId: string, action: ModerationActionType, duration?: number, reason?: string) => void
+  onModerate: (userId: string, platform: Platform, action: ModerationActionType, duration?: number, reason?: string) => void
 }
