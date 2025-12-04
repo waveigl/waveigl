@@ -20,6 +20,10 @@ const nextConfig = {
       },
     ],
   },
+  // Configuração vazia do Turbopack para silenciar o aviso do Next.js 16
+  // A maioria das aplicações funciona bem sem configuração específica
+  turbopack: {},
+  // Configuração do Webpack para módulos nativos (fallback caso use --webpack)
   webpack: (config, { isServer }) => {
     // Evitar bundle de módulos nativos opcionais usados por discord.js/@discordjs/ws
     config.externals = config.externals || []

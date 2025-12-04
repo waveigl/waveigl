@@ -3,14 +3,16 @@ import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { checkTwitchModeratorStatus, checkKickModeratorStatus } from '@/lib/moderation/check'
 import { grantTwitchModerator } from '@/lib/moderation/grant'
+import { OWNER_ACCOUNT_IDS, ADMIN_ACCOUNT_IDS } from '@/lib/permissions'
 
 /**
  * Verifica e atualiza o status de moderador do usuário em todas as plataformas vinculadas
  * Chamado no login e pode ser chamado manualmente para re-verificar
  * 
  * FLUXO COMPLETO:
- * 1. Verifica se o usuário é moderador em cada plataforma (Twitch, Kick)
- * 2. Se for moderador em QUALQUER plataforma:
+ * 1. Verifica se o usuário é o OWNER ou ADMIN (pula verificação de moderador)
+ * 2. Verifica se o usuário é moderador em cada plataforma (Twitch, Kick)
+ * 3. Se for moderador em QUALQUER plataforma:
  *    a) Propaga is_moderator=true para TODAS as contas vinculadas no banco
  *    b) Atualiza role do perfil para 'moderator'
  *    c) TENTA conceder moderação REAL na Twitch (se o broadcaster tiver o scope)
@@ -35,10 +37,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao buscar contas' }, { status: 500 })
     }
 
+    // Verificar se é o OWNER (streamer) - não precisa verificar moderador
+    const isOwner = linkedAccounts.some(a => 
+      OWNER_ACCOUNT_IDS[a.platform] === a.platform_user_id
+    )
+    
+    if (isOwner) {
+      console.log(`[Check Moderator] Usuário é o OWNER (streamer) - pular verificação de moderador`)
+      return NextResponse.json({ 
+        success: true, 
+        isModerator: true,
+        isOwner: true,
+        platforms: linkedAccounts.reduce((acc, a) => ({ ...acc, [a.platform]: true }), {}),
+        message: 'Usuário é o streamer - tem todas as permissões'
+      })
+    }
+    
+    // Verificar se é ADMIN - também tem todas as permissões
+    const isAdmin = linkedAccounts.some(a => 
+      ADMIN_ACCOUNT_IDS[a.platform] === a.platform_user_id
+    )
+    
+    if (isAdmin) {
+      console.log(`[Check Moderator] Usuário é ADMIN - pular verificação de moderador`)
+      return NextResponse.json({ 
+        success: true, 
+        isModerator: true,
+        isAdmin: true,
+        platforms: linkedAccounts.reduce((acc, a) => ({ ...acc, [a.platform]: true }), {}),
+        message: 'Usuário é admin - tem todas as permissões'
+      })
+    }
+
     const results: Record<string, boolean> = {}
     let anyModerator = false
 
-    // Verificar cada plataforma
+    // Verificar cada plataforma (apenas para usuários não-owner/admin)
     for (const account of linkedAccounts) {
       let isModerator = account.is_moderator || false
 

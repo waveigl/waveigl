@@ -1,39 +1,195 @@
-import { chatHub } from './hub'
+import { chatHub, youtubeStatusHub } from './hub'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { getCachedYouTubeLive } from '@/lib/youtube/live'
+import { getCachedYouTubeLive, isApiBlocked, blockApiDueToQuota } from '@/lib/youtube/live'
 
 let readerStarted = false
 let currentLiveChatId: string | null = null
+let currentVideoId: string | null = null
 let pollingInterval: NodeJS.Timeout | null = null
 let nextPageToken: string | null = null
 let lastLoggedState: string = '' // Para evitar spam de logs
 let processedMessageIds = new Set<string>() // Para evitar duplicatas
+let lastApiCallTime = 0 // Para rate limiting
+let lastPublishedLiveStatus = false // Para evitar publicar mesmo status
 
 // Intervalo de polling (em ms)
 const CHAT_POLLING_INTERVAL = 5000 // 5 segundos quando há live
-const LIVE_CHECK_INTERVAL = 60000 // 60 segundos para verificar se há live
+const LIVE_CHECK_INTERVAL = 5 * 60 * 1000 // 5 MINUTOS para verificar se há live (economiza quota)
+const MIN_API_INTERVAL = 10 * 1000 // Mínimo 10 segundos entre chamadas à API
+
+/**
+ * Publica o status atual do YouTube para todos os clientes via SSE
+ */
+function publishYouTubeStatus(isLive: boolean, videoId: string | null, liveChatId: string | null): void {
+  // Só publicar se o status mudou
+  if (lastPublishedLiveStatus === isLive && currentLiveChatId === liveChatId) {
+    return
+  }
+  
+  lastPublishedLiveStatus = isLive
+  currentLiveChatId = liveChatId
+  currentVideoId = videoId
+  
+  youtubeStatusHub.publish({
+    type: 'youtube_status',
+    isLive,
+    videoId,
+    liveChatId,
+    timestamp: Date.now()
+  })
+}
+
+/**
+ * Renova o token de acesso do YouTube usando o refresh_token
+ */
+export async function refreshYouTubeToken(userId: string, refreshToken: string): Promise<string | null> {
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token'
+      })
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      console.error('[YouTube] Erro ao renovar token:', response.status, errorData)
+      return null
+    }
+    
+    const tokenData = await response.json()
+    
+    if (tokenData.access_token) {
+      // Atualizar no banco de dados
+      const supabase = getSupabaseAdmin()
+      await supabase
+        .from('linked_accounts')
+        .update({ 
+          access_token: tokenData.access_token,
+          // Atualizar refresh_token se vier um novo
+          ...(tokenData.refresh_token ? { refresh_token: tokenData.refresh_token } : {})
+        })
+        .eq('user_id', userId)
+        .eq('platform', 'youtube')
+      
+      console.log('[YouTube] ✅ Token renovado com sucesso')
+      return tokenData.access_token
+    }
+    
+    return null
+  } catch (error) {
+    console.error('[YouTube] Erro ao renovar token:', error)
+    return null
+  }
+}
+
+// Cache do token para evitar verificações repetidas
+let cachedToken: { token: string; expiresAt: number } | null = null
+
+/**
+ * Invalida o cache do token (chamado quando recebe 401)
+ */
+function invalidateTokenCache(): void {
+  cachedToken = null
+  console.log('[YouTube] Cache de token invalidado')
+}
+
+/**
+ * Força renovação do token (chamado quando recebe 401)
+ */
+async function forceTokenRenewal(): Promise<string | null> {
+  invalidateTokenCache()
+  
+  const supabase = getSupabaseAdmin()
+  
+  const { data: account } = await supabase
+    .from('linked_accounts')
+    .select('user_id, refresh_token')
+    .eq('platform', 'youtube')
+    .not('refresh_token', 'is', null)
+    .limit(1)
+    .maybeSingle()
+  
+  if (!account?.refresh_token) {
+    console.log('[YouTube] Nenhum refresh_token disponível para renovar')
+    return null
+  }
+  
+  console.log('[YouTube] Forçando renovação do token...')
+  const newToken = await refreshYouTubeToken(account.user_id, account.refresh_token)
+  
+  if (newToken) {
+    cachedToken = {
+      token: newToken,
+      expiresAt: Date.now() + 60 * 60 * 1000
+    }
+    return newToken
+  }
+  
+  return null
+}
 
 /**
  * Obtém um token de acesso do YouTube de qualquer conta vinculada
- * Prioriza contas que possam ter acesso ao chat
+ * Usa cache para evitar verificações repetidas (economiza quota)
  */
 async function getYouTubeToken(): Promise<string | null> {
   try {
+    // Usar cache se ainda válido (15 minutos de margem)
+    const now = Date.now()
+    if (cachedToken && cachedToken.expiresAt > now + 15 * 60 * 1000) {
+      return cachedToken.token
+    }
+    
     const supabase = getSupabaseAdmin()
     
     // Buscar qualquer conta do YouTube vinculada
     const { data: accounts } = await supabase
       .from('linked_accounts')
-      .select('access_token, platform_user_id, platform_username')
+      .select('user_id, access_token, refresh_token, platform_user_id, platform_username')
       .eq('platform', 'youtube')
       .not('access_token', 'is', null)
     
-    if (accounts && accounts.length > 0) {
-      // Retornar o primeiro token disponível
-      return accounts[0].access_token
+    if (!accounts || accounts.length === 0) {
+      return null
     }
     
+    const account = accounts[0]
+    
+    // Se não temos cache ou está expirado, assumir que o token é válido
+    // A API vai retornar 401 se não for, e aí renovamos
+    if (account.access_token) {
+      // Cache por 1 hora (tokens do Google duram 1h)
+      cachedToken = {
+        token: account.access_token,
+        expiresAt: now + 60 * 60 * 1000
+      }
+      return account.access_token
+    }
+    
+    // Token não existe, tentar renovar
+    console.log('[YouTube] Token não encontrado, tentando renovar...')
+    
+    if (account.refresh_token) {
+      const newToken = await refreshYouTubeToken(account.user_id, account.refresh_token)
+      if (newToken) {
+        cachedToken = {
+          token: newToken,
+          expiresAt: now + 60 * 60 * 1000
+        }
+        return newToken
+      }
+    }
+    
+    console.log('[YouTube] Não foi possível renovar o token')
     return null
+    
   } catch (error) {
     console.error('[YouTube] Erro ao obter token:', error)
     return null
@@ -52,6 +208,7 @@ function logStateChange(state: string, message: string) {
 
 /**
  * Busca o liveChatId usando o módulo de detecção de live
+ * Se o scraping não conseguir o chatId, usa a API do YouTube
  */
 async function detectLiveChatId(): Promise<string | null> {
   try {
@@ -62,13 +219,95 @@ async function detectLiveChatId(): Promise<string | null> {
       return liveInfo.liveChatId
     }
     
-    if (liveInfo.isLive && !liveInfo.liveChatId) {
+    // Se detectou live mas não tem chatId, tentar via API
+    if (liveInfo.isLive && liveInfo.videoId && !liveInfo.liveChatId) {
+      console.log(`[YouTube] Live encontrada (${liveInfo.videoId}) mas sem chatId, buscando via API...`)
+      
+      const accessToken = await getYouTubeToken()
+      if (accessToken) {
+        // Buscar liveChatId diretamente do vídeo
+        const liveChatId = await fetchLiveChatIdFromVideo(accessToken, liveInfo.videoId)
+        if (liveChatId) {
+          logStateChange('live_found_api', `[YouTube] ✅ liveChatId obtido via API: ${liveChatId}`)
+          return liveChatId
+        }
+      }
+      
       logStateChange('live_no_chat', `[YouTube] Live encontrada mas sem chatId disponível`)
     }
     
     return null
   } catch (error) {
-    // Silencioso
+    console.error('[YouTube] Erro ao detectar liveChatId:', error)
+    return null
+  }
+}
+
+/**
+ * Busca o liveChatId de um vídeo específico via API
+ * Com rate limiting, verificação de bloqueio de quota, e renovação de token
+ */
+async function fetchLiveChatIdFromVideo(accessToken: string, videoId: string, retryCount: number = 0): Promise<string | null> {
+  try {
+    // Verificar se API está bloqueada por quota
+    if (isApiBlocked()) {
+      return null
+    }
+    
+    // Rate limiting - esperar se a última chamada foi muito recente
+    const now = Date.now()
+    if (now - lastApiCallTime < MIN_API_INTERVAL) {
+      console.log('[YouTube] Rate limit - aguardando antes de chamar API')
+      return null
+    }
+    lastApiCallTime = now
+    
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      
+      // Se for erro 401 (token expirado), tentar renovar e tentar novamente
+      if (response.status === 401 && retryCount === 0) {
+        console.log('[YouTube] Token expirado (401), forçando renovação...')
+        const newToken = await forceTokenRenewal()
+        if (newToken) {
+          return fetchLiveChatIdFromVideo(newToken, videoId, 1) // Retry com novo token
+        }
+        console.log('[YouTube] Não foi possível renovar o token')
+        return null
+      }
+      
+      // Se for erro de quota, bloquear API globalmente
+      if (response.status === 403 && errorData?.error?.message?.includes('quota')) {
+        blockApiDueToQuota()
+      } else if (response.status !== 401) { // Não logar 401 novamente
+        console.error('[YouTube] Erro ao buscar vídeo:', response.status, errorData)
+      }
+      return null
+    }
+    
+    const data = await response.json()
+    const liveChatId = data.items?.[0]?.liveStreamingDetails?.activeLiveChatId
+    
+    if (liveChatId) {
+      console.log('[YouTube] ✅ liveChatId encontrado:', liveChatId)
+      return liveChatId
+    }
+    
+    console.log('[YouTube] Vídeo não tem activeLiveChatId')
+    return null
+    
+  } catch (error) {
+    console.error('[YouTube] Erro ao buscar liveChatId do vídeo:', error)
     return null
   }
 }
@@ -257,29 +496,38 @@ async function fetchLiveChatMessages(accessToken: string, liveChatId: string): P
 
 /**
  * Função de polling do chat
+ * Detecta live e publica status via SSE para evitar polling do frontend
  */
 async function pollYouTubeChat(): Promise<void> {
   // Se não temos liveChatId, tentar detectar
   if (!currentLiveChatId) {
-    // Primeiro, tentar via módulo de detecção (usa API key ou scraping)
-    currentLiveChatId = await detectLiveChatId()
+    // Primeiro, tentar via módulo de detecção (usa scraping - não gasta quota)
+    const detectedChatId = await detectLiveChatId()
     
-    // Se não encontrou, tentar via OAuth
-    if (!currentLiveChatId) {
+    // Se não encontrou via scraping, tentar via OAuth (com cuidado para não gastar quota)
+    if (!detectedChatId) {
       const accessToken = await getYouTubeToken()
       if (accessToken) {
         currentLiveChatId = await detectLiveChatIdViaOAuth(accessToken)
       }
+    } else {
+      currentLiveChatId = detectedChatId
     }
     
     if (!currentLiveChatId) {
       logStateChange('no_live', '[YouTube] Nenhuma live ativa detectada')
+      // Publicar status offline para clientes (evita polling do frontend)
+      publishYouTubeStatus(false, null, null)
       return
     }
     
     // Reset page token quando encontrar novo chat
     nextPageToken = null
     processedMessageIds.clear()
+    
+    // Publicar status online para clientes (evita polling do frontend)
+    publishYouTubeStatus(true, currentVideoId, currentLiveChatId)
+    console.log(`[YouTube] ✅ Live detectada! chatId: ${currentLiveChatId}`)
   }
   
   // Precisamos de um token para ler mensagens
@@ -296,29 +544,42 @@ async function pollYouTubeChat(): Promise<void> {
 
 /**
  * Inicia o leitor de chat do YouTube
+ * NÃO faz verificação inicial - isso será feito quando Twitch/Kick detectar atividade
+ * Economiza quota da API do Google
  */
 export async function startYouTubeReader(): Promise<void> {
   if (readerStarted) return
   readerStarted = true
   
-  console.log('[YouTube] Iniciando leitor de chat...')
+  console.log('[YouTube] Leitor de chat iniciado (aguardando sinal de Twitch/Kick)')
   
-  // Fazer primeira verificação
-  await pollYouTubeChat()
-  
-  // Iniciar polling periódico
-  // Usa intervalo menor quando há live, maior quando não há
+  // Iniciar polling periódico APENAS para verificar mensagens quando há live
+  // A detecção de live será feita quando Twitch/Kick receber primeira mensagem
   const startPolling = () => {
+    // Se já temos liveChatId, verificar mensagens a cada 5 segundos
+    // Se não temos, verificar a cada 5 minutos (economiza quota)
     const interval = currentLiveChatId ? CHAT_POLLING_INTERVAL : LIVE_CHECK_INTERVAL
+    
     pollingInterval = setTimeout(async () => {
-      await pollYouTubeChat()
+      // Só fazer polling se já temos liveChatId ou se passou 5 minutos
+      if (currentLiveChatId) {
+        await pollYouTubeChat()
+      }
+      // Se não temos liveChatId, não fazemos nada - esperamos Twitch/Kick detectar
       startPolling() // Reagendar
     }, interval)
   }
   
   startPolling()
-  
-  console.log('[YouTube] Leitor de chat iniciado')
+}
+
+/**
+ * Força uma verificação do YouTube (chamado quando Twitch/Kick detecta atividade)
+ * Isso permite iniciar a leitura do chat do YouTube de forma inteligente
+ */
+export async function triggerYouTubeCheck(): Promise<void> {
+  console.log('[YouTube] Verificação forçada (trigger externo)')
+  await pollYouTubeChat()
 }
 
 /**
@@ -373,7 +634,7 @@ export async function sendYouTubeMessage(
   liveChatId: string, 
   message: string,
   username?: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: string }> {
   try {
     console.log('[YouTube] Enviando mensagem para liveChatId:', liveChatId)
     
@@ -401,6 +662,11 @@ export async function sendYouTubeMessage(
       const errorData = await response.json().catch(() => ({}))
       const errorMessage = errorData.error?.message || `Erro ${response.status}`
       console.error('[YouTube] Erro ao enviar mensagem:', response.status, errorData)
+      
+      // Token expirado - retornar código específico para renovação
+      if (response.status === 401) {
+        return { success: false, error: 'Token expirado', code: 'TOKEN_EXPIRED' }
+      }
       
       // Erros comuns
       if (response.status === 403) {

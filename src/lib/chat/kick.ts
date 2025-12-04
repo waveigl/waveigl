@@ -5,6 +5,7 @@
 
 import { chatHub } from './hub'
 import { processCommand } from './commands'
+import { triggerYouTubeCheck } from './youtube'
 import WebSocket from 'ws'
 
 const KICK_CHANNEL = 'waveigloficial'
@@ -17,11 +18,30 @@ declare global {
   var __kickWs: WebSocket | null
   // eslint-disable-next-line no-var
   var __kickCachedChatroomId: number | null
+  // eslint-disable-next-line no-var
+  var __kickFirstMessageReceived: boolean
 }
 
 globalThis.__kickReaderStarted = globalThis.__kickReaderStarted || false
 globalThis.__kickWs = globalThis.__kickWs || null
 globalThis.__kickCachedChatroomId = globalThis.__kickCachedChatroomId || null
+globalThis.__kickFirstMessageReceived = globalThis.__kickFirstMessageReceived || false
+
+/**
+ * Verifica o status do YouTube quando Kick detecta atividade
+ */
+function checkYouTubeOnKickActivity(): void {
+  if (globalThis.__kickFirstMessageReceived) return
+  globalThis.__kickFirstMessageReceived = true
+  
+  console.log('[Kick] Primeira mensagem recebida - sinalizando YouTube para verificar...')
+  
+  setTimeout(() => {
+    triggerYouTubeCheck().catch(err => {
+      console.error('[Kick] Erro ao sinalizar YouTube:', err)
+    })
+  }, 100)
+}
 
 interface KickChatMessage {
   id: string
@@ -183,6 +203,10 @@ function connectWebSocket(chatroomId: number): void {
           data.event === 'ChatMessage' ||
           data.event === 'message') {
         console.log('[Kick] Mensagem de chat recebida!')
+        
+        // Quando receber primeira mensagem, verificar YouTube (economiza quota)
+        checkYouTubeOnKickActivity()
+        
         const messageData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
         handleChatMessage(messageData)
       }

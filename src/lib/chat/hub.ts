@@ -16,6 +16,7 @@ export interface ModerationEvent {
   duration?: number
   reason?: string
   timestamp: number
+  moderatorName?: string // Nome do moderador que aplicou a punição
 }
 
 type ChatSubscriber = (event: ChatMessage) => void
@@ -63,13 +64,62 @@ class ModerationHub {
   }
 
   publish(event: ModerationEvent): void {
+    console.log(`[ModerationHub] Publicando evento: ${event.type} para ${event.username} (${event.platform})`)
+    console.log(`[ModerationHub] Subscribers ativos: ${this.subscribers.size}`)
     for (const sub of this.subscribers) {
       try {
         sub(event)
-      } catch {
-        // ignore subscriber errors
+      } catch (err) {
+        console.error('[ModerationHub] Erro no subscriber:', err)
       }
     }
+  }
+}
+
+// Hub para status do YouTube
+export interface YouTubeStatusEvent {
+  type: 'youtube_status'
+  isLive: boolean
+  videoId: string | null
+  liveChatId: string | null
+  timestamp: number
+}
+
+type YouTubeStatusSubscriber = (event: YouTubeStatusEvent) => void
+
+class YouTubeStatusHub {
+  private subscribers: Set<YouTubeStatusSubscriber> = new Set()
+  private lastStatus: YouTubeStatusEvent | null = null
+
+  subscribe(callback: YouTubeStatusSubscriber): () => void {
+    this.subscribers.add(callback)
+    // Enviar status atual imediatamente se disponível
+    if (this.lastStatus) {
+      callback(this.lastStatus)
+    }
+    return () => this.subscribers.delete(callback)
+  }
+
+  publish(event: YouTubeStatusEvent): void {
+    // Só publicar se o status mudou
+    if (this.lastStatus?.isLive === event.isLive && this.lastStatus?.liveChatId === event.liveChatId) {
+      return
+    }
+    
+    console.log(`[YouTubeStatusHub] Status mudou: isLive=${event.isLive}, liveChatId=${event.liveChatId}`)
+    this.lastStatus = event
+    
+    for (const sub of this.subscribers) {
+      try {
+        sub(event)
+      } catch (err) {
+        console.error('[YouTubeStatusHub] Erro no subscriber:', err)
+      }
+    }
+  }
+  
+  getLastStatus(): YouTubeStatusEvent | null {
+    return this.lastStatus
   }
 }
 
@@ -79,6 +129,8 @@ declare global {
   var __chatHub: ChatHub | undefined
   // eslint-disable-next-line no-var
   var __moderationHub: ModerationHub | undefined
+  // eslint-disable-next-line no-var
+  var __youtubeStatusHub: YouTubeStatusHub | undefined
 }
 
 // Criar ou reutilizar instâncias existentes
@@ -88,8 +140,12 @@ if (!globalThis.__chatHub) {
 if (!globalThis.__moderationHub) {
   globalThis.__moderationHub = new ModerationHub()
 }
+if (!globalThis.__youtubeStatusHub) {
+  globalThis.__youtubeStatusHub = new YouTubeStatusHub()
+}
 
 export const chatHub = globalThis.__chatHub
 export const moderationHub = globalThis.__moderationHub
+export const youtubeStatusHub = globalThis.__youtubeStatusHub
 
 

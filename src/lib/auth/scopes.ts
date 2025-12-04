@@ -7,7 +7,8 @@
 export const SCOPES_VERSION = {
   twitch: 5, // Incrementado para incluir user:manage:whispers
   youtube: 1,
-  kick: 1
+  kick: 1,
+  discord: 1 // Para vinculação (não autenticação)
 }
 
 // Escopos necessários para cada plataforma

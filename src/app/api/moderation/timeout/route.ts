@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Aplicar timeout na plataforma
-    const result = await applyPlatformTimeout(targetPlatform, targetPlatformUserId, durationSeconds, reason)
+    // Aplicar timeout na plataforma (passando moderatorId para usar o token dele)
+    const result = await applyPlatformTimeout(targetPlatform, targetPlatformUserId, durationSeconds, reason, moderatorId)
 
     if (!result.success) {
       return NextResponse.json({ 

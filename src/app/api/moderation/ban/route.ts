@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Aplicar ban na plataforma
-    const result = await applyPlatformBan(targetPlatform, targetPlatformUserId, reason)
+    // Aplicar ban na plataforma (passando moderatorId para usar o token dele)
+    const result = await applyPlatformBan(targetPlatform, targetPlatformUserId, reason, moderatorId)
 
     if (!result.success) {
       return NextResponse.json({ 

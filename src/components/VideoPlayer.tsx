@@ -9,15 +9,40 @@ interface YouTubeLiveInfo {
   title: string | null
 }
 
-export function VideoPlayer({ platform, channelId = 'waveigl', className }: VideoPlayerProps) {
+interface YouTubeStatusFromProps {
+  isLive: boolean
+  videoId: string | null
+}
+
+interface ExtendedVideoPlayerProps extends VideoPlayerProps {
+  youtubeStatusFromSSE?: YouTubeStatusFromProps
+}
+
+export function VideoPlayer({ platform, channelId = 'waveigl', className, youtubeStatusFromSSE }: ExtendedVideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [youtubeVideoId, setYoutubeVideoId] = useState<string | null>(null)
   const [isYoutubeLive, setIsYoutubeLive] = useState(false)
   const [youtubeTitle, setYoutubeTitle] = useState<string | null>(null)
+  const initialFetchDone = useRef(false)
 
-  // Buscar live do YouTube automaticamente
+  // Receber status do YouTube via prop (SSE) - SEM POLLING!
+  useEffect(() => {
+    if (youtubeStatusFromSSE) {
+      setIsYoutubeLive(youtubeStatusFromSSE.isLive)
+      setYoutubeVideoId(youtubeStatusFromSSE.videoId)
+    }
+  }, [youtubeStatusFromSSE])
+
+  // Buscar live do YouTube apenas UMA VEZ na inicialização
   useEffect(() => {
     if (platform !== 'youtube') return
+    if (initialFetchDone.current) return
+    
+    // Se já recebemos via SSE, não precisa buscar
+    if (youtubeStatusFromSSE?.videoId) {
+      initialFetchDone.current = true
+      return
+    }
 
     const fetchYouTubeLive = async () => {
       try {
@@ -27,17 +52,16 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className }: Vide
         setIsYoutubeLive(data.isLive)
         setYoutubeVideoId(data.videoId)
         setYoutubeTitle(data.title)
+        initialFetchDone.current = true
       } catch (error) {
         console.error('Erro ao buscar live YouTube:', error)
       }
     }
 
-    fetchYouTubeLive()
-    
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(fetchYouTubeLive, 30000)
-    return () => clearInterval(interval)
-  }, [platform])
+    // Delay de 1 segundo para dar tempo do SSE conectar
+    const timeout = setTimeout(fetchYouTubeLive, 1000)
+    return () => clearTimeout(timeout)
+  }, [platform, youtubeStatusFromSSE])
 
   useEffect(() => {
     if (!containerRef.current) return

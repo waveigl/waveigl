@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { sendTwitchMessage } from '@/lib/chat/twitch'
-import { sendYouTubeMessage, getCurrentLiveChatId, getActiveLiveChatId, isYouTubeLiveActive } from '@/lib/chat/youtube'
+import { sendYouTubeMessage, getCurrentLiveChatId, getActiveLiveChatId, isYouTubeLiveActive, refreshYouTubeToken } from '@/lib/chat/youtube'
 import { sendKickMessage, refreshKickToken } from '@/lib/chat/kick'
 
 export async function POST(request: NextRequest) {
@@ -63,7 +63,24 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
         
-        const ytResult = await sendYouTubeMessage(linked.access_token!, liveChatId, message, linked.platform_username)
+        let youtubeToken = linked.access_token!
+        let ytResult = await sendYouTubeMessage(youtubeToken, liveChatId, message, linked.platform_username)
+        
+        // Se o token expirou, tentar renovar e enviar novamente
+        if (!ytResult.success && ytResult.code === 'TOKEN_EXPIRED' && linked.refresh_token) {
+          console.log('[YouTube] Token expirado, tentando renovar...')
+          const newToken = await refreshYouTubeToken(session.userId, linked.refresh_token)
+          
+          if (newToken) {
+            youtubeToken = newToken
+            ytResult = await sendYouTubeMessage(youtubeToken, liveChatId, message, linked.platform_username)
+          } else {
+            return NextResponse.json({ 
+              error: 'Token do YouTube expirado. Por favor, reautorize sua conta nas configurações.',
+              code: 'YOUTUBE_TOKEN_EXPIRED'
+            }, { status: 401 })
+          }
+        }
         
         if (!ytResult.success) {
           return NextResponse.json({ 

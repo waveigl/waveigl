@@ -1,6 +1,6 @@
 export type Platform = 'twitch' | 'youtube' | 'kick'
 
-export type UserRole = 'owner' | 'admin' | 'moderator' | 'member'
+export type UserRole = 'owner' | 'admin' | 'moderator' | 'user'
 
 export type SubscriptionStatus = 'active' | 'inactive' | 'cancelled' | 'expired'
 

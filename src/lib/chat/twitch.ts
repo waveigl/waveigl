@@ -1,6 +1,7 @@
-import tmi, { Client as TmiClient } from 'tmi.js'
+import tmi, { Client as TmiClient, Userstate } from 'tmi.js'
 import { chatHub, moderationHub } from './hub'
-import { processCommand } from './commands'
+import { processCommand, broadcastSubscriptionEvent, broadcastGiftSubEvent } from './commands'
+import { triggerYouTubeCheck } from './youtube'
 
 // Usar globalThis para persistir estado entre HMR (Hot Module Replacement)
 // Isso evita múltiplas conexões quando o Next.js recarrega módulos
@@ -11,12 +12,72 @@ declare global {
   var __twitchReaderStarted: boolean
   // eslint-disable-next-line no-var
   var __twitchProcessedMessageIds: Set<string>
+  // eslint-disable-next-line no-var
+  var __twitchFirstMessageReceived: boolean
 }
 
 // Inicializar no globalThis se não existir
 globalThis.__twitchReaderClient = globalThis.__twitchReaderClient || null
 globalThis.__twitchReaderStarted = globalThis.__twitchReaderStarted || false
 globalThis.__twitchProcessedMessageIds = globalThis.__twitchProcessedMessageIds || new Set<string>()
+globalThis.__twitchFirstMessageReceived = globalThis.__twitchFirstMessageReceived || false
+
+/**
+ * Verifica o status do YouTube quando Twitch detecta atividade
+ * Isso economiza quota porque só verifica quando sabemos que o streamer está ao vivo
+ */
+function checkYouTubeOnTwitchActivity(): void {
+  if (globalThis.__twitchFirstMessageReceived) return // Já verificou
+  globalThis.__twitchFirstMessageReceived = true
+  
+  console.log('[Twitch] Primeira mensagem recebida - sinalizando YouTube para verificar...')
+  
+  // Usar setTimeout para não bloquear o processamento de mensagens
+  setTimeout(() => {
+    triggerYouTubeCheck().catch(err => {
+      console.error('[Twitch] Erro ao sinalizar YouTube:', err)
+    })
+  }, 100)
+}
+
+/**
+ * Mapeia o plano de sub para tier legível
+ */
+function getTierName(plan: string): string {
+  switch (plan) {
+    case 'Prime':
+    case '1000': return 'Tier 1'
+    case '2000': return 'Tier 2'
+    case '3000': return 'Tier 3'
+    default: return 'Tier 1'
+  }
+}
+
+/**
+ * Trata eventos de subscription (nova ou resub)
+ */
+async function handleSubscriptionEvent(
+  type: 'new_sub' | 'resub',
+  username: string,
+  plan: string,
+  _userstate: Userstate
+): Promise<void> {
+  const tierName = getTierName(plan)
+  await broadcastSubscriptionEvent(username, tierName, 'twitch')
+}
+
+/**
+ * Trata eventos de gift sub
+ */
+async function handleGiftSubEvent(
+  gifterUsername: string,
+  recipientUsername: string,
+  plan: string,
+  _userstate: Userstate
+): Promise<void> {
+  const tierName = getTierName(plan)
+  await broadcastGiftSubEvent(gifterUsername, recipientUsername, tierName, 'twitch')
+}
 
 const MAX_PROCESSED_IDS = 1000 // Limitar tamanho do cache
 
@@ -38,6 +99,9 @@ export async function startTwitchReader(): Promise<void> {
   // Listener para mensagens do chat
   client.on('message', async (_channel, userstate, message, self) => {
     console.log(`[Twitch] Mensagem recebida de ${userstate['display-name']}: ${message.substring(0, 50)}`)
+    
+    // Quando receber primeira mensagem, verificar YouTube (economiza quota)
+    checkYouTubeOnTwitchActivity()
     
     if (self) {
       console.log('[Twitch] Mensagem própria ignorada')
@@ -132,6 +196,30 @@ export async function startTwitchReader(): Promise<void> {
       username,
       timestamp: Date.now()
     })
+  })
+  
+  // Listener para novas inscrições (subscription)
+  client.on('subscription', (_channel, username, methods, _message, userstate) => {
+    console.log(`[Twitch] 🎉 ${username} se inscreveu!`)
+    handleSubscriptionEvent('new_sub', username, methods?.plan || '1000', userstate)
+  })
+  
+  // Listener para re-inscrições
+  client.on('resub', (_channel, username, _months, _message, userstate, methods) => {
+    console.log(`[Twitch] 🎉 ${username} renovou a inscrição!`)
+    handleSubscriptionEvent('resub', username, methods?.plan || '1000', userstate)
+  })
+  
+  // Listener para sub gift (quando alguém dá sub para outra pessoa)
+  client.on('subgift', (_channel, username, _streakMonths, recipient, methods, userstate) => {
+    console.log(`[Twitch] 🎁 ${username} deu sub para ${recipient}!`)
+    handleGiftSubEvent(username, recipient, methods?.plan || '1000', userstate)
+  })
+  
+  // Listener para sub mystery gift (quando alguém dá vários subs aleatórios)
+  client.on('submysterygift', (_channel, username, _numOfSubs, methods, userstate) => {
+    console.log(`[Twitch] 🎁 ${username} está distribuindo subs!`)
+    // Não precisa fazer nada aqui, os subgift individuais serão disparados
   })
   
   try {

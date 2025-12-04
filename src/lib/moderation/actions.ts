@@ -32,19 +32,46 @@ async function getBroadcasterToken(platform: 'twitch' | 'kick' | 'youtube'): Pro
 }
 
 /**
+ * Obtém o token do moderador para ações de moderação
+ * Permite que a ação apareça no nome do moderador ao invés do streamer
+ */
+async function getModeratorToken(
+  moderatorId: string, 
+  platform: 'twitch' | 'kick' | 'youtube'
+): Promise<{ token: string; moderatorPlatformId: string } | null> {
+  const db = getSupabaseAdmin()
+  
+  const { data: account } = await db
+    .from('linked_accounts')
+    .select('access_token, platform_user_id')
+    .eq('user_id', moderatorId)
+    .eq('platform', platform)
+    .maybeSingle()
+  
+  if (!account?.access_token) {
+    console.log(`[Moderation] Token do moderador não encontrado para ${platform}, usando broadcaster`)
+    return null
+  }
+  
+  return { token: account.access_token, moderatorPlatformId: account.platform_user_id }
+}
+
+/**
  * Aplica timeout em uma plataforma específica
+ * @param moderatorId - ID do moderador no sistema (para usar o token dele)
  */
 export async function applyPlatformTimeout(
   platform: string, 
   platformUserId: string, 
   durationSeconds: number,
-  reason?: string
+  reason?: string,
+  moderatorId?: string
 ): Promise<{ success: boolean; error?: string }> {
-  console.log(`[Moderation] Aplicando timeout no ${platform} para ${platformUserId}: ${durationSeconds}s`)
+  console.log(`[Moderation] Aplicando timeout no ${platform} para ${platformUserId}: ${durationSeconds}s (mod: ${moderatorId || 'broadcaster'})`)
   
   switch (platform) {
     case 'twitch':
-      return applyTwitchTimeout(platformUserId, durationSeconds, reason)
+      return applyTwitchTimeout(platformUserId, durationSeconds, reason, moderatorId)
     case 'youtube':
       return applyYouTubeTimeout(platformUserId, durationSeconds, reason)
     case 'kick':
@@ -56,17 +83,19 @@ export async function applyPlatformTimeout(
 
 /**
  * Aplica ban em uma plataforma específica
+ * @param moderatorId - ID do moderador no sistema (para usar o token dele)
  */
 export async function applyPlatformBan(
   platform: string, 
   platformUserId: string,
-  reason?: string
+  reason?: string,
+  moderatorId?: string
 ): Promise<{ success: boolean; error?: string }> {
-  console.log(`[Moderation] Aplicando ban no ${platform} para ${platformUserId}`)
+  console.log(`[Moderation] Aplicando ban no ${platform} para ${platformUserId} (mod: ${moderatorId || 'broadcaster'})`)
   
   switch (platform) {
     case 'twitch':
-      return applyTwitchBan(platformUserId, reason)
+      return applyTwitchBan(platformUserId, reason, moderatorId)
     case 'youtube':
       return applyYouTubeBan(platformUserId, reason)
     case 'kick':
@@ -78,22 +107,35 @@ export async function applyPlatformBan(
 
 // ============ TWITCH ============
 
-async function applyTwitchTimeout(userId: string, durationSeconds: number, reason?: string): Promise<{ success: boolean; error?: string }> {
+async function applyTwitchTimeout(userId: string, durationSeconds: number, reason?: string, moderatorId?: string): Promise<{ success: boolean; error?: string }> {
   try {
     const broadcaster = await getBroadcasterToken('twitch')
     if (!broadcaster) {
       return { success: false, error: 'Token do broadcaster não disponível' }
     }
     
+    // Tentar usar o token do moderador para que a ação apareça no nome dele
+    let modToken = broadcaster.token
+    let modPlatformId = broadcaster.broadcasterId
+    
+    if (moderatorId) {
+      const moderator = await getModeratorToken(moderatorId, 'twitch')
+      if (moderator) {
+        modToken = moderator.token
+        modPlatformId = moderator.moderatorPlatformId
+        console.log(`[Twitch] Usando token do moderador: ${modPlatformId}`)
+      }
+    }
+    
     // POST https://api.twitch.tv/helix/moderation/bans
     // Timeout é um ban com duração
     const response = await fetch('https://api.twitch.tv/helix/moderation/bans?' + new URLSearchParams({
       broadcaster_id: broadcaster.broadcasterId,
-      moderator_id: broadcaster.broadcasterId // Usando o próprio broadcaster como moderador
+      moderator_id: modPlatformId // Usando o ID do moderador
     }), {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${broadcaster.token}`,
+        'Authorization': `Bearer ${modToken}`,
         'Client-Id': process.env.TWITCH_CLIENT_ID!,
         'Content-Type': 'application/json'
       },
@@ -107,7 +149,7 @@ async function applyTwitchTimeout(userId: string, durationSeconds: number, reaso
     })
     
     if (response.ok) {
-      console.log(`[Twitch] ✅ Timeout aplicado para ${userId}`)
+      console.log(`[Twitch] ✅ Timeout aplicado para ${userId} por ${modPlatformId}`)
       return { success: true }
     }
     
@@ -121,22 +163,35 @@ async function applyTwitchTimeout(userId: string, durationSeconds: number, reaso
   }
 }
 
-async function applyTwitchBan(userId: string, reason?: string): Promise<{ success: boolean; error?: string }> {
+async function applyTwitchBan(userId: string, reason?: string, moderatorId?: string): Promise<{ success: boolean; error?: string }> {
   try {
     const broadcaster = await getBroadcasterToken('twitch')
     if (!broadcaster) {
       return { success: false, error: 'Token do broadcaster não disponível' }
     }
     
+    // Tentar usar o token do moderador para que a ação apareça no nome dele
+    let modToken = broadcaster.token
+    let modPlatformId = broadcaster.broadcasterId
+    
+    if (moderatorId) {
+      const moderator = await getModeratorToken(moderatorId, 'twitch')
+      if (moderator) {
+        modToken = moderator.token
+        modPlatformId = moderator.moderatorPlatformId
+        console.log(`[Twitch] Usando token do moderador: ${modPlatformId}`)
+      }
+    }
+    
     // POST https://api.twitch.tv/helix/moderation/bans
     // Ban permanente (sem duration)
     const response = await fetch('https://api.twitch.tv/helix/moderation/bans?' + new URLSearchParams({
       broadcaster_id: broadcaster.broadcasterId,
-      moderator_id: broadcaster.broadcasterId
+      moderator_id: modPlatformId
     }), {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${broadcaster.token}`,
+        'Authorization': `Bearer ${modToken}`,
         'Client-Id': process.env.TWITCH_CLIENT_ID!,
         'Content-Type': 'application/json'
       },
@@ -149,7 +204,7 @@ async function applyTwitchBan(userId: string, reason?: string): Promise<{ succes
     })
     
     if (response.ok) {
-      console.log(`[Twitch] ✅ Ban aplicado para ${userId}`)
+      console.log(`[Twitch] ✅ Ban aplicado para ${userId} por ${modPlatformId}`)
       return { success: true }
     }
     

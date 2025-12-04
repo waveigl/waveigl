@@ -14,6 +14,9 @@ import { ProfileEditor } from '@/components/ProfileEditor'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ModerationPanel } from '@/components/ModerationPanel'
+import BenefitsIndicator, { SubBadge } from '@/components/BenefitsIndicator'
+import SubscriberBenefitsPopup from '@/components/SubscriberBenefitsPopup'
+import BenefitsPanel from '@/components/BenefitsPanel'
 
 // Configuração visual dos cargos
 const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -213,6 +216,20 @@ export default function DashboardPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [accountsNeedingReauth, setAccountsNeedingReauth] = useState<Array<{ platform: string; missingScopes: string[] }>>([])
   const [isChatEnabled, setIsChatEnabled] = useState(true) // Controle de chat para o streamer
+  
+  // Estados para sistema de benefícios
+  const [benefits, setBenefits] = useState<any[]>([])
+  const [discordConnection, setDiscordConnection] = useState<any>(null)
+  const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
+  const [showBenefitsPanel, setShowBenefitsPanel] = useState(false)
+  const [pendingBenefit, setPendingBenefit] = useState<any>(null)
+  
+  // Status do YouTube (recebido via SSE para evitar polling)
+  const [youtubeStatus, setYoutubeStatus] = useState<{
+    isLive: boolean
+    videoId: string | null
+    liveChatId: string | null
+  }>({ isLive: false, videoId: null, liveChatId: null })
 
   // Carregar dados do usuário
   const loadUser = async () => {
@@ -288,6 +305,31 @@ export default function DashboardPage() {
     }
   }
 
+  // Carregar benefícios do usuário
+  const loadBenefits = async () => {
+    try {
+      const res = await fetch('/api/benefits')
+      if (res.ok) {
+        const data = await res.json()
+        setBenefits(data.benefits || [])
+        setDiscordConnection(data.discordConnection)
+        
+        // Verificar se há benefício pendente de onboarding
+        if (data.hasPendingOnboarding && data.benefits.length > 0) {
+          const pending = data.benefits.find((b: any) => 
+            b.onboarding_step < 3 && !b.onboarding_dismissed_at
+          )
+          if (pending) {
+            setPendingBenefit(pending)
+            setShowBenefitsPopup(true)
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao carregar benefícios:', e)
+    }
+  }
+  
   useEffect(() => {
     // Carregar dados do usuário e verificar moderador
     const initializeUser = async () => {
@@ -295,6 +337,8 @@ export default function DashboardPage() {
       // Verificar status de moderador via API após carregar usuário
       // Isso garante que o status esteja atualizado mesmo se mudou fora da plataforma
       await checkModeratorViaAPI()
+      // Carregar benefícios
+      await loadBenefits()
     }
     initializeUser()
 
@@ -303,6 +347,17 @@ export default function DashboardPage() {
     es.onmessage = (ev) => {
       try {
         const payload = JSON.parse(ev.data)
+        
+        // Evento de status do YouTube (live on/off)
+        if (payload.eventType === 'youtube_status') {
+          console.log('[Dashboard] Status YouTube via SSE:', payload.isLive ? 'ONLINE' : 'OFFLINE')
+          setYoutubeStatus({
+            isLive: payload.isLive,
+            videoId: payload.videoId,
+            liveChatId: payload.liveChatId
+          })
+          return
+        }
         
         // Evento de moderação (alguém foi promovido/removido de moderador)
         if (payload.eventType === 'moderation') {
@@ -331,8 +386,9 @@ export default function DashboardPage() {
         
         // Mensagem de chat normal
         if (payload && payload.message && payload.platform) {
+          const messageId = String(payload.id || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
           const newMessage = {
-            id: String(payload.id || `${Date.now()}`),
+            id: messageId,
             platform: payload.platform,
             username: payload.username || 'user',
             userId: payload.userId || 'unknown',
@@ -341,7 +397,14 @@ export default function DashboardPage() {
             badges: payload.badges || []
           }
           
-          setMessages((curr) => [...curr.slice(-200), newMessage])
+          // Usar função de atualização para evitar duplicatas
+          setMessages((curr) => {
+            // Verificar se já existe mensagem com este ID
+            if (curr.some(m => m.id === messageId)) {
+              return curr // Não adicionar duplicata
+            }
+            return [...curr.slice(-200), newMessage]
+          })
           
           // Verificar se esta mensagem é do usuário atual e tem badge de moderador
           const currentLinkedAccounts = linkedAccountsRef.current
@@ -422,6 +485,37 @@ export default function DashboardPage() {
       
       if (res.ok) {
         console.log('Moderação aplicada com sucesso:', data)
+        
+        // Substituir mensagens do usuário punido por "<Mensagem Deletada>"
+        setMessages(curr => curr.map(msg => {
+          if (msg.userId === userId && msg.platform === platform) {
+            return {
+              ...msg,
+              message: '<Mensagem Deletada>',
+              isDeleted: true
+            } as UnifiedMessage & { isDeleted?: boolean }
+          }
+          return msg
+        }))
+        
+        // Adicionar mensagem de sistema no chat mostrando a punição
+        const targetUsername = messages.find(m => m.userId === userId)?.username || 'Usuário'
+        const moderatorName = linkedAccounts.find(acc => acc.platform === platform)?.platform_username || user.username || 'Moderador'
+        
+        const durationText = duration ? formatDuration(duration) : ''
+        const actionText = action === 'ban' ? '🔨 banido permanentemente' : `⏱️ recebeu timeout de ${durationText}`
+        
+        const systemMessage: UnifiedMessage = {
+          id: `mod-${Date.now()}`,
+          platform: platform as 'twitch' | 'youtube' | 'kick',
+          username: '🛡️ Sistema',
+          userId: 'system',
+          message: `${targetUsername} foi ${actionText} por ${moderatorName}`,
+          timestamp: Date.now(),
+          badges: ['system']
+        }
+        
+        setMessages(curr => [...curr, systemMessage])
       } else {
         console.error('Erro ao aplicar moderação:', data.error)
         alert(`Erro: ${data.error}`)
@@ -430,6 +524,14 @@ export default function DashboardPage() {
       console.error('Erro ao moderar:', error)
       alert('Erro ao aplicar moderação')
     }
+  }
+  
+  // Formatar duração em texto legível
+  const formatDuration = (seconds: number): string => {
+    if (seconds < 60) return `${seconds}s`
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}min`
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`
+    return `${Math.floor(seconds / 86400)}d`
   }
 
   const handleLogout = () => {
@@ -519,6 +621,17 @@ export default function DashboardPage() {
                 {/* Painel de moderação - apenas para admin/streamer */}
                 {(user.role === 'admin' || user.role === 'streamer') && (
                   <ModerationPanel isAdmin={true} />
+                )}
+                
+                {/* Indicador de benefícios para subs */}
+                {benefits.length > 0 && (
+                  <>
+                    <BenefitsIndicator 
+                      hasPendingBenefits={benefits.some(b => b.onboarding_step < 3 && !b.onboarding_dismissed_at)}
+                      onClick={() => setShowBenefitsPanel(true)}
+                    />
+                    {!benefits.some(b => b.onboarding_step < 3) && <SubBadge />}
+                  </>
                 )}
               </>
             )}
@@ -623,6 +736,7 @@ export default function DashboardPage() {
               platform={selectedPlatform}
               channelId="waveigl"
               className="w-full h-full rounded-lg"
+              youtubeStatusFromSSE={youtubeStatus}
             />
           </div>
         </div>
@@ -660,9 +774,11 @@ export default function DashboardPage() {
                 isModerator={isModerator}
                 onModerate={handleModerate}
                 isLogged={!!user}
+                youtubeStatusFromSSE={youtubeStatus}
                 currentUser={user ? {
                   id: user.id,
                   is_moderator: isModerator,
+                  role: user.role || 'user',
                   linkedAccounts: linkedAccounts.map(acc => ({
                     platform: acc.platform as Platform,
                     platform_user_id: acc.platform_user_id,
@@ -699,6 +815,33 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+      
+      {/* Popup de onboarding de benefícios para novos subs */}
+      {pendingBenefit && (
+        <SubscriberBenefitsPopup
+          benefit={pendingBenefit}
+          isOpen={showBenefitsPopup}
+          onClose={() => {
+            setShowBenefitsPopup(false)
+            loadBenefits() // Recarregar para atualizar status
+          }}
+          onDismiss={() => {
+            setShowBenefitsPopup(false)
+          }}
+          discordConnected={!!discordConnection}
+        />
+      )}
+      
+      {/* Painel completo de benefícios */}
+      <BenefitsPanel
+        isOpen={showBenefitsPanel}
+        onClose={() => setShowBenefitsPanel(false)}
+        onOpenOnboarding={(benefit) => {
+          setPendingBenefit(benefit)
+          setShowBenefitsPanel(false)
+          setShowBenefitsPopup(true)
+        }}
+      />
     </div>
   )
 }

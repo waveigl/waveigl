@@ -3,12 +3,27 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { UnifiedChatProps, Platform, ChatMessage } from '@/types'
-import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw } from 'lucide-react'
+import { UnifiedChatProps, Platform, ChatMessage, UserRole } from '@/types'
+import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+
+// Limites padrão de mensagens por role
+const DEFAULT_MESSAGE_LIMITS: Record<UserRole, number> = {
+  user: 100,
+  moderator: 250,
+  admin: 250,
+  owner: 250
+}
+
+// Limites mínimos e máximos permitidos
+const MIN_MESSAGE_LIMIT = 50
+const MAX_MESSAGE_LIMIT = 500
 
 // Tipos de badges conhecidos
 const MODERATOR_BADGES = ['moderator', 'mod', 'broadcaster', 'vip', 'staff', 'admin', 'owner']
+
+// Badges de subscriber
+const SUBSCRIBER_BADGES = ['subscriber', 'sub', 'founder', 'member', 'tier1', 'tier2', 'tier3']
 
 // Tipo para mensagem local com status de envio
 type MessageStatus = 'sending' | 'sent' | 'error'
@@ -33,13 +48,27 @@ const BADGE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label
   vip: { icon: <Star className="w-3 h-3" />, color: 'bg-pink-500', label: 'VIP' },
   staff: { icon: <Shield className="w-3 h-3" />, color: 'bg-blue-500', label: 'Staff' },
   admin: { icon: <Shield className="w-3 h-3" />, color: 'bg-purple-500', label: 'Admin' },
+  // Badges de subscriber
+  subscriber: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-400', label: 'SUB' },
+  sub: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-400', label: 'SUB' },
+  founder: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-600', label: 'Founder' },
+  member: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-400', label: 'Membro' },
+  tier1: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-400', label: 'Tier 1' },
+  tier2: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-500', label: 'Tier 2' },
+  tier3: { icon: <Gem className="w-3 h-3" />, color: 'bg-purple-600', label: 'Tier 3' },
 }
 
 interface ExtendedUnifiedChatProps extends UnifiedChatProps {
   isLogged?: boolean
+  youtubeStatusFromSSE?: {
+    isLive: boolean
+    videoId: string | null
+    liveChatId: string | null
+  }
   currentUser?: {
     id: string
     is_moderator?: boolean
+    role?: UserRole
     linkedAccounts?: Array<{
       platform: Platform
       platform_user_id: string
@@ -49,47 +78,97 @@ interface ExtendedUnifiedChatProps extends UnifiedChatProps {
   }
 }
 
-export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, currentUser }: ExtendedUnifiedChatProps) {
+export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser }: ExtendedUnifiedChatProps) {
   const [newMessage, setNewMessage] = useState('')
   const [sendPlatform, setSendPlatform] = useState<Platform>('kick')
   const [showModerationMenu, setShowModerationMenu] = useState<string | null>(null)
   const [customTimeoutInput, setCustomTimeoutInput] = useState('')
+  const [customTimeoutUnit, setCustomTimeoutUnit] = useState<'seconds' | 'minutes' | 'hours' | 'days' | 'months' | 'permanent'>('days')
   const [showCustomTimeout, setShowCustomTimeout] = useState(false)
   const [localMessages, setLocalMessages] = useState<LocalMessage[]>([])
   const [isSending, setIsSending] = useState(false)
   const [youtubeIsLive, setYoutubeIsLive] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  
-  // Verificar status do YouTube periodicamente
-  useEffect(() => {
-    const checkYouTubeStatus = async () => {
-      try {
-        const res = await fetch('/api/youtube/status')
-        const data = await res.json()
-        const isLive = data.isLive === true
-        setYoutubeIsLive(isLive)
-        
-        // Se YouTube ficou offline e estava selecionado, mudar para Kick
-        if (!isLive && sendPlatform === 'youtube') {
-          setSendPlatform('kick')
-        }
-      } catch {
-        setYoutubeIsLive(false)
-        if (sendPlatform === 'youtube') {
-          setSendPlatform('kick')
+  const [showChatSettings, setShowChatSettings] = useState(false)
+  const [messageLimit, setMessageLimit] = useState<number>(() => {
+    // Carregar do localStorage se disponível
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chat_message_limit')
+      if (saved) {
+        const parsed = parseInt(saved, 10)
+        if (!isNaN(parsed) && parsed >= MIN_MESSAGE_LIMIT && parsed <= MAX_MESSAGE_LIMIT) {
+          return parsed
         }
       }
     }
+    // Retornar limite padrão baseado no role
+    const role = currentUser?.role || 'user'
+    return DEFAULT_MESSAGE_LIMITS[role]
+  })
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  
+  // Atualizar limite quando o role mudar
+  useEffect(() => {
+    const role = currentUser?.role || 'user'
+    const defaultLimit = DEFAULT_MESSAGE_LIMITS[role]
     
-    // Verificar imediatamente
-    checkYouTubeStatus()
+    // Se o limite atual é maior que o permitido para o role, ajustar
+    if (messageLimit > defaultLimit) {
+      setMessageLimit(defaultLimit)
+      localStorage.setItem('chat_message_limit', String(defaultLimit))
+    }
+  }, [currentUser?.role, messageLimit])
+  
+  // Status do YouTube vindo do SSE (fonte primária - não faz polling!)
+  useEffect(() => {
+    if (youtubeStatusFromSSE) {
+      setYoutubeIsLive(youtubeStatusFromSSE.isLive)
+      
+      // Se YouTube ficou offline e estava selecionado, mudar para Kick
+      if (!youtubeStatusFromSSE.isLive && sendPlatform === 'youtube') {
+        setSendPlatform('kick')
+      }
+    }
+  }, [youtubeStatusFromSSE, sendPlatform])
+  
+  // Fallback: verificar via API apenas se não recebeu status via SSE após 5 segundos
+  const hasReceivedSSEStatus = useRef(false)
+  useEffect(() => {
+    if (youtubeStatusFromSSE) {
+      hasReceivedSSEStatus.current = true
+    }
+  }, [youtubeStatusFromSSE])
+  
+  // Verificação manual apenas quando o usuário clicar (lazy check)
+  // Usa flag global para evitar múltiplas verificações simultâneas
+  const isCheckingYoutube = useRef(false)
+  
+  const checkYouTubeStatus = useCallback(async () => {
+    // Evitar verificações simultâneas
+    if (isCheckingYoutube.current) {
+      console.log('[YouTube] Verificação já em andamento, ignorando...')
+      return
+    }
     
-    // Verificar a cada 30 segundos
-    const interval = setInterval(checkYouTubeStatus, 30000)
+    isCheckingYoutube.current = true
     
-    return () => clearInterval(interval)
-  }, [sendPlatform])
+    try {
+      console.log('[YouTube] Verificação manual (lazy check) iniciada')
+      const res = await fetch('/api/youtube/status?lazy=true')
+      const data = await res.json()
+      const isLive = data.isLive === true
+      setYoutubeIsLive(isLive)
+      
+      // Se YouTube ficou online, automaticamente selecionar
+      if (isLive) {
+        setSendPlatform('youtube')
+      }
+    } catch {
+      setYoutubeIsLive(false)
+    } finally {
+      isCheckingYoutube.current = false
+    }
+  }, [])
   
   // Obtém o ID do usuário na plataforma selecionada (para envio)
   const getCurrentPlatformUserId = useCallback(() => {
@@ -191,9 +270,13 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   })
   
   // Combina mensagens do servidor com mensagens locais e ordena por timestamp
-  const allMessages = [...filteredServerMessages, ...localMessages].sort(
+  const combinedMessages = [...filteredServerMessages, ...localMessages].sort(
     (a, b) => a.timestamp - b.timestamp
   )
+  
+  // Aplicar limite de mensagens - mantém apenas as mais recentes
+  // IMPORTANTE: Isso remove as mensagens mais antigas da memória, não apenas da visualização
+  const allMessages = combinedMessages.slice(-messageLimit)
 
   // Ref para rastrear o último número de mensagens do servidor (para scroll apenas em novas mensagens)
   const lastServerMessageCountRef = useRef(messages.length)
@@ -388,11 +471,37 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   }
 
   const handleCustomTimeout = (userId: string, platform: Platform) => {
-    const days = parseInt(customTimeoutInput)
-    if (days > 0 && days <= 14) {
-      const seconds = days * 24 * 60 * 60
-      handleModeration(userId, platform, 'timeout', seconds)
+    // Se for permanente, chamar ban
+    if (customTimeoutUnit === 'permanent') {
+      handleModeration(userId, platform, 'ban')
+      return
     }
+    
+    const value = parseInt(customTimeoutInput)
+    if (value <= 0) return
+    
+    let seconds: number
+    switch (customTimeoutUnit) {
+      case 'seconds':
+        seconds = value
+        break
+      case 'minutes':
+        seconds = value * 60
+        break
+      case 'hours':
+        seconds = value * 60 * 60
+        break
+      case 'days':
+        seconds = value * 24 * 60 * 60
+        break
+      case 'months':
+        seconds = value * 30 * 24 * 60 * 60 // 30 dias por mês
+        break
+      default:
+        seconds = value * 24 * 60 * 60 // default: dias
+    }
+    
+    handleModeration(userId, platform, 'timeout', seconds)
   }
 
   // Verifica se o usuário tem badge de moderador
@@ -455,14 +564,97 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           <Button
             size="sm"
             variant={sendPlatform === 'youtube' ? 'default' : 'outline'}
-            onClick={() => youtubeIsLive && setSendPlatform('youtube')}
+            onClick={async () => {
+              if (youtubeIsLive) {
+                setSendPlatform('youtube')
+              } else {
+                // Se não está live, verificar novamente (lazy check - apenas quando clicado)
+                await checkYouTubeStatus()
+              }
+            }}
             disabled={!youtubeIsLive}
             className={`${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Não há live ativa'}
+            title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Clique para verificar'}
           >
             YouTube
             {!youtubeIsLive && <span className="ml-1 text-[10px]">(offline)</span>}
           </Button>
+          
+          {/* Botão de configurações do chat */}
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowChatSettings(true)}
+              title="Configurações do chat"
+              className="h-7 w-7 p-0"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de configurações do chat */}
+      {showChatSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg p-4 w-80 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Configurações do Chat</h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowChatSettings(false)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Limite de mensagens */}
+              <div>
+                <label className="text-sm text-muted-foreground block mb-2">
+                  Limite de mensagens no histórico
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={MIN_MESSAGE_LIMIT}
+                    max={DEFAULT_MESSAGE_LIMITS[currentUser?.role || 'user']}
+                    value={messageLimit}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10)
+                      const maxForRole = DEFAULT_MESSAGE_LIMITS[currentUser?.role || 'user']
+                      if (!isNaN(value)) {
+                        const clampedValue = Math.min(Math.max(value, MIN_MESSAGE_LIMIT), maxForRole)
+                        setMessageLimit(clampedValue)
+                        localStorage.setItem('chat_message_limit', String(clampedValue))
+                      }
+                    }}
+                    className="w-24"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    (máx: {DEFAULT_MESSAGE_LIMITS[currentUser?.role || 'user']})
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mensagens mais antigas serão removidas permanentemente.
+                </p>
+              </div>
+              
+              {/* Info sobre o role */}
+              <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
+                <p>
+                  <strong>Seu cargo:</strong> {currentUser?.role || 'user'}
+                </p>
+                <p className="mt-1">
+                  Usuários normais: máx 100 mensagens<br />
+                  Moderadores/Admins/Streamer: máx 250 mensagens
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -492,7 +684,10 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     {renderBadges(message.badges)}
                     
                     {/* Nome do usuário */}
-                    <span className={`font-semibold text-sm ${hasModeratorBadge(message.badges) ? 'text-green-400' : 'text-foreground'}`}>
+                    <span className={`font-semibold text-sm ${
+                      message.badges?.includes('system') ? 'text-yellow-500' :
+                      hasModeratorBadge(message.badges) ? 'text-green-400' : 'text-foreground'
+                    }`}>
                       {message.username}
                     </span>
                     
@@ -524,9 +719,20 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       </span>
                     )}
                   </div>
-                  <p className={`text-sm mt-1 break-words ${localStatus === 'error' ? 'text-destructive/70' : 'text-muted-foreground'}`}>
-                    {message.message}
-                  </p>
+                  {/* Mensagem - com tratamento especial para mensagens deletadas e de sistema */}
+                  {message.message === '<Mensagem Deletada>' ? (
+                    <p className="text-sm mt-1 break-words text-muted-foreground/50 italic">
+                      &lt;Mensagem Deletada&gt;
+                    </p>
+                  ) : message.badges?.includes('system') ? (
+                    <p className="text-sm mt-1 break-words text-yellow-500 font-medium">
+                      {message.message}
+                    </p>
+                  ) : (
+                    <p className={`text-sm mt-1 break-words ${localStatus === 'error' ? 'text-destructive/70' : 'text-muted-foreground'}`}>
+                      {message.message}
+                    </p>
+                  )}
                   
                   {/* Botões de ação para mensagens com erro */}
                   {isLocalMessage && localStatus === 'error' && tempId && (
@@ -552,8 +758,8 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                   )}
                 </div>
 
-                {/* Moderation Buttons - aparecem no hover (apenas para mensagens não-locais) */}
-                {isModerator && !isLocalMessage && (
+                {/* Moderation Buttons - aparecem no hover (apenas para mensagens não-locais, não-sistema, não-deletadas) */}
+                {isModerator && !isLocalMessage && !message.badges?.includes('system') && message.message !== '<Mensagem Deletada>' && (
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     {/* Botões de timeout rápido */}
                     <Button
@@ -614,25 +820,40 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         Timeout customizado
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 px-2 py-1">
-                        <Input
-                          type="number"
-                          min="1"
-                          max="14"
-                          value={customTimeoutInput}
-                          onChange={(e) => setCustomTimeoutInput(e.target.value)}
-                          placeholder="Dias (1-14)"
-                          className="h-7 text-xs w-24"
-                          autoFocus
-                        />
+                      <div className="flex flex-col gap-2 px-2 py-1">
+                        <div className="flex items-center gap-2">
+                          {customTimeoutUnit !== 'permanent' && (
+                            <Input
+                              type="number"
+                              min="1"
+                              value={customTimeoutInput}
+                              onChange={(e) => setCustomTimeoutInput(e.target.value)}
+                              placeholder="Valor"
+                              className="h-7 text-xs w-16"
+                              autoFocus
+                            />
+                          )}
+                          <select
+                            value={customTimeoutUnit}
+                            onChange={(e) => setCustomTimeoutUnit(e.target.value as any)}
+                            className="h-7 text-xs bg-muted border border-border rounded px-2"
+                          >
+                            <option value="seconds">Segundos</option>
+                            <option value="minutes">Minutos</option>
+                            <option value="hours">Horas</option>
+                            <option value="days">Dias</option>
+                            <option value="months">Meses</option>
+                            <option value="permanent">Permanente</option>
+                          </select>
+                        </div>
                         <Button
                           size="sm"
                           variant="default"
                           onClick={() => handleCustomTimeout(message.userId, message.platform)}
-                          disabled={!customTimeoutInput || parseInt(customTimeoutInput) < 1 || parseInt(customTimeoutInput) > 14}
-                          className="h-7 text-xs"
+                          disabled={customTimeoutUnit !== 'permanent' && (!customTimeoutInput || parseInt(customTimeoutInput) < 1)}
+                          className="h-7 text-xs w-full"
                         >
-                          Aplicar
+                          {customTimeoutUnit === 'permanent' ? 'Banir Permanentemente' : 'Aplicar Timeout'}
                         </Button>
                       </div>
                     )}
