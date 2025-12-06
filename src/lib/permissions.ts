@@ -61,23 +61,23 @@ export function getUserRole(linkedAccounts: LinkedAccount[]): UserRole {
     return 'moderator'
   }
   
-  return 'member'
+  return 'user'
 }
 
 export function canModerate(role: UserRole): boolean {
-  return ['owner', 'admin', 'moderator'].includes(role)
+  return ['owner', 'streamer', 'admin', 'moderator'].includes(role)
 }
 
 export function canBan(role: UserRole): boolean {
-  return ['owner', 'admin'].includes(role)
+  return ['owner', 'streamer', 'admin'].includes(role)
 }
 
 export function canManageModerators(role: UserRole): boolean {
-  return ['owner', 'admin'].includes(role)
+  return ['owner', 'streamer', 'admin'].includes(role)
 }
 
 export function isOwner(role: UserRole): boolean {
-  return role === 'owner'
+  return role === 'owner' || role === 'streamer'
 }
 
 export function isAdmin(role: UserRole): boolean {

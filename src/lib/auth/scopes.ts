@@ -80,19 +80,18 @@ export function getMissingScopes(
   return required.filter(scope => !authorizedScopes.includes(scope))
 }
 
-/**
- * Tipos de cargo do usuário
- */
-export type UserRole = 'user' | 'moderator' | 'admin' | 'streamer'
+import { UserRole } from '@/types'
 
 /**
  * Hierarquia de cargos (maior número = maior permissão)
+ * owner e streamer são equivalentes (nível máximo)
  */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   user: 0,
   moderator: 1,
   admin: 2,
-  streamer: 3
+  owner: 3,
+  streamer: 3 // streamer = owner
 }
 
 /**
@@ -106,6 +105,7 @@ export function hasRolePermission(userRole: UserRole, requiredRole: UserRole): b
  * Configuração visual dos cargos
  */
 export const ROLE_CONFIG: Record<UserRole, { label: string; color: string; icon: string }> = {
+  owner: { label: 'Streamer', color: 'bg-red-500', icon: '👑' },
   streamer: { label: 'Streamer', color: 'bg-red-500', icon: '👑' },
   admin: { label: 'Admin', color: 'bg-purple-500', icon: '⚡' },
   moderator: { label: 'Mod', color: 'bg-green-500', icon: '🛡️' },

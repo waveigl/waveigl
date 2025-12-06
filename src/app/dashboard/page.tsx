@@ -250,7 +250,7 @@ export default function DashboardPage() {
       const computedRole = getUserRole(linkedAccounts)
       
       // Se o role computado for diferente do banco, usar o computado (prioridade)
-      const finalRole = computedRole !== 'member' ? computedRole : (data.user?.role || 'user')
+      const finalRole = computedRole !== 'user' ? computedRole : (data.user?.role || 'user')
       
       setUser({
         ...data.user,
@@ -773,7 +773,7 @@ export default function DashboardPage() {
                   {(() => {
                     // Determinar role final (priorizar role computado das contas vinculadas)
                     const computedRole = getUserRole(linkedAccounts)
-                    const displayRole = computedRole !== 'member' ? computedRole : (user.role || 'user')
+                    const displayRole = computedRole !== 'user' ? computedRole : (user.role || 'user')
                     
                     // Mapear 'owner' para 'streamer' na UI
                     const uiRole = displayRole === 'owner' ? 'streamer' : displayRole
