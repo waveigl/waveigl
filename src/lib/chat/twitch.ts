@@ -1,7 +1,27 @@
-import tmi, { Client as TmiClient, Userstate } from 'tmi.js'
+import tmi, { Client as TmiClient } from 'tmi.js'
 import { chatHub, moderationHub } from './hub'
 import { processCommand, broadcastSubscriptionEvent, broadcastGiftSubEvent } from './commands'
 import { triggerYouTubeCheck } from './youtube'
+
+// Tipo local para Userstate (tmi.js não exporta mais)
+interface Userstate {
+  badges?: Record<string, string>
+  'badges-raw'?: string
+  color?: string
+  'display-name'?: string
+  emotes?: Record<string, string[]>
+  'emotes-raw'?: string
+  id?: string
+  mod?: boolean
+  'room-id'?: string
+  subscriber?: boolean
+  'tmi-sent-ts'?: string
+  turbo?: boolean
+  'user-id'?: string
+  'user-type'?: string
+  username?: string
+  [key: string]: unknown
+}
 
 // Usar globalThis para persistir estado entre HMR (Hot Module Replacement)
 // Isso evita múltiplas conexões quando o Next.js recarrega módulos
@@ -177,7 +197,7 @@ export async function startTwitchReader(): Promise<void> {
   })
   
   // Listener para quando alguém é promovido a moderador
-  client.on('mod', (_channel, username) => {
+  ;(client as any).on('mod', (_channel: string, username: string) => {
     console.log(`[Twitch] ${username} foi promovido a moderador`)
     moderationHub.publish({
       type: 'mod_added',
@@ -188,7 +208,7 @@ export async function startTwitchReader(): Promise<void> {
   })
   
   // Listener para quando alguém é removido de moderador
-  client.on('unmod', (_channel, username) => {
+  ;(client as any).on('unmod', (_channel: string, username: string) => {
     console.log(`[Twitch] ${username} foi removido de moderador`)
     moderationHub.publish({
       type: 'mod_removed',
@@ -199,25 +219,25 @@ export async function startTwitchReader(): Promise<void> {
   })
   
   // Listener para novas inscrições (subscription)
-  client.on('subscription', (_channel, username, methods, _message, userstate) => {
+  ;(client as any).on('subscription', (_channel: string, username: string, methods: any, _message: string, userstate: Userstate) => {
     console.log(`[Twitch] 🎉 ${username} se inscreveu!`)
     handleSubscriptionEvent('new_sub', username, methods?.plan || '1000', userstate)
   })
   
   // Listener para re-inscrições
-  client.on('resub', (_channel, username, _months, _message, userstate, methods) => {
+  ;(client as any).on('resub', (_channel: string, username: string, _months: number, _message: string, userstate: Userstate, methods: any) => {
     console.log(`[Twitch] 🎉 ${username} renovou a inscrição!`)
     handleSubscriptionEvent('resub', username, methods?.plan || '1000', userstate)
   })
   
   // Listener para sub gift (quando alguém dá sub para outra pessoa)
-  client.on('subgift', (_channel, username, _streakMonths, recipient, methods, userstate) => {
+  ;(client as any).on('subgift', (_channel: string, username: string, _streakMonths: number, recipient: string, methods: any, userstate: Userstate) => {
     console.log(`[Twitch] 🎁 ${username} deu sub para ${recipient}!`)
     handleGiftSubEvent(username, recipient, methods?.plan || '1000', userstate)
   })
   
   // Listener para sub mystery gift (quando alguém dá vários subs aleatórios)
-  client.on('submysterygift', (_channel, username, _numOfSubs, methods, userstate) => {
+  ;(client as any).on('submysterygift', (_channel: string, username: string, _numOfSubs: number, methods: any, _userstate: Userstate) => {
     console.log(`[Twitch] 🎁 ${username} está distribuindo subs!`)
     // Não precisa fazer nada aqui, os subgift individuais serão disparados
   })

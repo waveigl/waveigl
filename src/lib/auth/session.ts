@@ -37,7 +37,7 @@ function fromBase64Url(input: string): Uint8Array {
 async function getCryptoKey(secret: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
-    secret,
+    secret.buffer as ArrayBuffer,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
@@ -71,7 +71,7 @@ async function decode(token: string): Promise<SessionPayload | null> {
   const verified = await crypto.subtle.verify(
     'HMAC',
     key,
-    fromBase64Url(signature),
+    fromBase64Url(signature).buffer as ArrayBuffer,
     new TextEncoder().encode(body)
   )
 

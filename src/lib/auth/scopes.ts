@@ -3,6 +3,11 @@
  * Quando os escopos mudam, os usuários precisam reautenticar
  */
 
+import { UserRole } from '@/types'
+
+// Re-exportar para manter compatibilidade com imports existentes
+export type { UserRole }
+
 // Versão dos escopos - incrementar quando adicionar novos escopos obrigatórios
 export const SCOPES_VERSION = {
   twitch: 5, // Incrementado para incluir user:manage:whispers
@@ -80,11 +85,6 @@ export function getMissingScopes(
   return required.filter(scope => !authorizedScopes.includes(scope))
 }
 
-import { UserRole } from '@/types'
-
-// Re-exportar para manter compatibilidade com imports existentes
-export { UserRole }
-
 /**
  * Hierarquia de cargos (maior número = maior permissão)
  * owner e streamer são equivalentes (nível máximo)
@@ -114,4 +114,3 @@ export const ROLE_CONFIG: Record<UserRole, { label: string; color: string; icon:
   moderator: { label: 'Mod', color: 'bg-green-500', icon: '🛡️' },
   user: { label: 'Usuário', color: 'bg-gray-500', icon: '👤' }
 }
-

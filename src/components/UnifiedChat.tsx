@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { UnifiedChatProps, Platform, ChatMessage, UserRole } from '@/types'
+import { UnifiedChatProps, Platform, ChatMessage, UserRole, UnifiedMessage } from '@/types'
 import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
@@ -12,7 +12,8 @@ const DEFAULT_MESSAGE_LIMITS: Record<UserRole, number> = {
   user: 100,
   moderator: 250,
   admin: 250,
-  owner: 250
+  owner: 250,
+  streamer: 250
 }
 
 // Limites mínimos e máximos permitidos
@@ -225,7 +226,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           serverMsg.userId === userIdForPlatform &&
           serverMsg.platform === localMsg.platform &&
           serverMsg.message === localMsg.message &&
-          Math.abs(localMsg.timestamp - serverMsg.timestamp) < 30000
+          Math.abs(Number(localMsg.timestamp) - serverMsg.timestamp) < 30000
       )
       
       if (matchingServerMsg) {
@@ -262,7 +263,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
         localMsg.platform === msg.platform &&
         localMsg.message === msg.message &&
         // Mensagem recebida dentro de 30 segundos da mensagem local
-        Math.abs(localMsg.timestamp - msg.timestamp) < 30000
+        Math.abs(Number(localMsg.timestamp) - msg.timestamp) < 30000
     )
     
     // Se temos versão local, filtrar a do servidor
@@ -271,7 +272,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   
   // Combina mensagens do servidor com mensagens locais e ordena por timestamp
   const combinedMessages = [...filteredServerMessages, ...localMessages].sort(
-    (a, b) => a.timestamp - b.timestamp
+    (a, b) => Number(a.timestamp) - Number(b.timestamp)
   )
   
   // Aplicar limite de mensagens - mantém apenas as mais recentes
@@ -308,9 +309,10 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       tempId,
       platform: sendPlatform,
       username: getCurrentPlatformUsername(),
-      userId: getCurrentPlatformUserId() || 'unknown',
+      user_id: getCurrentPlatformUserId() || 'unknown',
       message: messageText,
-      timestamp: Date.now(),
+      timestamp: String(Date.now()),
+      created_at: new Date().toISOString(),
       badges: userIsModerator ? ['moderator'] : [],
       status: 'sending',
       isLocal: true
@@ -456,11 +458,18 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     }
   }
 
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString('pt-BR', {
+  const formatTime = (timestamp: string | number) => {
+    return new Date(Number(timestamp)).toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  // Helper para obter userId de mensagens unificadas ou locais
+  const getMessageUserId = (message: UnifiedMessage | LocalMessage): string => {
+    if ('userId' in message) return message.userId
+    if ('user_id' in message) return message.user_id
+    return 'unknown'
   }
 
   const handleModeration = (userId: string, platform: Platform, action: string, duration?: number) => {
@@ -765,7 +774,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, message.platform, 'timeout', 86400)}
+                      onClick={() => handleModeration(getMessageUserId(message), message.platform, 'timeout', 86400)}
                       className="h-7 px-2 text-xs text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
                       title="Timeout 1 dia"
                     >
@@ -775,7 +784,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, message.platform, 'timeout', 1209600)}
+                      onClick={() => handleModeration(getMessageUserId(message), message.platform, 'timeout', 1209600)}
                       className="h-7 px-2 text-xs text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
                       title="Timeout 14 dias"
                     >
@@ -849,7 +858,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         <Button
                           size="sm"
                           variant="default"
-                          onClick={() => handleCustomTimeout(message.userId, message.platform)}
+                          onClick={() => handleCustomTimeout(getMessageUserId(message), message.platform)}
                           disabled={customTimeoutUnit !== 'permanent' && (!customTimeoutInput || parseInt(customTimeoutInput) < 1)}
                           className="h-7 text-xs w-full"
                         >
@@ -863,7 +872,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleModeration(message.userId, message.platform, 'ban')}
+                      onClick={() => handleModeration(getMessageUserId(message), message.platform, 'ban')}
                       className="w-full justify-start text-destructive hover:bg-destructive/10"
                     >
                       <Ban className="w-3 h-3 mr-2" />

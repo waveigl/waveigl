@@ -355,9 +355,8 @@ export function blockApiDueToQuota(): void {
 }
 
 /**
- * Força atualização do cache
+ * Força atualização do cache (stub - cache desabilitado)
  */
 export function invalidateLiveCache(): void {
-  cachedLiveInfo = null
-  cacheTimestamp = 0
+  // Cache desabilitado - função mantida para compatibilidade
 }
