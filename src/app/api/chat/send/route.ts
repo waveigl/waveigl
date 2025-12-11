@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { sendTwitchMessage } from '@/lib/chat/twitch'
+import { sendTwitchMessage, refreshTwitchToken } from '@/lib/chat/twitch'
 import { sendYouTubeMessage, getCurrentLiveChatId, getActiveLiveChatId, isYouTubeLiveActive, refreshYouTubeToken } from '@/lib/chat/youtube'
 import { sendKickMessage, refreshKickToken } from '@/lib/chat/kick'
 
@@ -33,7 +33,31 @@ export async function POST(request: NextRequest) {
 
     switch (platform) {
       case 'twitch':
-        await sendTwitchMessage(linked.platform_username, linked.access_token!, message)
+        let twitchToken = linked.access_token!
+        let twitchResult = await sendTwitchMessage(linked.platform_username, twitchToken, message)
+        
+        // Se o token expirou, tentar renovar e enviar novamente
+        if (!twitchResult.success && twitchResult.code === 'TOKEN_EXPIRED' && linked.refresh_token) {
+          console.log('[Twitch] Token expirado, tentando renovar...')
+          const newToken = await refreshTwitchToken(linked.refresh_token, session.userId)
+          
+          if (newToken) {
+            twitchToken = newToken
+            twitchResult = await sendTwitchMessage(linked.platform_username, twitchToken, message)
+          } else {
+            return NextResponse.json({ 
+              error: 'Token da Twitch expirado. Por favor, reautorize sua conta nas configurações.',
+              code: 'TWITCH_TOKEN_EXPIRED'
+            }, { status: 401 })
+          }
+        }
+        
+        if (!twitchResult.success) {
+          return NextResponse.json({ 
+            error: twitchResult.error || 'Erro ao enviar mensagem na Twitch',
+            code: 'TWITCH_SEND_ERROR'
+          }, { status: 400 })
+        }
         break
         
       case 'youtube':

@@ -252,7 +252,58 @@ export async function startTwitchReader(): Promise<void> {
   }
 }
 
-export async function sendTwitchMessage(username: string, accessToken: string, message: string): Promise<void> {
+/**
+ * Renova o token de acesso do Twitch usando o refresh token
+ */
+export async function refreshTwitchToken(refreshToken: string, userId: string): Promise<string | null> {
+  try {
+    const response = await fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.TWITCH_CLIENT_ID!,
+        client_secret: process.env.TWITCH_CLIENT_SECRET!,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('[Twitch] Erro ao renovar token:', response.status)
+      return null
+    }
+
+    const data = await response.json()
+    
+    if (!data.access_token) {
+      console.error('[Twitch] Token não retornado:', data)
+      return null
+    }
+
+    // Atualizar no banco de dados
+    const { getSupabaseAdmin } = await import('@/lib/supabase/server')
+    const db = getSupabaseAdmin()
+    
+    await db
+      .from('linked_accounts')
+      .update({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || refreshToken,
+      })
+      .eq('user_id', userId)
+      .eq('platform', 'twitch')
+
+    console.log('[Twitch] Token renovado com sucesso')
+    return data.access_token
+  } catch (error) {
+    console.error('[Twitch] Erro ao renovar token:', error)
+    return null
+  }
+}
+
+export async function sendTwitchMessage(username: string, accessToken: string, message: string): Promise<{ success: boolean; error?: string; code?: string }> {
   const channel = process.env.WAVEIGL_TWITCH_CHANNEL || 'waveigl'
   const client = new tmi.Client({
     identity: {
@@ -265,6 +316,19 @@ export async function sendTwitchMessage(username: string, accessToken: string, m
   try {
     await client.connect()
     await client.say(channel, message)
+    return { success: true }
+  } catch (error: any) {
+    const errorMsg = error?.message || String(error)
+    console.error('[Twitch] Erro ao enviar mensagem:', errorMsg)
+    
+    // Detectar erros de autenticação
+    if (errorMsg.includes('Login authentication failed') || 
+        errorMsg.includes('Login unsuccessful') ||
+        errorMsg.includes('Invalid OAuth token')) {
+      return { success: false, error: errorMsg, code: 'TOKEN_EXPIRED' }
+    }
+    
+    return { success: false, error: errorMsg }
   } finally {
     try {
       await client.disconnect()
