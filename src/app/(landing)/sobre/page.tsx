@@ -14,7 +14,6 @@ import {
   Award,
   Target,
   Heart,
-  ArrowLeft,
   ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
@@ -83,34 +82,13 @@ export default function SobrePage() {
       {/* Header */}
       <header className="relative z-10 border-b border-[#E38817]/10 backdrop-blur-md bg-[#0A0B0F]/80">
         <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3 group">
-              <ArrowLeft className="w-5 h-5 text-[#D9D9D9]/50 group-hover:text-[#E38817] transition-colors" />
-              <Image 
-                src="/favicon.webp" 
-                alt="WaveIGL" 
-                width={40} 
-                height={40}
-                className="rounded-lg shadow-lg shadow-[#E38817]/30"
-              />
-              <span className="text-2xl font-bold tracking-tight">
-                Wave<span className="text-[#E38817]">IGL</span>
-              </span>
-            </Link>
-            
-            <div className="flex items-center space-x-3">
-              <Link href="/midia-kit">
-                <Button 
-                  variant="outline" 
-                  className="border-[#E38817]/30 text-[#D9D9D9] hover:bg-[#E38817]/10 hover:border-[#E38817] hover:text-[#E38817] transition-all"
-                >
-                  Mídia Kit
-                </Button>
+          <nav className="flex items-center justify-center">
+            <div className="flex items-center space-x-8">
+              <Link href="/" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
+                Home
               </Link>
-              <Link href="/auth/login">
-                <Button className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white border-none">
-                  Assinar Clube
-                </Button>
+              <Link href="/midia-kit" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
+                Mídia Kit
               </Link>
             </div>
           </nav>
