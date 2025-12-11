@@ -4,14 +4,14 @@ const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://waveigl.com'
 
 export const metadata: Metadata = {
   title: 'Sobre WaveIGL - Conrado Koerich | História e Trajetória',
-  description: 'Conheça a história do WaveIGL (Conrado Koerich): Ex-Top 9 nacional CS 1.6, DJ profissional, e hoje professor de CS2 com mais de 440k seguidores. De Florianópolis para o mundo.',
+  description: 'Conheça a história do WaveIGL (Conrado Koerich): Professor de CS2 com mais de 35k de horas, com alunos que jogaram MUNDIAL.',
   keywords: [
-    'WaveIGL', 'Conrado Koerich', 'streamer CS2', 'professor CS2', 'BlackBelt CSGO',
-    'Top 9 CS 1.6', 'DJ Hope', 'Florianópolis', 'streamer brasileiro', 'Twitch Brasil'
+    'WaveIGL', 'Conrado Koerich', 'streamer CS2', 'professor CS2', 'aulas CS2',
+    '35k horas', 'Giuzinha', 'Florianópolis', 'streamer brasileiro', 'Twitch Brasil'
   ],
   openGraph: {
     title: 'Sobre WaveIGL - Conrado Koerich',
-    description: 'Ex-Top 9 nacional CS 1.6, DJ profissional, e hoje professor de CS2 com mais de 440k seguidores.',
+    description: 'Professor de CS2 com 35k+ horas de jogo. Aluna Giuzinha conquistou Top 5 Mundial pela Team Brazil.',
     url: `${siteUrl}/sobre`,
     type: 'profile',
     images: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Sobre WaveIGL - Conrado Koerich',
-    description: 'Ex-Top 9 nacional CS 1.6, DJ profissional, e hoje professor de CS2 com mais de 440k seguidores.',
+    description: 'Professor de CS2 com 35k+ horas de jogo. Aluna Giuzinha conquistou Top 5 Mundial pela Team Brazil.',
     images: ['/og-sobre.jpg'],
   },
   alternates: {
@@ -42,7 +42,7 @@ const personSchema = {
   "alternateName": ["WaveIGL", "Wave", "DJ Hope"],
   "url": `${siteUrl}/sobre`,
   "image": `${siteUrl}/images/waveigl_profile.webp`,
-  "description": "Streamer e professor de CS2 brasileiro, ex-Top 9 nacional de Counter-Strike 1.6 e ex-DJ profissional.",
+  "description": "Streamer e professor de CS2 brasileiro com 35k+ horas de jogo. Formou a aluna Giuzinha, Top 5 Mundial pela Team Brazil.",
   "jobTitle": "Streamer e Professor de CS2",
   "birthDate": "1984-11-12",
   "birthPlace": {
@@ -61,7 +61,7 @@ const personSchema = {
   ],
   "worksFor": {
     "@type": "Organization",
-    "name": "BlackBelt CSGO Inteligente"
+    "name": "Clube WaveIGL"
   }
 }
 

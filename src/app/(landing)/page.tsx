@@ -180,7 +180,7 @@ export default function LandingPage() {
                   className="mb-6 px-4 py-2 bg-[#1E202F]/80 text-[#E38817] border border-[#E38817]/30 hover:bg-[#1E202F] transition-colors backdrop-blur-sm"
                 >
                   <Trophy className="w-4 h-4 mr-2" />
-                  Ex-Top 9 Nacional CS 1.6 • +440k Seguidores
+                  Professor de CS2
                 </Badge>
                 
                 {/* Main Title */}
@@ -229,7 +229,7 @@ export default function LandingPage() {
               <StatCounter value={440} suffix="k" label="Seguidores" />
               <StatCounter value={2} suffix="M" label="Views/mês" />
               <StatCounter value={70} suffix="h" label="Live/semana" />
-              <StatCounter value={400} suffix="+" label="Alunos BlackBelt" />
+              <StatCounter value={500} suffix="k+" label="Alunos" />
             </div>
           </div>
         </div>
@@ -265,7 +265,7 @@ export default function LandingPage() {
               {
                 icon: <Gamepad2 className="w-8 h-8" />,
                 title: 'Aprenda com o Melhor',
-                description: 'Aprenda CS2 com quem foi Top 9 nacional e ensina há mais de 7 anos. O mesmo conhecimento das aulas particulares, por uma fração do preço'
+                description: 'Aprenda CS2 com quem tem 35k+ horas de jogo e formou a aluna Giuzinha, Top 5 Mundial pela Team Brazil. O mesmo conhecimento das aulas particulares, por uma fração do preço'
               },
               {
                 icon: <Lock className="w-8 h-8" />,

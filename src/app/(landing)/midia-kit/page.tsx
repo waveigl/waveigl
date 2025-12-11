@@ -180,7 +180,7 @@ export default function MidiaKitPage() {
             />
             <StatCard 
               icon={Users} 
-              value="440k+" 
+              value="497k+" 
               label="Seguidores Totais" 
               subtext="Comunidade ativa"
             />
@@ -432,7 +432,7 @@ export default function MidiaKitPage() {
             </h2>
             
             <div className="flex flex-wrap justify-center gap-6">
-              {['KeyDrop', 'Hellcase', 'CSMoney'].map((brand) => (
+              {['KeyDrop', 'xbet'].map((brand) => (
                 <div 
                   key={brand}
                   className="px-8 py-4 bg-[#1E202F]/30 border border-[#E38817]/10 rounded-xl flex items-center gap-3"

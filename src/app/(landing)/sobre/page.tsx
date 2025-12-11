@@ -135,7 +135,7 @@ export default function SobrePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-[#E38817]" />
-                    Ex-Top 9 Nacional CS
+                    35k+ Horas de Jogo
                   </div>
                 </div>
               </div>
@@ -145,15 +145,18 @@ export default function SobrePage() {
             <Card className="bg-[#1E202F]/30 border-[#E38817]/10 backdrop-blur-sm mb-16">
               <CardContent className="p-8">
                 <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
-                  <span className="text-[#E38817] font-bold">WaveIGL</span> é um dos maiores criadores de conteúdo de CS2 do Brasil. 
-                  Com mais de <span className="text-[#E38817] font-semibold">10 Milhões de pessoas alcançadas</span> nas redes sociais, 
+                  <span className="text-[#E38817] font-bold">WaveIGL</span> é um dos maiores criadores de conteúdo e professores de CS2 do Brasil. 
+                  Com mais de <span className="text-[#E38817] font-semibold">35 mil horas de jogo</span> e <span className="text-[#E38817] font-semibold">10 Milhões de pessoas alcançadas</span> nas redes sociais, 
                   Wave dedica sua carreira a ensinar e entreter jogadores de todos os níveis.
                 </p>
-                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
-                  Em 2011, competiu no cenário profissional de CS 1.6, alcançando o <span className="text-[#E38817] font-semibold">Top 9 nacional</span> no CWB Jungle Cup.
-                  Após o competitivo, Wave se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span> em 2014, tocando nos melhores eventos 
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
+                  Em 2014, Wave se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span>, tocando nos melhores eventos 
                   como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>, entre outros. Em 2017, por paixão ao ensino, 
-                  fundou a BlackBelt e se dedicou integralmente ao streaming e educação em CS.
+                  se dedicou integralmente ao streaming e educação em CS.
+                </p>
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
+                  Seu maior case de sucesso é a aluna <span className="text-[#E38817] font-semibold">Giuzinha</span>, que representou o Brasil no cenário mundial feminino 
+                  e conquistou o <span className="text-[#E38817] font-semibold">Top 5 no Mundial de CS2</span> pela Team Brazil, ao lado de yuu, morenah, yor e pack.
                 </p>
               </CardContent>
             </Card>
@@ -162,7 +165,7 @@ export default function SobrePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
               {[
                 { value: '440k+', label: 'Seguidores Twitch', icon: Users },
-                { value: '400+', label: 'Alunos BlackBelt', icon: GraduationCap },
+                { value: '500k+', label: 'Alunos', icon: GraduationCap },
                 { value: '70h', label: 'Lives por Semana', icon: Gamepad2 },
                 { value: '7+', label: 'Anos Ensinando', icon: Award },
               ].map((stat, i) => (
@@ -185,24 +188,16 @@ export default function SobrePage() {
               
               <div className="space-y-0">
                 <TimelineItem 
-                  year="2011"
-                  title="Top 9 Nacional CS 1.6"
-                  description="Competiu profissionalmente no Counter-Strike 1.6 com o time freNzy!, alcançando o Top 9 no CWB Jungle Cup em Curitiba. Nick: conrado. O início de uma paixão que definiria sua carreira."
-                  icon={Trophy}
-                  highlight
-                />
-                
-                <TimelineItem 
                   year="2014"
                   title="Era DJ Hope"
-                  description="Após o competitivo, iniciou carreira como DJ com os projetos Mix Factor e Mixshow. Tocou nas melhores baladas do Brasil, incluindo Café de la Musique, Oxygen Party, The Roof e muitos outros eventos de grande porte."
+                  description="Iniciou carreira como DJ com os projetos Mix Factor e Mixshow. Tocou nas melhores baladas do Brasil, incluindo Café de la Musique, Oxygen Party, The Roof e muitos outros eventos de grande porte."
                   icon={Music}
                 />
                 
                 <TimelineItem 
                   year="2017"
-                  title="Fundação da BlackBelt CSGO Inteligente"
-                  description="Por paixão ao ensino e ao CS, criou o projeto BlackBelt com foco em auxiliar jogadores de todos os níveis a evoluírem. Encerrou a carreira de DJ para se dedicar integralmente ao streaming e educação."
+                  title="Início como Professor de CS"
+                  description="Por paixão ao ensino e ao CS, começou a ensinar jogadores de todos os níveis a evoluírem. Encerrou a carreira de DJ para se dedicar integralmente ao streaming e educação."
                   icon={GraduationCap}
                   highlight
                 />
@@ -216,10 +211,18 @@ export default function SobrePage() {
                 />
                 
                 <TimelineItem 
-                  year="2019-2024"
+                  year="2019-2023"
                   title="Crescimento Contínuo"
-                  description="Realizou diversos sorteios de itens raros, incluindo uma AWP Dragon Lore. Consolidou a comunidade com mais de 400 alunos ativos na BlackBelt e alcançou 440k+ seguidores na Twitch."
+                  description="Realizou diversos sorteios de itens raros, incluindo uma AWP Dragon Lore. Consolidou a comunidade e alcançou 440k+ seguidores na Twitch, ensinando mais de 500k alunos através das lives gratuitas."
                   icon={Award}
+                />
+                
+                <TimelineItem 
+                  year="2024"
+                  title="Aluna Top 5 Mundial"
+                  description="Giuzinha, aluna do WaveIGL, representou o Brasil no cenário mundial feminino de CS2 e conquistou o 5º lugar no Mundial pela Team Brazil, ao lado de yuu, morenah, yor e pack."
+                  icon={Trophy}
+                  highlight
                 />
                 
                 <TimelineItem 
@@ -237,7 +240,7 @@ export default function SobrePage() {
               <CardContent className="p-8 text-center">
                 <h3 className="text-2xl font-bold mb-4">Faça parte da comunidade</h3>
                 <p className="text-[#D9D9D9]/60 mb-6 max-w-lg mx-auto">
-                  Junte-se a milhares de jogadores que aprendem e se divertem todos os dias com WaveIGL
+                  Faça parte do lançamento do Clube WaveIGL e aprenda CS2 com quem mais entende
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link href="/auth/login">

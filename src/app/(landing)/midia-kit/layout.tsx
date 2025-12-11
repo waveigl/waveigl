@@ -4,14 +4,14 @@ const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://waveigl.com'
 
 export const metadata: Metadata = {
   title: 'Mídia Kit WaveIGL - Anuncie para 2M+ Views/mês',
-  description: 'Mídia Kit oficial do WaveIGL. Alcance uma audiência de 2M+ views mensais, 440k+ seguidores. Dados demográficos, formatos de anúncio e contato comercial.',
+  description: 'Mídia Kit oficial do WaveIGL. Alcance uma audiência de 2M+ views mensais, 497k+ seguidores. Dados demográficos, formatos de anúncio e contato comercial.',
   keywords: [
     'mídia kit', 'WaveIGL mídia kit', 'anunciar streamer', 'publicidade gaming',
     'influencer CS2', 'patrocínio streamer', 'marketing gaming', 'anúncio Twitch'
   ],
   openGraph: {
     title: 'Mídia Kit WaveIGL - Anuncie para Gamers',
-    description: 'Alcance 2M+ views mensais e 440k+ seguidores. Mídia Kit oficial com dados demográficos e formatos de anúncio.',
+    description: 'Alcance 2M+ views mensais e 497k+ seguidores. Mídia Kit oficial com dados demográficos e formatos de anúncio.',
     url: `${siteUrl}/midia-kit`,
     type: 'website',
     images: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Mídia Kit WaveIGL - Anuncie para Gamers',
-    description: 'Alcance 2M+ views mensais e 440k+ seguidores. Contato: csgoblackbelt@gmail.com',
+    description: 'Alcance 2M+ views mensais e 497k+ seguidores. Contato: csgoblackbelt@gmail.com',
     images: ['/og-midia-kit.jpg'],
   },
   alternates: {
