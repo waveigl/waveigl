@@ -4,7 +4,10 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { removeMemberFromServer } from '@/lib/discord/server'
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/api/auth/discord/callback'
+
+function getAppUrl(request: NextRequest): string {
+  return process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+}
 
 // Scopes configurados no Discord Developer Portal
 // - identify: obter informações do usuário (id, username, avatar)
@@ -42,9 +45,12 @@ export async function GET(request: NextRequest) {
     })).toString('base64url')
 
     // Construir URL de autorização do Discord
+    const appUrl = getAppUrl(request)
+    const redirectUri = `${appUrl}/api/auth/discord/callback`
+    
     const authUrl = new URL('https://discord.com/api/oauth2/authorize')
     authUrl.searchParams.set('client_id', DISCORD_CLIENT_ID)
-    authUrl.searchParams.set('redirect_uri', DISCORD_REDIRECT_URI)
+    authUrl.searchParams.set('redirect_uri', redirectUri)
     authUrl.searchParams.set('response_type', 'code')
     authUrl.searchParams.set('scope', DISCORD_SCOPES)
     authUrl.searchParams.set('state', state)

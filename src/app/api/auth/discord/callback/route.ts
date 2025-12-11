@@ -4,7 +4,10 @@ import { processNewDiscordConnection, hasActiveSubscription, removeMemberFromSer
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'http://localhost:3000/api/auth/discord/callback'
+
+function getAppUrl(request: NextRequest): string {
+  return process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+}
 
 interface DiscordUser {
   id: string
@@ -56,6 +59,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard?error=discord_not_configured', request.url))
     }
 
+    // Construir redirect_uri dinamicamente
+    const appUrl = getAppUrl(request)
+    const redirectUri = `${appUrl}/api/auth/discord/callback`
+
     // Trocar code por access_token
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
@@ -67,7 +74,7 @@ export async function GET(request: NextRequest) {
         client_secret: DISCORD_CLIENT_SECRET,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: DISCORD_REDIRECT_URI
+        redirect_uri: redirectUri
       })
     })
 
