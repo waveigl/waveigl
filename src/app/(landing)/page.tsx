@@ -193,10 +193,10 @@ export default function LandingPage() {
                 
                 {/* Subtitle */}
                 <p className="text-xl md:text-2xl text-[#D9D9D9]/70 mb-3 leading-relaxed">
-                  Comunidade exclusiva de aprendizado de CS2
+                  O conhecimento das aulas particulares, por R$9,90/mês
                 </p>
                 <p className="text-base text-[#D9D9D9]/50 mb-8">
-                  Discord VIP • Aulas ao vivo exclusivas • Conteúdo denso • Comunidade fechada
+                  Discord VIP • Aulas ao vivo exclusivas • Início em 01/01/2026
                 </p>
                 
                 {/* CTA Buttons */}
@@ -242,30 +242,30 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
               Por que o <span className="text-[#E38817]">Clube WaveIGL</span>?
             </h2>
-            <p className="text-[#D9D9D9]/60 text-lg">Comunidade exclusiva para quem quer evoluir no CS2</p>
+            <p className="text-[#D9D9D9]/60 text-lg">O mesmo conteúdo das aulas particulares de R$149, agora compartilhado em comunidade por apenas R$9,90/mês</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
+              {
+                icon: <GraduationCap className="w-8 h-8" />,
+                title: 'Aulas de R$149 por R$9,90',
+                description: 'O mesmo conhecimento das aulas particulares que custam R$149, agora em formato compartilhado. Você economiza mais de 98% e aprende o mesmo conteúdo'
+              },
               {
                 icon: <Users className="w-8 h-8" />,
                 title: 'Discord VIP Exclusivo',
                 description: 'Acesso a uma comunidade fechada apenas para assinantes do Clube, onde você interage diretamente com outros membros e o WaveIGL'
               },
               {
-                icon: <GraduationCap className="w-8 h-8" />,
-                title: 'Aulas Ao Vivo Exclusivas',
-                description: 'Aulas ao vivo no Discord que não são gravadas nem salvas. Conteúdo denso e avançado que não é apresentado nas lives públicas'
+                icon: <Trophy className="w-8 h-8" />,
+                title: 'Professor com Resultados',
+                description: 'Aprenda com quem tem 35k+ horas de jogo e formou a aluna Giuzinha, Top 5 Mundial pela Team Brazil. Resultados comprovados'
               },
               {
                 icon: <Clock className="w-8 h-8" />,
-                title: 'Flexibilidade Total',
-                description: 'Aulas variadas conforme o WaveIGL quiser, no horário que ele quiser, pelo tempo que ele quiser. Conteúdo adaptado às necessidades da comunidade'
-              },
-              {
-                icon: <Gamepad2 className="w-8 h-8" />,
-                title: 'Aprenda com o Melhor',
-                description: 'Aprenda CS2 com quem tem 35k+ horas de jogo e formou a aluna Giuzinha, Top 5 Mundial pela Team Brazil. O mesmo conhecimento das aulas particulares, por uma fração do preço'
+                title: 'Aulas Ao Vivo',
+                description: 'Aulas ao vivo no Discord que não são gravadas nem salvas. Conteúdo denso e avançado que não é apresentado nas lives públicas'
               },
               {
                 icon: <Lock className="w-8 h-8" />,
@@ -300,59 +300,113 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-[#E38817]/10 text-[#E38817] border-[#E38817]/30">
-              💰 Preço Especial de Lançamento
+              🎓 O mesmo conhecimento das aulas particulares
             </Badge>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Assine o <span className="text-[#E38817]">Clube</span>
+              Compare e <span className="text-[#E38817]">Economize</span>
             </h2>
-            <p className="text-[#D9D9D9]/60 text-lg">Por tempo limitado</p>
+            <p className="text-[#D9D9D9]/60 text-lg">O conhecimento que transforma jogadores, agora acessível</p>
           </div>
           
-          <div className="max-w-md mx-auto">
-            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#E38817]/30 shadow-2xl shadow-[#E38817]/10 overflow-hidden">
+          <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-6">
+            {/* Aula Avulsa */}
+            <Card className="bg-[#1E202F]/30 border-[#E38817]/10">
+              <CardContent className="p-6 text-center">
+                <h3 className="text-lg font-bold text-[#D9D9D9]/60 mb-4">Aula Particular Avulsa</h3>
+                <div className="text-4xl font-black text-[#D9D9D9]/40 mb-2">R$149</div>
+                <div className="text-[#D9D9D9]/40 text-sm mb-6">/por aula</div>
+                <ul className="space-y-3 text-left text-sm text-[#D9D9D9]/50">
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    Aula individual com WaveIGL
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    Conteúdo personalizado
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    Horário agendado
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Clube WaveIGL - Destaque */}
+            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#E38817]/30 shadow-2xl shadow-[#E38817]/10 overflow-hidden md:scale-105">
               {/* Top glow */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#E38817] to-transparent" />
               
-              <CardContent className="p-8 text-center">
-                <div className="flex items-center justify-center mb-6">
-                  <Badge className="bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 px-3 py-1">
-                    <Star className="w-3 h-3 mr-1 fill-current" /> Mais Popular
-                  </Badge>
-                </div>
+              <CardContent className="p-6 text-center">
+                <Badge className="mb-4 bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 px-3 py-1">
+                  <Star className="w-3 h-3 mr-1 fill-current" /> Melhor Custo-Benefício
+                </Badge>
                 
-                <h3 className="text-2xl font-bold text-[#D9D9D9] mb-6">Clube WaveIGL</h3>
+                <h3 className="text-xl font-bold text-[#D9D9D9] mb-4">Clube WaveIGL</h3>
                 
-                <div className="flex items-center justify-center space-x-3 mb-8">
-                  <span className="text-6xl font-black text-[#E38817]">R$9,90</span>
+                <div className="flex items-center justify-center space-x-2 mb-2">
+                  <span className="text-5xl font-black text-[#E38817]">R$9,90</span>
                   <div className="text-left">
-                    <div className="text-[#D9D9D9]/40 line-through text-sm">R$19,90</div>
                     <div className="text-[#D9D9D9]/60 text-sm">/mês</div>
                   </div>
                 </div>
                 
-                <ul className="space-y-4 mb-8 text-left">
+                <div className="text-[#E38817]/80 text-sm mb-6 font-semibold">
+                  🚀 Aulas iniciam em 01/01/2026
+                </div>
+                
+                <ul className="space-y-3 mb-6 text-left text-sm">
                   {[
-                    'Acesso ao Discord VIP exclusivo',
-                    'Aulas ao vivo não gravadas',
-                    'Conteúdo denso e avançado de CS2',
-                    'Aulas variadas conforme disponibilidade',
+                    'Aulas ao vivo no Discord VIP',
+                    'Conteúdo exclusivo não gravado',
+                    'Mesmo conhecimento das particulares',
                     'Comunidade fechada e selecionada',
-                    'Mesmo conhecimento das aulas particulares'
+                    'Interação direta com WaveIGL'
                   ].map((item, i) => (
                     <li key={i} className="flex items-center text-[#D9D9D9]/80">
-                      <CheckCircle className="w-5 h-5 text-[#E38817] mr-3 flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-[#E38817] mr-2 flex-shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
                 
                 <Link href="/auth/login" className="block">
-                  <Button className="w-full bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg h-14 shadow-lg shadow-[#E38817]/25 transition-all hover:scale-[1.02]">
-                    Assinar Agora
+                  <Button className="w-full bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg h-12 shadow-lg shadow-[#E38817]/25 transition-all hover:scale-[1.02]">
+                    Garantir Vaga
                   </Button>
                 </Link>
               </CardContent>
             </Card>
+
+            {/* Mensalidade */}
+            <Card className="bg-[#1E202F]/30 border-[#E38817]/10">
+              <CardContent className="p-6 text-center">
+                <h3 className="text-lg font-bold text-[#D9D9D9]/60 mb-4">Mensalidade Particular</h3>
+                <div className="text-4xl font-black text-[#D9D9D9]/40 mb-2">R$499</div>
+                <div className="text-[#D9D9D9]/40 text-sm mb-6">/mês (1 aula/semana)</div>
+                <ul className="space-y-3 text-left text-sm text-[#D9D9D9]/50">
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    4 aulas mensais individuais
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    Acompanhamento semanal
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="w-4 h-4 mr-2 opacity-50" />
+                    Evolução personalizada
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Destaque de economia */}
+          <div className="text-center mt-12">
+            <p className="text-[#D9D9D9]/60 text-lg">
+              Com o Clube você economiza até <span className="text-[#E38817] font-bold">98%</span> comparado às aulas particulares
+            </p>
           </div>
         </div>
       </section>
