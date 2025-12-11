@@ -144,10 +144,10 @@ export default function MidiaKitPage() {
           <nav className="flex items-center justify-center">
             <div className="flex items-center space-x-8">
               <Link href="/" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
-                Home
-              </Link>
-              <Link href="/sobre" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
                 Sobre
+              </Link>
+              <Link href="/clube-do-waveigl" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
+                Clube
               </Link>
             </div>
           </nav>
@@ -481,7 +481,7 @@ export default function MidiaKitPage() {
                   Enviar Email
                 </Button>
               </a>
-              <Link href="/sobre">
+              <Link href="/">
                 <Button 
                   size="lg"
                   variant="outline" 

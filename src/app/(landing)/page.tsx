@@ -3,89 +3,225 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Users, Star, Trophy, Gamepad2, ChevronRight, Play, Lock, GraduationCap, Clock, Shield } from 'lucide-react'
+import { 
+  Trophy, 
+  Gamepad2, 
+  GraduationCap, 
+  Music, 
+  Users, 
+  Calendar,
+  MapPin,
+  Award,
+  Target,
+  Heart,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-// Cores CS2
-const CS2_COLORS = {
-  white: '#D9D9D9',
-  orange: '#E38817',
-  darkBlue: '#1E202F',
-}
+// Componente de Carrossel estilo Instagram
+function InstagramCarousel({ 
+  images, 
+  aspectRatio = 'square' 
+}: { 
+  images: { src: string; alt: string; caption?: string }[]
+  aspectRatio?: 'square' | 'portrait' | 'landscape'
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-function GlowingOrb({ className, delay = 0 }: { className?: string; delay?: number }) {
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  const aspectClasses = {
+    square: 'aspect-square',
+    portrait: 'aspect-[4/5]',
+    landscape: 'aspect-video'
+  }
+
   return (
-    <div 
-      className={`absolute rounded-full blur-[100px] animate-pulse ${className}`}
-      style={{ animationDelay: `${delay}ms` }}
-    />
-  )
-}
-
-function StatCounter({ value, label, suffix = '' }: { value: number; label: string; suffix?: string }) {
-  const [count, setCount] = useState(0)
-  
-  useEffect(() => {
-    const duration = 2000
-    const steps = 60
-    const increment = value / steps
-    let current = 0
-    
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= value) {
-        setCount(value)
-        clearInterval(timer)
-      } else {
-        setCount(Math.floor(current))
-      }
-    }, duration / steps)
-    
-    return () => clearInterval(timer)
-  }, [value])
-  
-  return (
-    <div className="text-center">
-      <div className="text-4xl md:text-5xl font-bold text-[#E38817] mb-2">
-        {count.toLocaleString('pt-BR')}{suffix}
+    <div className="relative w-full max-w-md mx-auto mt-4">
+      {/* Instagram-style frame */}
+      <div className="bg-[#1E202F] rounded-xl overflow-hidden border border-[#E38817]/20">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-3 border-b border-[#E38817]/10">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#E38817] to-[#B86A10] flex items-center justify-center">
+            <span className="text-white text-xs font-bold">W</span>
+          </div>
+          <span className="text-[#D9D9D9] text-sm font-medium">waveigl</span>
+        </div>
+        
+        {/* Image Container */}
+        <div className={`relative ${aspectClasses[aspectRatio]} bg-[#0A0B0F]`}>
+          <Image
+            src={images[currentIndex].src}
+            alt={images[currentIndex].alt}
+            fill
+            className="object-cover"
+          />
+          
+          {/* Navigation Arrows */}
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={prevSlide}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-[#0A0B0F]" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 rounded-full flex items-center justify-center hover:bg-white transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-[#0A0B0F]" />
+              </button>
+            </>
+          )}
+        </div>
+        
+        {/* Dots Indicator */}
+        {images.length > 1 && (
+          <div className="flex justify-center gap-1 py-2">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  idx === currentIndex ? 'bg-[#E38817]' : 'bg-[#D9D9D9]/30'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Caption */}
+        {images[currentIndex].caption && (
+          <div className="p-3 border-t border-[#E38817]/10">
+            <p className="text-[#D9D9D9]/80 text-sm">
+              <span className="font-semibold text-[#D9D9D9]">waveigl</span>{' '}
+              {images[currentIndex].caption}
+            </p>
+          </div>
+        )}
       </div>
-      <div className="text-[#D9D9D9]/70 text-sm uppercase tracking-wider">{label}</div>
     </div>
   )
 }
 
-export default function LandingPage() {
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
-
+function TimelineItem({ 
+  year, 
+  title, 
+  description, 
+  icon: Icon,
+  highlight = false 
+}: { 
+  year: string
+  title: string
+  description: string
+  icon: React.ElementType
+  highlight?: boolean
+}) {
   return (
-    <div className="min-h-screen bg-[#0A0B0F] text-[#D9D9D9] selection:bg-[#E38817]/30 selection:text-white overflow-hidden">
+    <div className="relative flex gap-6 pb-12 last:pb-0">
+      {/* Line */}
+      <div className="absolute left-[27px] top-14 bottom-0 w-[2px] bg-gradient-to-b from-[#E38817]/50 to-transparent last:hidden" />
+      
+      {/* Icon */}
+      <div className={`relative z-10 w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${
+        highlight 
+          ? 'bg-gradient-to-br from-[#E38817] to-[#B86A10] text-white shadow-lg shadow-[#E38817]/30' 
+          : 'bg-[#1E202F] border border-[#E38817]/20 text-[#E38817]'
+      }`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      
+      {/* Content */}
+      <div className="flex-1 pt-1">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-[#E38817] font-mono text-sm">{year}</span>
+          {highlight && (
+            <Badge className="bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 text-xs">
+              Destaque
+            </Badge>
+          )}
+        </div>
+        <h3 className="text-xl font-bold text-[#D9D9D9] mb-2">{title}</h3>
+        <p className="text-[#D9D9D9]/60 leading-relaxed">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+function TimelineItemWithCarousel({ 
+  year, 
+  title, 
+  description, 
+  icon: Icon,
+  highlight = false,
+  images
+}: { 
+  year: string
+  title: string
+  description: string
+  icon: React.ElementType
+  highlight?: boolean
+  images: { src: string; alt: string; caption?: string }[]
+}) {
+  return (
+    <div className="relative flex gap-6 pb-12 last:pb-0">
+      {/* Line */}
+      <div className="absolute left-[27px] top-14 bottom-0 w-[2px] bg-gradient-to-b from-[#E38817]/50 to-transparent last:hidden" />
+      
+      {/* Icon */}
+      <div className={`relative z-10 w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${
+        highlight 
+          ? 'bg-gradient-to-br from-[#E38817] to-[#B86A10] text-white shadow-lg shadow-[#E38817]/30' 
+          : 'bg-[#1E202F] border border-[#E38817]/20 text-[#E38817]'
+      }`}>
+        <Icon className="w-6 h-6" />
+      </div>
+      
+      {/* Content */}
+      <div className="flex-1 pt-1">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-[#E38817] font-mono text-sm">{year}</span>
+          {highlight && (
+            <Badge className="bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 text-xs">
+              Destaque
+            </Badge>
+          )}
+        </div>
+        <h3 className="text-xl font-bold text-[#D9D9D9] mb-2">{title}</h3>
+        <p className="text-[#D9D9D9]/60 leading-relaxed mb-4">{description}</p>
+        
+        {/* Instagram Carousel */}
+        <InstagramCarousel images={images} />
+      </div>
+    </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <div className="min-h-screen bg-[#0A0B0F] text-[#D9D9D9]">
       {/* Background Effects */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Grid pattern */}
         <div 
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `linear-gradient(#E38817 1px, transparent 1px), linear-gradient(90deg, #E38817 1px, transparent 1px)`,
             backgroundSize: '50px 50px'
           }}
         />
-        
-        {/* Glowing orbs */}
-        <GlowingOrb className="top-[-10%] left-[-5%] w-[600px] h-[600px] bg-[#E38817]/10" delay={0} />
-        <GlowingOrb className="bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#1E202F]/30" delay={500} />
-        <GlowingOrb className="top-[40%] right-[20%] w-[400px] h-[400px] bg-[#E38817]/5" delay={1000} />
-        
-        {/* Diagonal lines */}
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-[20%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#E38817]/20 to-transparent transform -rotate-12" />
-          <div className="absolute top-[60%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#E38817]/10 to-transparent transform rotate-6" />
-        </div>
+        <div className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] bg-[#E38817]/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-[#1E202F]/30 rounded-full blur-[100px]" />
       </div>
 
       {/* Header */}
@@ -109,8 +245,8 @@ export default function LandingPage() {
             </Link>
             
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="/sobre" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
-                Sobre
+              <Link href="/clube-do-waveigl" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
+                Clube
               </Link>
               <Link href="/midia-kit" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
                 Mídia Kit
@@ -126,7 +262,7 @@ export default function LandingPage() {
                   Entrar
                 </Button>
               </Link>
-              <Link href="/auth/login">
+              <Link href="/clube-do-waveigl">
                 <Button className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white border-none shadow-lg shadow-[#E38817]/25 transition-all">
                   Assinar Clube
                 </Button>
@@ -136,427 +272,199 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="relative z-10 py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className={`max-w-6xl mx-auto transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            
-            {/* Hero Grid - Image + Content */}
-            <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
-              
-              {/* Left - Image */}
-              <div className="relative order-2 lg:order-1 flex justify-center">
-                {/* Neon glow effects */}
-                <div className="absolute -left-20 top-1/4 w-40 h-80 bg-[#E38817]/30 blur-[100px] rounded-full" />
-                <div className="absolute -right-20 top-1/3 w-40 h-80 bg-[#3B82F6]/20 blur-[100px] rounded-full" />
-                
-                {/* Main image */}
-                {/* Nota: unoptimized é necessário para preservar a transparência do WebP */}
-                <div className="relative">
+          <div className="max-w-4xl mx-auto">
+            {/* Profile Card */}
+            <div className="flex flex-col md:flex-row items-center gap-8 mb-16">
+              {/* Avatar */}
+              <div className="relative">
+                <div className="w-40 h-40 rounded-2xl bg-gradient-to-br from-[#E38817] to-[#B86A10] p-1 overflow-hidden">
                   <Image 
-                    src="/waveigl.webp" 
+                    src="/waveigl_profile.webp" 
                     alt="WaveIGL - Conrado Koerich" 
-                    width={500} 
-                    height={500}
-                    className="relative z-10 rounded-2xl bg-transparent"
-                    style={{ 
-                      backgroundColor: 'transparent',
-                      backgroundImage: 'none'
-                    }}
-                    priority
-                    unoptimized
+                    width={160} 
+                    height={160}
+                    className="w-full h-full rounded-xl object-cover"
                   />
-                  {/* Orange neon line left */}
-                  <div className="absolute -left-8 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-transparent via-[#E38817] to-transparent opacity-60" />
-                  {/* Blue neon line right */}
-                  <div className="absolute -right-8 top-1/3 bottom-1/3 w-1 bg-gradient-to-b from-transparent via-[#3B82F6] to-transparent opacity-40" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-[#E38817] rounded-lg px-3 py-1 text-white text-sm font-bold">
+                  🇧🇷 BR
                 </div>
               </div>
               
-              {/* Right - Content */}
-              <div className="order-1 lg:order-2 text-center lg:text-left">
-                {/* Badge */}
-                <Badge 
-                  className="mb-6 px-4 py-2 bg-[#1E202F]/80 text-[#E38817] border border-[#E38817]/30 hover:bg-[#1E202F] transition-colors backdrop-blur-sm"
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  Professor de CS2
-                </Badge>
-                
-                {/* Main Title */}
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-6 tracking-tight leading-none">
-                  <span className="block text-[#D9D9D9]">CLUBE</span>
-                  <span className="block bg-gradient-to-r from-[#E38817] via-[#F5A623] to-[#E38817] bg-clip-text text-transparent">
-                    WAVEIGL
-                  </span>
+              {/* Info */}
+              <div className="text-center md:text-left">
+                <h1 className="text-4xl md:text-5xl font-black mb-2">
+                  WaveIGL
                 </h1>
+                <p className="text-2xl text-[#E38817]/70 mb-4">Professor de CS2</p>
                 
-                {/* Subtitle */}
-                <p className="text-xl md:text-2xl text-[#D9D9D9]/70 mb-3 leading-relaxed">
-                  O conhecimento das aulas particulares, por R$9,90/mês
-                </p>
-                <p className="text-base text-[#D9D9D9]/50 mb-8">
-                  Discord VIP • Aulas ao vivo exclusivas • Início em 01/01/2026
-                </p>
-                
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <Link href="/auth/login">
-                    <Button 
-                      size="lg" 
-                      className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105 hover:shadow-[#E38817]/40 group"
-                    >
-                      <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Começar Agora
-                    </Button>
-                  </Link>
-                  <Link href="/sobre">
-                    <Button 
-                      variant="outline" 
-                      size="lg" 
-                      className="border-[#D9D9D9]/20 text-[#D9D9D9] hover:bg-[#D9D9D9]/5 hover:border-[#D9D9D9]/40 text-lg px-10 h-14 backdrop-blur-sm transition-all group"
-                    >
-                      Conheça o Wave
-                      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  </Link>
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-[#D9D9D9]/60">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#E38817]" />
+                    Florianópolis, SC
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#E38817]" />
+                    12/11/1984
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-[#E38817]" />
+                    35k+ Horas de Jogo
+                  </div>
                 </div>
               </div>
             </div>
-            
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
-              <StatCounter value={500} suffix="k" label="Seguidores" />
-              <StatCounter value={2} suffix="M" label="Views/mês" />
-              <StatCounter value={70} suffix="h" label="Live/semana" />
-              <StatCounter value={500} suffix="k+" label="Alunos" />
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="relative z-10 py-24 border-t border-[#E38817]/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Por que o <span className="text-[#E38817]">Clube WaveIGL</span>?
-            </h2>
-            <p className="text-[#D9D9D9]/60 text-lg">O mesmo conteúdo das aulas particulares de R$149, agora compartilhado em comunidade por apenas R$9,90/mês</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                icon: <GraduationCap className="w-8 h-8" />,
-                title: 'Aulas de R$149 por R$9,90',
-                description: 'O mesmo conhecimento das aulas particulares que custam R$149, agora em formato compartilhado. Você economiza mais de 98% e aprende o mesmo conteúdo'
-              },
-              {
-                icon: <Users className="w-8 h-8" />,
-                title: 'Discord VIP Exclusivo',
-                description: 'Acesso a uma comunidade fechada apenas para assinantes do Clube, onde você interage diretamente com outros membros e o WaveIGL'
-              },
-              {
-                icon: <Trophy className="w-8 h-8" />,
-                title: 'Professor com Resultados',
-                description: 'Aprenda com quem tem 35k+ horas de jogo e formou a aluna Giuzinha, Top 5 Mundial pela Team Brazil. Resultados comprovados'
-              },
-              {
-                icon: <Clock className="w-8 h-8" />,
-                title: 'Aulas Ao Vivo',
-                description: 'Aulas ao vivo no Discord que não são gravadas nem salvas. Conteúdo denso e avançado que não é apresentado nas lives públicas'
-              },
-              {
-                icon: <Lock className="w-8 h-8" />,
-                title: 'Conteúdo Protegido',
-                description: 'Nenhum conteúdo interno pode ser gravado ou postado. Aulas e discussões permanecem exclusivas para membros do Clube'
-              },
-              {
-                icon: <Shield className="w-8 h-8" />,
-                title: 'Comunidade Selecionada',
-                description: 'Faça parte de um grupo seleto de pessoas comprometidas em evoluir no CS2. Ambiente focado em aprendizado e crescimento'
-              }
-            ].map((feature, i) => (
-              <Card 
-                key={i}
-                className="bg-[#1E202F]/30 border-[#E38817]/10 hover:border-[#E38817]/30 backdrop-blur-sm transition-all duration-300 hover:bg-[#1E202F]/50 group"
-              >
-                <CardContent className="p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#E38817]/20 to-[#E38817]/5 rounded-xl flex items-center justify-center mb-4 text-[#E38817] group-hover:scale-110 transition-transform">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-[#D9D9D9] mb-2">{feature.title}</h3>
-                  <p className="text-[#D9D9D9]/60 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="relative z-10 py-24 border-t border-[#E38817]/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-[#E38817]/10 text-[#E38817] border-[#E38817]/30">
-              🎓 O mesmo conhecimento das aulas particulares
-            </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Escolha seu <span className="text-[#E38817]">Plano</span>
-            </h2>
-            <p className="text-[#D9D9D9]/60 text-lg">O conhecimento que transforma jogadores, agora acessível</p>
-          </div>
-          
-          {/* Planos do Clube */}
-          <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6 mb-16">
-            {/* Clube Mensal */}
-            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#E38817]/30 shadow-2xl shadow-[#E38817]/10 overflow-hidden">
-              {/* Top glow */}
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#E38817] to-transparent" />
-              
-              <CardContent className="p-6 text-center">
-                <Badge className="mb-4 bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 px-3 py-1">
-                  <Star className="w-3 h-3 mr-1 fill-current" /> Mais Popular
-                </Badge>
-                
-                <h3 className="text-xl font-bold text-[#D9D9D9] mb-4">Clube Mensal</h3>
-                
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <span className="text-5xl font-black text-[#E38817]">R$9,90</span>
-                  <div className="text-left">
-                    <div className="text-[#D9D9D9]/60 text-sm">/mês</div>
-                  </div>
-                </div>
-                
-                <div className="text-[#E38817]/80 text-sm mb-6 font-semibold">
-                  🚀 Aulas iniciam em 01/01/2026
-                </div>
-                
-                <ul className="space-y-3 mb-6 text-left text-sm">
-                  {[
-                    'Aulas ao vivo no Discord VIP',
-                    'Conteúdo exclusivo não gravado',
-                    'Mesmo conhecimento das particulares',
-                    'Comunidade fechada e selecionada',
-                    'Interação direta com WaveIGL',
-                    'Cancele quando quiser'
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center text-[#D9D9D9]/80">
-                      <CheckCircle className="w-4 h-4 text-[#E38817] mr-2 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link href="/auth/login" className="block">
-                  <Button className="w-full bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg h-12 shadow-lg shadow-[#E38817]/25 transition-all hover:scale-[1.02]">
-                    Assinar Mensal
-                  </Button>
-                </Link>
+            {/* Bio */}
+            <Card className="bg-[#1E202F]/30 border-[#E38817]/10 backdrop-blur-sm mb-16">
+              <CardContent className="p-8">
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
+                  <span className="text-[#E38817] font-bold">WaveIGL</span> é um dos maiores criadores de conteúdo e professores de CS2 do Brasil. 
+                  Com mais de <span className="text-[#E38817] font-semibold">35 mil horas de jogo</span> e <span className="text-[#E38817] font-semibold">10 Milhões de pessoas alcançadas</span> nas redes sociais, 
+                  Wave dedica sua carreira a ensinar e entreter jogadores de todos os níveis.
+                </p>
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
+                  Em 2014, Wave se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span>, tocando nos melhores eventos 
+                  como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>, entre outros. Em 2017, por paixão ao ensino, 
+                  se dedicou integralmente ao streaming e educação em CS.
+                </p>
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
+                  Seu maior case de sucesso é a aluna <span className="text-[#E38817] font-semibold">Giuzinha</span>, que representou o Brasil no cenário mundial feminino 
+                  e conquistou o <span className="text-[#E38817] font-semibold">Top 5 no Mundial de CS2</span> pela Team Brazil.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Clube Vitalício */}
-            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#3B82F6]/30 shadow-2xl shadow-[#3B82F6]/10 overflow-hidden">
-              {/* Top glow */}
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#3B82F6] to-transparent" />
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+              {[
+                { value: '440k+', label: 'Seguidores Twitch', icon: Users },
+                { value: '500k+', label: 'Alunos', icon: GraduationCap },
+                { value: '70h', label: 'Lives por Semana', icon: Gamepad2 },
+                { value: '7+', label: 'Anos Ensinando', icon: Award },
+              ].map((stat, i) => (
+                <Card key={i} className="bg-[#1E202F]/30 border-[#E38817]/10">
+                  <CardContent className="p-6 text-center">
+                    <stat.icon className="w-8 h-8 text-[#E38817] mx-auto mb-3" />
+                    <div className="text-2xl font-bold text-[#E38817] mb-1">{stat.value}</div>
+                    <div className="text-sm text-[#D9D9D9]/60">{stat.label}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Timeline */}
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold mb-8 flex items-center gap-3">
+                <Calendar className="w-8 h-8 text-[#E38817]" />
+                Trajetória
+              </h2>
               
-              <CardContent className="p-6 text-center">
-                <Badge className="mb-4 bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30 px-3 py-1">
-                  ♾️ Para Sempre
-                </Badge>
-                
-                <h3 className="text-xl font-bold text-[#D9D9D9] mb-4">Clube Vitalício</h3>
-                
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <span className="text-5xl font-black text-[#3B82F6]">R$499</span>
-                  <div className="text-left">
-                    <div className="text-[#D9D9D9]/60 text-sm">pagamento único</div>
-                  </div>
-                </div>
-                
-                <div className="text-[#3B82F6]/80 text-sm mb-6 font-semibold">
-                  ⚡ Acesso permanente ao Clube
-                </div>
-                
-                <ul className="space-y-3 mb-6 text-left text-sm">
-                  {[
-                    'Tudo do plano mensal',
-                    'Acesso VITALÍCIO ao Clube',
-                    'Nunca mais pague mensalidade',
-                    'Prioridade em eventos especiais',
-                    'Badge exclusivo de fundador',
-                    'Equivale a ~4 anos de mensalidade'
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center text-[#D9D9D9]/80">
-                      <CheckCircle className="w-4 h-4 text-[#3B82F6] mr-2 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link href="/auth/login" className="block">
-                  <Button className="w-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#60A5FA] hover:to-[#3B82F6] text-white text-lg h-12 shadow-lg shadow-[#3B82F6]/25 transition-all hover:scale-[1.02]">
-                    Garantir Vitalício
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Comparativo com Aulas Particulares */}
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-8">
-              <p className="text-[#D9D9D9]/40 text-sm uppercase tracking-wider">Compare com as aulas particulares</p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Aula Avulsa */}
-              <Card className="bg-[#1E202F]/20 border-[#E38817]/5">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-[#D9D9D9]/50">Aula Particular Avulsa</h4>
-                    <p className="text-xs text-[#D9D9D9]/30">Aula individual 1h</p>
-                  </div>
-                  <div className="text-2xl font-black text-[#D9D9D9]/30">R$149</div>
-                </CardContent>
-              </Card>
-
-              {/* Mensalidade */}
-              <Card className="bg-[#1E202F]/20 border-[#E38817]/5">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-bold text-[#D9D9D9]/50">Mensalidade Particular</h4>
-                    <p className="text-xs text-[#D9D9D9]/30">1 aula por semana</p>
-                  </div>
-                  <div className="text-2xl font-black text-[#D9D9D9]/30">R$499/mês</div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Destaque de economia */}
-            <div className="text-center mt-8">
-              <p className="text-[#D9D9D9]/60 text-lg">
-                Com o Clube você economiza até <span className="text-[#E38817] font-bold">98%</span> comparado às aulas particulares
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      <section className="relative z-10 py-24 border-t border-[#E38817]/10 bg-[#1E202F]/20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold mb-4">
-              Assista nas suas plataformas favoritas
-            </h2>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-6">
-            {[
-              { name: 'Twitch', url: 'https://twitch.tv/waveigl', followers: '440k', color: '#9146FF' },
-              { name: 'YouTube', url: 'https://youtube.com/@waveigl', followers: '34.5k', color: '#FF0000' },
-              { name: 'Instagram', url: 'https://instagram.com/waveigl', followers: '20.7k', color: '#E4405F' },
-              { name: 'Kick', url: 'https://kick.com/waveigloficial', followers: '840', color: '#53FC18' },
-              { name: 'TikTok', url: 'https://tiktok.com/@waveigloficial', followers: '500', color: '#000000' },
-              { name: 'Kwai', url: 'https://kwai.com/@waveigl', followers: '200', color: '#FF6600' },
-              { name: 'Facebook', url: 'https://facebook.com/waveigl', followers: '-', color: '#1877F2' },
-            ].map((platform) => (
-              <a 
-                key={platform.name}
-                href={platform.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-6 py-3 bg-[#1E202F]/50 border border-[#E38817]/10 rounded-xl hover:border-[#E38817]/30 transition-all group"
-              >
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: platform.color }}
+              <div className="space-y-0">
+                <TimelineItemWithCarousel 
+                  year="2014-2017"
+                  title="Era DJ Hope - O Auge que ele deixou para trás"
+                  description="No auge de sua carreira como DJ, tocando nas melhores baladas do Brasil como Café de la Musique, Oxygen Party e The Roof, WaveIGL tomou uma decisão que mudaria sua vida. Inspirado em sua mãe, que era professora, decidiu abandonar tudo para se dedicar integralmente àquilo que realmente tinha expertise: ensinar Counter-Strike. Uma escolha corajosa de deixar o sucesso garantido para seguir sua verdadeira paixão."
+                  icon={Music}
+                  highlight
+                  images={[
+                    { src: '/images/dj/dj-hope-1.jpg', alt: 'DJ Hope no Café de la Musique', caption: 'Café de la Musique - No auge da carreira 🎧' },
+                    { src: '/images/dj/dj-hope-2.jpg', alt: 'DJ Hope no Oxygen Party', caption: 'Oxygen Party - Lotação máxima 🔥' },
+                    { src: '/images/dj/dj-hope-3.jpg', alt: 'DJ Hope no The Roof', caption: 'The Roof - Melhores baladas do Brasil 🎵' },
+                    { src: '/images/dj/dj-hope-4.jpg', alt: 'DJ Hope equipamentos', caption: 'Deixei tudo isso para seguir minha paixão: ensinar CS 🎮' }
+                  ]}
                 />
-                <span className="font-medium text-[#D9D9D9] group-hover:text-[#E38817] transition-colors">
-                  {platform.name}
-                </span>
-                <span className="text-[#D9D9D9]/50 text-sm">{platform.followers}</span>
-              </a>
-            ))}
+                
+                <TimelineItem 
+                  year="2017"
+                  title="Início como Professor de CS"
+                  description="Inspirado em sua mãe professora, começou a ensinar jogadores de todos os níveis a evoluírem. Encerrou a carreira de DJ no auge para se dedicar integralmente ao streaming e educação em CS."
+                  icon={GraduationCap}
+                  highlight
+                />
+                
+                <TimelineItem 
+                  year="2018"
+                  title="O Auge no CS"
+                  description="Ano marcante com viralizações épicas, incluindo o famoso 'Gank do Skipinho' e outros momentos memoráveis que consolidaram Wave como referência no cenário de CS brasileiro."
+                  icon={Target}
+                  highlight
+                />
+                
+                <TimelineItem 
+                  year="2019-2023"
+                  title="Crescimento Contínuo"
+                  description="Realizou diversos sorteios de itens raros, incluindo uma AWP Dragon Lore. Consolidou a comunidade e alcançou 440k+ seguidores na Twitch, ensinando mais de 500k alunos através das lives gratuitas."
+                  icon={Award}
+                />
+                
+                <TimelineItemWithCarousel 
+                  year="2024"
+                  title="Giuzinha - Top 5 Mundial"
+                  description="Giuzinha, aluna do WaveIGL, representou o Brasil no cenário mundial feminino de CS2 e conquistou o 5º lugar no Mundial pela Team Brazil. O maior case de sucesso que comprova a qualidade do ensino do Wave."
+                  icon={Trophy}
+                  highlight
+                  images={[
+                    { src: '/images/giuzinha/giuzinha-1.jpg', alt: 'Giuzinha no Mundial', caption: 'Top 5 Mundial de CS2 🏆' },
+                    { src: '/images/giuzinha/giuzinha-2.jpg', alt: 'Giuzinha competindo', caption: 'Representando o Brasil no cenário mundial 🇧🇷' },
+                    { src: '/images/giuzinha/giuzinha-3.jpg', alt: 'Giuzinha Team Brazil', caption: 'Team Brazil - Orgulho nacional 💪' },
+                    { src: '/images/giuzinha/giuzinha-4.jpg', alt: 'Giuzinha com troféu', caption: 'O resultado de muito treino e dedicação 🎮' }
+                  ]}
+                />
+                
+                <TimelineItem 
+                  year="2025"
+                  title="Clube WaveIGL"
+                  description="Lançamento do projeto Clube WaveIGL: uma plataforma completa com chat unificado, Discord VIP, e aulas gratuitas de CS2 ao vivo na Twitch. O próximo capítulo da comunidade Wave."
+                  icon={Heart}
+                  highlight
+                />
+              </div>
+            </div>
+
+            {/* CTA */}
+            <Card className="bg-gradient-to-r from-[#1E202F] to-[#1E202F]/50 border-[#E38817]/20">
+              <CardContent className="p-8 text-center">
+                <h3 className="text-2xl font-bold mb-4">Faça parte da comunidade</h3>
+                <p className="text-[#D9D9D9]/60 mb-6 max-w-lg mx-auto">
+                  Faça parte do lançamento do Clube WaveIGL e aprenda CS2 com quem mais entende
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/clube-do-waveigl">
+                    <Button className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white px-8">
+                      Conhecer o Clube
+                    </Button>
+                  </Link>
+                  <a href="https://twitch.tv/waveigl" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="border-[#E38817]/30 hover:bg-[#E38817]/10 hover:border-[#E38817] px-8">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Assistir na Twitch
+                    </Button>
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 py-12 border-t border-[#E38817]/10">
+      <footer className="relative z-10 py-8 border-t border-[#E38817]/10">
         <div className="container mx-auto px-4">
-          {/* Main Footer */}
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <Image 
-                  src="/favicon.webp" 
-                  alt="WaveIGL" 
-                  width={32} 
-                  height={32}
-                  className="rounded-lg"
-                />
-                <span className="text-xl font-bold">
-                  Wave<span className="text-[#E38817]">IGL</span>
-                </span>
-              </div>
-              <p className="text-sm text-[#D9D9D9]/50 mb-4">
-                A maior comunidade de CS2 do Brasil. Aprenda, se divirta e evolua com a gente.
-              </p>
-              <a 
-                href="mailto:csgoblackbelt@gmail.com" 
-                className="text-sm text-[#E38817] hover:underline"
-              >
-                csgoblackbelt@gmail.com
-              </a>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#D9D9D9]/40">
+            <div className="flex items-center space-x-3">
+              <div className="w-6 h-6 bg-gradient-to-br from-[#E38817] to-[#B86A10] rounded" />
+              <span className="font-bold">WaveIGL</span>
             </div>
-            
-            {/* Links */}
-            <div>
-              <h4 className="font-semibold text-[#D9D9D9] mb-4">Navegação</h4>
-              <ul className="space-y-2 text-sm text-[#D9D9D9]/50">
-                <li><Link href="/sobre" className="hover:text-[#E38817] transition-colors">Sobre WaveIGL</Link></li>
-                <li><Link href="/midia-kit" className="hover:text-[#E38817] transition-colors">Mídia Kit</Link></li>
-                <li><Link href="/auth/login" className="hover:text-[#E38817] transition-colors">Entrar</Link></li>
-              </ul>
+            <div className="flex items-center gap-6">
+              <Link href="/termos-de-uso" className="hover:text-[#E38817] transition-colors">Termos</Link>
+              <Link href="/politica-privacidade" className="hover:text-[#E38817] transition-colors">Privacidade</Link>
+              <Link href="/cookies" className="hover:text-[#E38817] transition-colors">Cookies</Link>
             </div>
-            
-            {/* Legal */}
-            <div>
-              <h4 className="font-semibold text-[#D9D9D9] mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-[#D9D9D9]/50">
-                <li><Link href="/termos-de-uso" className="hover:text-[#E38817] transition-colors">Termos de Uso</Link></li>
-                <li><Link href="/politica-privacidade" className="hover:text-[#E38817] transition-colors">Política de Privacidade</Link></li>
-                <li><Link href="/cookies" className="hover:text-[#E38817] transition-colors">Política de Cookies</Link></li>
-              </ul>
-            </div>
-            
-            {/* Social */}
-            <div>
-              <h4 className="font-semibold text-[#D9D9D9] mb-4">Redes Sociais</h4>
-              <ul className="space-y-2 text-sm text-[#D9D9D9]/50">
-                <li><a href="https://twitch.tv/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Twitch</a></li>
-                <li><a href="https://youtube.com/@waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">YouTube</a></li>
-                <li><a href="https://instagram.com/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Instagram</a></li>
-                <li><a href="https://kick.com/waveigloficial" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Kick</a></li>
-                <li><a href="https://tiktok.com/@waveigloficial" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">TikTok</a></li>
-                <li><a href="https://facebook.com/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Facebook</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          {/* Bottom Bar */}
-          <div className="pt-8 border-t border-[#E38817]/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-[#D9D9D9]/40 text-sm">
-              © 2025 WaveIGL. Todos os direitos reservados.
-            </p>
-            <p className="text-[#D9D9D9]/30 text-xs">
-              Florianópolis, SC - Brasil | CNPJ em processo de registro
-            </p>
+            <p>© 2025 WaveIGL. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
