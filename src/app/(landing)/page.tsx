@@ -233,13 +233,15 @@ function TimelineItem({
   title, 
   description, 
   icon: Icon,
-  highlight = false 
+  highlight = false,
+  proofLink
 }: { 
   year: string
   title: string
   description: string
   icon: React.ElementType
   highlight?: boolean
+  proofLink?: string
 }) {
   return (
     <div className="relative flex gap-6 pb-12 last:pb-0">
@@ -257,12 +259,23 @@ function TimelineItem({
       
       {/* Content */}
       <div className="flex-1 pt-1">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-2 flex-wrap">
           <span className="text-[#E38817] font-mono text-sm">{year}</span>
           {highlight && (
             <Badge className="bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 text-xs">
               Destaque
             </Badge>
+          )}
+          {proofLink && (
+            <a 
+              href={proofLink} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs text-[#E38817]/70 hover:text-[#E38817] transition-colors flex items-center gap-1"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Ver comprovação
+            </a>
           )}
         </div>
         <h3 className="text-xl font-bold text-[#D9D9D9] mb-2">{title}</h3>
@@ -587,6 +600,7 @@ export default function HomePage() {
                   description="Como IGL (stand-in) do time freNzy!, alcançou o Top 9 do Brasil em LAN. Nick: conrado. Um marco importante que mostrou seu potencial competitivo e conhecimento estratégico do jogo."
                   icon={Trophy}
                   highlight
+                  proofLink="https://liquipedia.net/counterstrike/CWB_Jungle_Cup/2011"
                 />
                 
                 <TimelineItem 
@@ -638,9 +652,10 @@ export default function HomePage() {
                 <TimelineItem 
                   year="2024"
                   title="Giuzinha - Top 5 Mundial"
-                  description="Giuzinha, aluna do WaveIGL, representou o Brasil no cenário mundial feminino de CS2 e conquistou o 5º lugar no Mundial pela Team Brazil. O maior case de sucesso que comprova a qualidade do ensino do Wave."
+                  description="Giuzinha, aluna do WaveIGL, representou o Brasil no cenário mundial feminino de CS2 e conquistou o 5º lugar no Mundial pela Team Brazil."
                   icon={Trophy}
                   highlight
+                  proofLink="https://liquipedia.net/counterstrike/IESF/World_Esports_Championships/2023/Female"
                 />
                 
                 <TimelineItem 
