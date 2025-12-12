@@ -416,18 +416,12 @@ export default function HomePage() {
                   icon={Award}
                 />
                 
-                <TimelineItemWithCarousel 
+                <TimelineItem 
                   year="2024"
                   title="Giuzinha - Top 5 Mundial"
                   description="Giuzinha, aluna do WaveIGL, representou o Brasil no cenário mundial feminino de CS2 e conquistou o 5º lugar no Mundial pela Team Brazil. O maior case de sucesso que comprova a qualidade do ensino do Wave."
                   icon={Trophy}
                   highlight
-                  images={[
-                    { src: '/images/giuzinha/giuzinha-1.jpg', alt: 'Giuzinha no Mundial', caption: 'Top 5 Mundial de CS2 🏆' },
-                    { src: '/images/giuzinha/giuzinha-2.jpg', alt: 'Giuzinha competindo', caption: 'Representando o Brasil no cenário mundial 🇧🇷' },
-                    { src: '/images/giuzinha/giuzinha-3.jpg', alt: 'Giuzinha Team Brazil', caption: 'Team Brazil - Orgulho nacional 💪' },
-                    { src: '/images/giuzinha/giuzinha-4.jpg', alt: 'Giuzinha com troféu', caption: 'O resultado de muito treino e dedicação 🎮' }
-                  ]}
                 />
                 
                 <TimelineItem 
