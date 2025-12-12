@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { UnifiedChatProps, Platform, ChatMessage, UserRole, UnifiedMessage } from '@/types'
-import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X } from 'lucide-react'
+import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X, ChevronUp, ChevronDown, ExternalLink, Minimize2, Maximize2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 // Limites padrão de mensagens por role
@@ -77,17 +77,29 @@ interface ExtendedUnifiedChatProps extends UnifiedChatProps {
       is_moderator?: boolean
     }>
   }
+  // Props para modo popup/compacto
+  isPopup?: boolean
+  onOpenPopup?: () => void
+  defaultCompact?: boolean
 }
 
-export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser }: ExtendedUnifiedChatProps) {
+export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser, isPopup = false, onOpenPopup, defaultCompact = false }: ExtendedUnifiedChatProps) {
   const [newMessage, setNewMessage] = useState('')
-  const [sendPlatform, setSendPlatform] = useState<Platform>('kick')
+  const [sendPlatform, setSendPlatform] = useState<Platform | 'all'>('kick')
   const [showModerationMenu, setShowModerationMenu] = useState<string | null>(null)
   const [customTimeoutInput, setCustomTimeoutInput] = useState('')
   const [customTimeoutUnit, setCustomTimeoutUnit] = useState<'seconds' | 'minutes' | 'hours' | 'days' | 'months' | 'permanent'>('days')
   const [showCustomTimeout, setShowCustomTimeout] = useState(false)
   const [localMessages, setLocalMessages] = useState<LocalMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  const [isCompactMode, setIsCompactMode] = useState(() => {
+    // Carregar do localStorage ou usar default
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chat_compact_mode')
+      if (saved !== null) return saved === 'true'
+    }
+    return defaultCompact
+  })
   const [youtubeIsLive, setYoutubeIsLive] = useState(false)
   const [showChatSettings, setShowChatSettings] = useState(false)
   const [messageLimit, setMessageLimit] = useState<number>(() => {
@@ -297,6 +309,12 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     const messageText = newMessage.trim()
     if (!messageText) return
     
+    // Se for enviar para todas as plataformas
+    if (sendPlatform === 'all') {
+      await handleSendToAllPlatforms(messageText)
+      return
+    }
+    
     // Criar mensagem local otimista
     // Se o usuário é moderador (em qualquer plataforma), adicionar badge de moderador
     const userIsModerator = currentUser?.is_moderator || 
@@ -307,7 +325,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     const localMsg: LocalMessage = {
       id: tempId,
       tempId,
-      platform: sendPlatform,
+      platform: sendPlatform as Platform,
       username: getCurrentPlatformUsername(),
       user_id: getCurrentPlatformUserId() || 'unknown',
       message: messageText,
@@ -375,6 +393,85 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     }
     
     // Callback opcional (mantido para compatibilidade)
+    onSendMessage(messageText)
+  }
+  
+  // Função para enviar mensagem para todas as plataformas
+  const handleSendToAllPlatforms = async (messageText: string) => {
+    const userIsModerator = currentUser?.is_moderator || 
+      currentUser?.linkedAccounts?.some(acc => acc.is_moderator) || 
+      isModerator
+    
+    // Plataformas para enviar (inclui YouTube apenas se estiver live)
+    const platformsToSend: Platform[] = ['twitch', 'kick']
+    if (youtubeIsLive) {
+      platformsToSend.push('youtube')
+    }
+    
+    setNewMessage('')
+    setIsSending(true)
+    
+    // Criar mensagens locais para cada plataforma
+    const tempIds: Record<Platform, string> = {} as Record<Platform, string>
+    
+    platformsToSend.forEach(platform => {
+      const tempId = generateTempId()
+      tempIds[platform] = tempId
+      
+      const localMsg: LocalMessage = {
+        id: tempId,
+        tempId,
+        platform,
+        username: getCurrentPlatformUsername(),
+        user_id: getCurrentPlatformUserId() || 'unknown',
+        message: messageText,
+        timestamp: String(Date.now()),
+        created_at: new Date().toISOString(),
+        badges: userIsModerator ? ['moderator'] : [],
+        status: 'sending',
+        isLocal: true
+      }
+      
+      setLocalMessages(prev => [...prev, localMsg])
+    })
+    
+    // Enviar para cada plataforma em paralelo
+    const results = await Promise.allSettled(
+      platformsToSend.map(async platform => {
+        const response = await fetch('/api/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platform, message: messageText })
+        })
+        return { platform, ok: response.ok }
+      })
+    )
+    
+    // Atualizar status das mensagens baseado nos resultados
+    results.forEach((result, index) => {
+      const platform = platformsToSend[index]
+      const tempId = tempIds[platform]
+      
+      if (result.status === 'fulfilled' && result.value.ok) {
+        setLocalMessages(prev => 
+          prev.map(msg => 
+            msg.tempId === tempId 
+              ? { ...msg, status: 'sent' as MessageStatus }
+              : msg
+          )
+        )
+      } else {
+        setLocalMessages(prev => 
+          prev.map(msg => 
+            msg.tempId === tempId 
+              ? { ...msg, status: 'error' as MessageStatus }
+              : msg
+          )
+        )
+      }
+    })
+    
+    setIsSending(false)
     onSendMessage(messageText)
   }
   
@@ -518,6 +615,56 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     if (!badges) return false
     return badges.some(badge => MODERATOR_BADGES.includes(badge.toLowerCase()))
   }
+  
+  // Toggle modo compacto
+  const toggleCompactMode = () => {
+    setIsCompactMode(prev => {
+      const newValue = !prev
+      localStorage.setItem('chat_compact_mode', String(newValue))
+      return newValue
+    })
+  }
+  
+  // Abrir chat em popup
+  const openChatPopup = () => {
+    if (onOpenPopup) {
+      onOpenPopup()
+      return
+    }
+    // Abrir nova janela com chat
+    const width = 400
+    const height = 700
+    const left = window.screenX + window.outerWidth - width - 50
+    const top = window.screenY + 50
+    window.open(
+      '/chat-popup',
+      'waveigl-chat',
+      `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no`
+    )
+  }
+
+  // Renderiza mensagem com tag de sistema destacada
+  const renderMessageWithSystemTag = (messageText: string) => {
+    // Padrão para detectar tags de sistema: [🛡️ ...]
+    const systemTagRegex = /(\[🛡️[^\]]+\])$/
+    const match = messageText.match(systemTagRegex)
+    
+    if (match) {
+      const mainText = messageText.replace(systemTagRegex, '').trim()
+      const systemTag = match[1]
+      
+      return (
+        <>
+          {mainText}
+          <span className="ml-2 text-yellow-500 font-medium text-xs">
+            {systemTag}
+          </span>
+        </>
+      )
+    }
+    
+    return messageText
+  }
 
   // Renderiza badges do usuário
   const renderBadges = (badges: string[] | undefined) => {
@@ -549,16 +696,80 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Platform Send Selector (só aparece se logado) */}
-      {isLogged && (
+    <div className={`flex flex-col h-full overflow-hidden ${isPopup ? 'bg-background' : ''}`}>
+      {/* Barra de controle do chat (sempre visível) */}
+      <div className="border-b border-border p-1.5 flex items-center gap-1 shrink-0 bg-muted/30">
+        {/* Botão para expandir/recolher opções */}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={toggleCompactMode}
+          title={isCompactMode ? 'Expandir opções' : 'Recolher opções'}
+          className="h-6 w-6 p-0"
+        >
+          {isCompactMode ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        </Button>
+        
+        {/* Indicador de plataforma atual (modo compacto) */}
+        {isCompactMode && isLogged && (
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className={`w-2 h-2 rounded-full ${
+              sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500' :
+              sendPlatform === 'kick' ? 'bg-green-500' :
+              sendPlatform === 'twitch' ? 'bg-purple-600' :
+              sendPlatform === 'youtube' ? 'bg-red-600' : 'bg-muted'
+            }`} />
+            {sendPlatform === 'all' ? 'Todos' : sendPlatform.charAt(0).toUpperCase() + sendPlatform.slice(1)}
+          </span>
+        )}
+        
+        <div className="ml-auto flex items-center gap-1">
+          {/* Botão popup (não mostra se já está em popup) */}
+          {!isPopup && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={openChatPopup}
+              title="Abrir chat em popup"
+              className="h-6 w-6 p-0"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          
+          {/* Botão de configurações */}
+          {isLogged && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowChatSettings(true)}
+              title="Configurações do chat"
+              className="h-6 w-6 p-0"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {/* Platform Send Selector (só aparece se logado e NÃO está em modo compacto) */}
+      {isLogged && !isCompactMode && (
         <div className="border-b border-border p-2 flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground">Enviar como:</span>
           <Button
             size="sm"
+            variant={sendPlatform === 'all' ? 'default' : 'outline'}
+            onClick={() => setSendPlatform('all')}
+            className={`h-6 text-xs ${sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500 hover:opacity-90 text-white' : ''}`}
+            title="Enviar para Twitch, YouTube e Kick simultaneamente"
+          >
+            Todos
+          </Button>
+          <Button
+            size="sm"
             variant={sendPlatform === 'kick' ? 'default' : 'outline'}
             onClick={() => setSendPlatform('kick')}
-            className={sendPlatform === 'kick' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}
+            className={`h-6 text-xs ${sendPlatform === 'kick' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
           >
             Kick
           </Button>
@@ -566,7 +777,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
             size="sm"
             variant={sendPlatform === 'twitch' ? 'default' : 'outline'}
             onClick={() => setSendPlatform('twitch')}
-            className={sendPlatform === 'twitch' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}
+            className={`h-6 text-xs ${sendPlatform === 'twitch' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
           >
             Twitch
           </Button>
@@ -582,25 +793,12 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
               }
             }}
             disabled={!youtubeIsLive}
-            className={`${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`h-6 text-xs ${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Clique para verificar'}
           >
             YouTube
-            {!youtubeIsLive && <span className="ml-1 text-[10px]">(offline)</span>}
+            {!youtubeIsLive && <span className="ml-1 text-[10px]">(off)</span>}
           </Button>
-          
-          {/* Botão de configurações do chat */}
-          <div className="ml-auto">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowChatSettings(true)}
-              title="Configurações do chat"
-              className="h-7 w-7 p-0"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
         </div>
       )}
       
@@ -728,7 +926,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       </span>
                     )}
                   </div>
-                  {/* Mensagem - com tratamento especial para mensagens deletadas e de sistema */}
+                  {/* Mensagem - com tratamento especial para mensagens deletadas e tags de sistema */}
                   {message.message === '<Mensagem Deletada>' ? (
                     <p className="text-sm mt-1 break-words text-muted-foreground/50 italic">
                       &lt;Mensagem Deletada&gt;
@@ -739,7 +937,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     </p>
                   ) : (
                     <p className={`text-sm mt-1 break-words ${localStatus === 'error' ? 'text-destructive/70' : 'text-muted-foreground'}`}>
-                      {message.message}
+                      {renderMessageWithSystemTag(message.message)}
                     </p>
                   )}
                   
@@ -846,6 +1044,8 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                             value={customTimeoutUnit}
                             onChange={(e) => setCustomTimeoutUnit(e.target.value as any)}
                             className="h-7 text-xs bg-muted border border-border rounded px-2"
+                            title="Unidade de tempo"
+                            aria-label="Unidade de tempo para timeout"
                           >
                             <option value="seconds">Segundos</option>
                             <option value="minutes">Minutos</option>
@@ -877,6 +1077,16 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                     >
                       <Ban className="w-3 h-3 mr-2" />
                       Banir permanentemente
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleModeration(getMessageUserId(message), message.platform, 'unban')}
+                      className="w-full justify-start text-green-500 hover:bg-green-500/10"
+                    >
+                      <RotateCcw className="w-3 h-3 mr-2" />
+                      Reverter punição
                     </Button>
                   </div>
                 </div>

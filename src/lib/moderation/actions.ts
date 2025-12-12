@@ -105,6 +105,29 @@ export async function applyPlatformBan(
   }
 }
 
+/**
+ * Remove ban/timeout de uma plataforma específica (unban)
+ * @param moderatorId - ID do moderador no sistema (para usar o token dele)
+ */
+export async function applyPlatformUnban(
+  platform: string, 
+  platformUserId: string,
+  moderatorId?: string
+): Promise<{ success: boolean; error?: string }> {
+  console.log(`[Moderation] Removendo ban/timeout no ${platform} para ${platformUserId} (mod: ${moderatorId || 'broadcaster'})`)
+  
+  switch (platform) {
+    case 'twitch':
+      return applyTwitchUnban(platformUserId, moderatorId)
+    case 'youtube':
+      return applyYouTubeUnban(platformUserId)
+    case 'kick':
+      return applyKickUnban(platformUserId)
+    default:
+      return { success: false, error: `Plataforma não suportada: ${platform}` }
+  }
+}
+
 // ============ TWITCH ============
 
 async function applyTwitchTimeout(userId: string, durationSeconds: number, reason?: string, moderatorId?: string): Promise<{ success: boolean; error?: string }> {
@@ -218,6 +241,54 @@ async function applyTwitchBan(userId: string, reason?: string, moderatorId?: str
   }
 }
 
+async function applyTwitchUnban(userId: string, moderatorId?: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const broadcaster = await getBroadcasterToken('twitch')
+    if (!broadcaster) {
+      return { success: false, error: 'Token do broadcaster não disponível' }
+    }
+    
+    // Tentar usar o token do moderador
+    let modToken = broadcaster.token
+    let modPlatformId = broadcaster.broadcasterId
+    
+    if (moderatorId) {
+      const moderator = await getModeratorToken(moderatorId, 'twitch')
+      if (moderator) {
+        modToken = moderator.token
+        modPlatformId = moderator.moderatorPlatformId
+        console.log(`[Twitch] Usando token do moderador para unban: ${modPlatformId}`)
+      }
+    }
+    
+    // DELETE https://api.twitch.tv/helix/moderation/bans
+    const response = await fetch('https://api.twitch.tv/helix/moderation/bans?' + new URLSearchParams({
+      broadcaster_id: broadcaster.broadcasterId,
+      moderator_id: modPlatformId,
+      user_id: userId
+    }), {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${modToken}`,
+        'Client-Id': process.env.TWITCH_CLIENT_ID!
+      }
+    })
+    
+    if (response.ok || response.status === 204) {
+      console.log(`[Twitch] ✅ Unban aplicado para ${userId} por ${modPlatformId}`)
+      return { success: true }
+    }
+    
+    const errorData = await response.json().catch(() => ({}))
+    console.error(`[Twitch] Erro ao aplicar unban:`, response.status, errorData)
+    return { success: false, error: errorData.message || `Erro ${response.status}` }
+    
+  } catch (error) {
+    console.error('[Twitch] Erro ao aplicar unban:', error)
+    return { success: false, error: String(error) }
+  }
+}
+
 // ============ KICK ============
 
 async function applyKickTimeout(userId: string, durationSeconds: number, reason?: string): Promise<{ success: boolean; error?: string }> {
@@ -291,6 +362,37 @@ async function applyKickBan(userId: string, reason?: string): Promise<{ success:
     
   } catch (error) {
     console.error('[Kick] Erro ao aplicar ban:', error)
+    return { success: false, error: String(error) }
+  }
+}
+
+async function applyKickUnban(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const broadcaster = await getBroadcasterToken('kick')
+    if (!broadcaster) {
+      return { success: false, error: 'Token do broadcaster não disponível' }
+    }
+    
+    // Kick API: DELETE /public/v1/channels/{broadcaster_user_id}/bans/{banned_user_id}
+    const response = await fetch(`https://api.kick.com/public/v1/channels/${broadcaster.broadcasterId}/bans/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${broadcaster.token}`,
+        'Accept': 'application/json'
+      }
+    })
+    
+    if (response.ok || response.status === 204) {
+      console.log(`[Kick] ✅ Unban aplicado para ${userId}`)
+      return { success: true }
+    }
+    
+    const errorData = await response.json().catch(() => ({}))
+    console.error(`[Kick] Erro ao aplicar unban:`, response.status, errorData)
+    return { success: false, error: errorData.message || `Erro ${response.status}` }
+    
+  } catch (error) {
+    console.error('[Kick] Erro ao aplicar unban:', error)
     return { success: false, error: String(error) }
   }
 }
@@ -391,6 +493,67 @@ async function applyYouTubeBan(userId: string, reason?: string): Promise<{ succe
     
   } catch (error) {
     console.error('[YouTube] Erro ao aplicar ban:', error)
+    return { success: false, error: String(error) }
+  }
+}
+
+async function applyYouTubeUnban(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const broadcaster = await getBroadcasterToken('youtube')
+    if (!broadcaster) {
+      return { success: false, error: 'Token do broadcaster não disponível' }
+    }
+    
+    // YouTube Live Chat API: liveChatBans.delete
+    // Precisamos do banId para deletar - vamos primeiro buscar os bans
+    const { getCachedYouTubeLive } = await import('@/lib/youtube/live')
+    const liveInfo = await getCachedYouTubeLive()
+    
+    if (!liveInfo.isLive || !liveInfo.liveChatId) {
+      return { success: false, error: 'Não há live ativa no YouTube' }
+    }
+    
+    // Buscar o banId do usuário
+    const listResponse = await fetch(`https://www.googleapis.com/youtube/v3/liveChatBans?liveChatId=${liveInfo.liveChatId}&part=snippet`, {
+      headers: {
+        'Authorization': `Bearer ${broadcaster.token}`
+      }
+    })
+    
+    if (!listResponse.ok) {
+      const errorData = await listResponse.json().catch(() => ({}))
+      console.error(`[YouTube] Erro ao buscar bans:`, listResponse.status, errorData)
+      return { success: false, error: 'Não foi possível buscar lista de bans' }
+    }
+    
+    const bansData = await listResponse.json()
+    const userBan = bansData.items?.find((ban: { snippet?: { bannedUserDetails?: { channelId?: string } } }) => 
+      ban.snippet?.bannedUserDetails?.channelId === userId
+    )
+    
+    if (!userBan) {
+      return { success: false, error: 'Usuário não está banido nesta live' }
+    }
+    
+    // Deletar o ban
+    const deleteResponse = await fetch(`https://www.googleapis.com/youtube/v3/liveChatBans?id=${userBan.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${broadcaster.token}`
+      }
+    })
+    
+    if (deleteResponse.ok || deleteResponse.status === 204) {
+      console.log(`[YouTube] ✅ Unban aplicado para ${userId}`)
+      return { success: true }
+    }
+    
+    const errorData = await deleteResponse.json().catch(() => ({}))
+    console.error(`[YouTube] Erro ao aplicar unban:`, deleteResponse.status, errorData)
+    return { success: false, error: errorData.error?.message || `Erro ${deleteResponse.status}` }
+    
+  } catch (error) {
+    console.error('[YouTube] Erro ao aplicar unban:', error)
     return { success: false, error: String(error) }
   }
 }

@@ -577,6 +577,13 @@ export default function DashboardPage() {
           reason: reason || 'Ban via chat unificado',
           moderatorId: user.id
         }
+      } else if (action === 'unban') {
+        endpoint = '/api/moderation/unban'
+        body = {
+          targetPlatformUserId: userId,
+          targetPlatform: platform,
+          moderatorId: user.id
+        }
       } else {
         console.error('Ação de moderação desconhecida:', action)
         return
@@ -593,36 +600,50 @@ export default function DashboardPage() {
       if (res.ok) {
         console.log('Moderação aplicada com sucesso:', data)
         
-        // Substituir mensagens do usuário punido por "<Mensagem Deletada>"
-        setMessages(curr => curr.map(msg => {
-          if (msg.userId === userId && msg.platform === platform) {
-            return {
-              ...msg,
-              message: '<Mensagem Deletada>',
-              isDeleted: true
-            } as UnifiedMessage & { isDeleted?: boolean }
-          }
-          return msg
-        }))
-        
-        // Adicionar mensagem de sistema no chat mostrando a punição
-        const targetUsername = messages.find(m => m.userId === userId)?.username || 'Usuário'
         const moderatorName = linkedAccounts.find(acc => acc.platform === platform)?.platform_username || user.username || 'Moderador'
-        
         const durationText = duration ? formatDuration(duration) : ''
-        const actionText = action === 'ban' ? '🔨 banido permanentemente' : `⏱️ recebeu timeout de ${durationText}`
         
-        const systemMessage: UnifiedMessage = {
-          id: `mod-${Date.now()}`,
-          platform: platform as 'twitch' | 'youtube' | 'kick',
-          username: '🛡️ Sistema',
-          userId: 'system',
-          message: `${targetUsername} foi ${actionText} por ${moderatorName}`,
-          timestamp: Date.now(),
-          badges: ['system']
+        // Texto da ação de moderação
+        let systemTag = ''
+        if (action === 'ban') {
+          systemTag = ` [🛡️ Banido por ${moderatorName}]`
+        } else if (action === 'unban') {
+          systemTag = ` [🛡️ Punição revertida por ${moderatorName}]`
+        } else {
+          systemTag = ` [🛡️ Timeout ${durationText} por ${moderatorName}]`
         }
         
-        setMessages(curr => [...curr, systemMessage])
+        // Atualizar a última mensagem do usuário para incluir a tag de sistema
+        // e marcar as mensagens anteriores como deletadas
+        setMessages(curr => {
+          // Encontrar a última mensagem do usuário nessa plataforma
+          const lastMsgIndex = curr.map((msg, idx) => ({ msg, idx }))
+            .filter(({ msg }) => msg.userId === userId && msg.platform === platform)
+            .pop()?.idx
+          
+          return curr.map((msg, idx) => {
+            if (msg.userId === userId && msg.platform === platform) {
+              if (idx === lastMsgIndex) {
+                // Última mensagem: adicionar a tag de sistema
+                return {
+                  ...msg,
+                  message: msg.message + systemTag,
+                  systemTag: systemTag
+                } as UnifiedMessage & { systemTag?: string }
+              } else {
+                // Mensagens anteriores: marcar como deletada (apenas para ban/timeout, não para unban)
+                if (action !== 'unban') {
+                  return {
+                    ...msg,
+                    message: '<Mensagem Deletada>',
+                    isDeleted: true
+                  } as UnifiedMessage & { isDeleted?: boolean }
+                }
+              }
+            }
+            return msg
+          })
+        })
       } else {
         console.error('Erro ao aplicar moderação:', data.error)
         alert(`Erro: ${data.error}`)
