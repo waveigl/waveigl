@@ -16,7 +16,8 @@ import {
   Heart,
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Briefcase
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -328,9 +329,11 @@ export default function HomePage() {
                 </p>
                 <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
                   Começou a jogar Counter-Strike em <span className="text-[#E38817] font-semibold">2001</span>, acumulando experiência competitiva que culminou em <span className="text-[#E38817] font-semibold">2011</span>, quando alcançou o <span className="text-[#E38817] font-semibold">Top 9 do Brasil em LAN</span> como IGL (stand-in) do time freNzy!. 
+                  Em <span className="text-[#E38817] font-semibold">2015</span>, foi <span className="text-[#E38817] font-semibold">Head de Marketing Digital</span>, desenvolvendo expertise em estratégias digitais. 
                   Em 2014, se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span>, tocando nos melhores eventos 
-                  como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>, compartilhando palco com grandes nomes como <span className="text-[#E38817] font-semibold">David Guetta e Alok</span>, entre muitos outros. Em 2017, por paixão ao ensino, 
-                  se dedicou integralmente ao streaming e educação em CS.
+                  como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>, compartilhando palco com grandes nomes como <span className="text-[#E38817] font-semibold">David Guetta e Alok</span>, entre muitos outros. 
+                  Em <span className="text-[#E38817] font-semibold">2017</span>, decidiu começar do zero como professor de CS2, sem nunca mencionar sua carreira anterior. 
+                  Começou jogando servidores de DM com uma bind, conquistando alunos aos poucos até estourar e viralizar.
                 </p>
                 <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
                   Seu maior case de sucesso é a aluna <span className="text-[#E38817] font-semibold">Giuzinha</span>, que representou o Brasil no cenário mundial feminino 
@@ -379,6 +382,13 @@ export default function HomePage() {
                   highlight
                 />
                 
+                <TimelineItem 
+                  year="2015"
+                  title="Head de Marketing Digital"
+                  description="Antes de se tornar DJ profissional, foi Head de Marketing Digital, desenvolvendo expertise em estratégias digitais e crescimento de audiência que mais tarde aplicaria em sua carreira como criador de conteúdo."
+                  icon={Briefcase}
+                />
+                
                 <TimelineItemWithCarousel 
                   year="2014-2017"
                   title="Era DJ Hope - O Auge que ele deixou para trás"
@@ -394,8 +404,8 @@ export default function HomePage() {
                 
                 <TimelineItem 
                   year="2017"
-                  title="Início como Professor de CS"
-                  description="Inspirado em sua mãe professora, começou a ensinar jogadores de todos os níveis a evoluírem. Encerrou a carreira de DJ no auge para se dedicar integralmente ao streaming e educação em CS."
+                  title="Início como Professor de CS - Do Zero ao Topo"
+                  description="Inspirado em sua mãe professora, decidiu começar do zero como professor de CS2. Nunca mencionou sua carreira anterior como DJ. Começou jogando servidores de DM com uma bind, ensinando enquanto jogava. Aos poucos foi conquistando alunos, construindo sua comunidade passo a passo, até estourar e viralizar. Uma jornada de crescimento orgânico e autêntico."
                   icon={GraduationCap}
                   highlight
                 />
