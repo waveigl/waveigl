@@ -11,11 +11,12 @@ function getAppUrl(request: NextRequest): string {
 
 // Scopes configurados no Discord Developer Portal
 // - identify: obter informações do usuário (id, username, avatar)
+// - email: obter email do usuário
 // - guilds.join: adicionar ao servidor Clube do WaveIGL automaticamente
 // - guilds: listar servidores do usuário
-// - guilds.members.read: ler membros dos servidores
+// - guilds.channels.read: ler canais dos servidores
 // - openid: autenticação OpenID Connect
-const DISCORD_SCOPES = 'identify guilds.join guilds openid'
+const DISCORD_SCOPES = 'identify email guilds.join guilds guilds.channels.read openid'
 
 /**
  * GET /api/auth/discord
