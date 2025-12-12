@@ -35,7 +35,7 @@ export default function BenefitsIndicator({ hasPendingBenefits, onClick }: Benef
       animate={{ scale: 1 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="relative p-2 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl transition-shadow"
+      className="relative p-2 rounded-lg bg-linear-to-r from-orange-500 to-amber-500 text-white shadow-lg hover:shadow-xl transition-shadow"
     >
       <div className="relative">
         <Gift size={20} />
@@ -67,7 +67,7 @@ export default function BenefitsIndicator({ hasPendingBenefits, onClick }: Benef
 // Versão simples para exibir no header quando não há benefícios pendentes mas o usuário é SUB
 export function SubBadge() {
   return (
-    <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-lg">
+    <div className="flex items-center gap-1 px-2 py-1 bg-linear-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 rounded-lg">
       <Gift size={14} className="text-orange-400" />
       <span className="text-xs font-medium text-orange-400">SUB</span>
     </div>

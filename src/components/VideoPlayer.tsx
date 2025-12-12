@@ -154,7 +154,7 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className, youtub
     <div className="relative w-full h-full">
       {/* Título da live (se disponível) */}
       {platform === 'youtube' && youtubeTitle && (
-        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-3 z-10">
+        <div className="absolute top-0 left-0 right-0 bg-linear-to-b from-black/70 to-transparent p-3 z-10">
           <div className="flex items-center gap-2">
             {isYoutubeLive && (
               <span className="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded animate-pulse">

@@ -37,7 +37,7 @@ function StatCard({
   highlight?: boolean
 }) {
   return (
-    <Card className={`${highlight ? 'bg-gradient-to-br from-[#E38817]/20 to-[#1E202F]/50 border-[#E38817]/30' : 'bg-[#1E202F]/30 border-[#E38817]/10'}`}>
+    <Card className={`${highlight ? 'bg-linear-to-br from-[#E38817]/20 to-[#1E202F]/50 border-[#E38817]/30' : 'bg-[#1E202F]/30 border-[#E38817]/10'}`}>
       <CardContent className="p-6">
         <Icon className={`w-8 h-8 mb-4 ${highlight ? 'text-[#E38817]' : 'text-[#D9D9D9]/60'}`} />
         <div className={`text-3xl font-bold mb-1 ${highlight ? 'text-[#E38817]' : 'text-[#D9D9D9]'}`}>
@@ -111,7 +111,7 @@ function AdFormatCard({
 }) {
   return (
     <div className="flex gap-4 p-4 bg-[#1E202F]/20 rounded-xl border border-[#E38817]/5 hover:border-[#E38817]/20 transition-colors">
-      <div className="w-12 h-12 bg-[#E38817]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+      <div className="w-12 h-12 bg-[#E38817]/10 rounded-lg flex items-center justify-center shrink-0">
         <Icon className="w-6 h-6 text-[#E38817]" />
       </div>
       <div>
@@ -337,7 +337,7 @@ export default function MidiaKitPage() {
                       </div>
                       <div className="h-2 bg-[#0A0B0F] rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-[#E38817] to-[#B86A10] rounded-full"
+                          className="h-full bg-linear-to-r from-[#E38817] to-[#B86A10] rounded-full"
                           style={{ width: `${item.percent}%` }}
                         />
                       </div>
@@ -496,7 +496,7 @@ export default function MidiaKitPage() {
               <a href="mailto:csgoblackbelt@gmail.com">
                 <Button 
                   size="lg"
-                  className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white px-10 h-14 shadow-lg shadow-[#E38817]/25"
+                  className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white px-10 h-14 shadow-lg shadow-[#E38817]/25"
                 >
                   <Mail className="w-5 h-5 mr-2" />
                   Enviar Email
@@ -521,7 +521,7 @@ export default function MidiaKitPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-[#D9D9D9]/40">
             <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-gradient-to-br from-[#E38817] to-[#B86A10] rounded" />
+              <div className="w-6 h-6 bg-linear-to-br from-[#E38817] to-[#B86A10] rounded" />
               <span className="font-bold">WaveIGL</span>
             </div>
             <div className="flex items-center gap-6">

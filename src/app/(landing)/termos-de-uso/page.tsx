@@ -60,7 +60,7 @@ export default function TermosDeUsoPage() {
           <Card className="bg-[#E38817]/10 border-[#E38817]/30 mb-12">
             <CardContent className="p-6">
               <div className="flex gap-4">
-                <AlertTriangle className="w-6 h-6 text-[#E38817] flex-shrink-0 mt-1" />
+                <AlertTriangle className="w-6 h-6 text-[#E38817] shrink-0 mt-1" />
                 <div>
                   <p className="font-semibold text-[#E38817] mb-2">Leia com atenção</p>
                   <p className="text-sm text-[#D9D9D9]/80">

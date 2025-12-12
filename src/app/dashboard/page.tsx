@@ -754,7 +754,7 @@ export default function DashboardPage() {
                   <Button
                     onClick={handleSubscribeClick}
                     size="sm"
-                    className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25"
+                    className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25"
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
                     Assinar Clube

@@ -681,7 +681,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
               className={`relative group ${localStatus === 'error' ? 'opacity-70' : ''}`}
             >
               <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div className={`w-8 h-8 rounded-full ${getPlatformColor(message.platform)} flex items-center justify-center text-white text-xs`}>
                     {getPlatformIcon(message.platform)}
                   </div>

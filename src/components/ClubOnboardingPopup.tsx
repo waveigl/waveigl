@@ -179,7 +179,7 @@ export default function ClubOnboardingPopup({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="relative bg-gradient-to-r from-[#E38817] to-[#B86A10] p-6 text-center">
+          <div className="relative bg-linear-to-r from-[#E38817] to-[#B86A10] p-6 text-center">
             <button
               onClick={onClose}
               className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"

@@ -117,8 +117,8 @@ export default function ClubePage() {
         
         {/* Diagonal lines */}
         <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-[20%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#E38817]/20 to-transparent transform -rotate-12" />
-          <div className="absolute top-[60%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#E38817]/10 to-transparent transform rotate-6" />
+          <div className="absolute top-[20%] left-0 w-full h-px bg-linear-to-r from-transparent via-[#E38817]/20 to-transparent transform -rotate-12" />
+          <div className="absolute top-[60%] left-0 w-full h-px bg-linear-to-r from-transparent via-[#E38817]/10 to-transparent transform rotate-6" />
         </div>
       </div>
 
@@ -161,7 +161,7 @@ export default function ClubePage() {
                 </Button>
               </Link>
               <Link href="/auth/login">
-                <Button className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white border-none shadow-lg shadow-[#E38817]/25 transition-all">
+                <Button className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white border-none shadow-lg shadow-[#E38817]/25 transition-all">
                   Assinar Clube
                 </Button>
               </Link>
@@ -201,9 +201,9 @@ export default function ClubePage() {
                     unoptimized
                   />
                   {/* Orange neon line left */}
-                  <div className="absolute -left-8 top-1/4 bottom-1/4 w-1 bg-gradient-to-b from-transparent via-[#E38817] to-transparent opacity-60" />
+                  <div className="absolute -left-8 top-1/4 bottom-1/4 w-1 bg-linear-to-b from-transparent via-[#E38817] to-transparent opacity-60" />
                   {/* Blue neon line right */}
-                  <div className="absolute -right-8 top-1/3 bottom-1/3 w-1 bg-gradient-to-b from-transparent via-[#3B82F6] to-transparent opacity-40" />
+                  <div className="absolute -right-8 top-1/3 bottom-1/3 w-1 bg-linear-to-b from-transparent via-[#3B82F6] to-transparent opacity-40" />
                 </div>
               </div>
               
@@ -220,7 +220,7 @@ export default function ClubePage() {
                 {/* Main Title */}
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-black mb-6 tracking-tight leading-none">
                   <span className="block text-[#D9D9D9]">CLUBE</span>
-                  <span className="block bg-gradient-to-r from-[#E38817] via-[#F5A623] to-[#E38817] bg-clip-text text-transparent">
+                  <span className="block bg-linear-to-r from-[#E38817] via-[#F5A623] to-[#E38817] bg-clip-text text-transparent">
                     WAVEIGL
                   </span>
                 </h1>
@@ -238,7 +238,7 @@ export default function ClubePage() {
                   <Link href="/auth/login">
                     <Button 
                       size="lg" 
-                      className="bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105 hover:shadow-[#E38817]/40 group"
+                      className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105 hover:shadow-[#E38817]/40 group"
                     >
                       <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                       Começar Agora
@@ -327,7 +327,7 @@ export default function ClubePage() {
                 className="bg-[#1E202F]/30 border-[#E38817]/10 hover:border-[#E38817]/30 backdrop-blur-sm transition-all duration-300 hover:bg-[#1E202F]/50 group"
               >
                 <CardContent className="p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#E38817]/20 to-[#E38817]/5 rounded-xl flex items-center justify-center mb-4 text-[#E38817] group-hover:scale-110 transition-transform">
+                  <div className="w-14 h-14 bg-linear-to-br from-[#E38817]/20 to-[#E38817]/5 rounded-xl flex items-center justify-center mb-4 text-[#E38817] group-hover:scale-110 transition-transform">
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-bold text-[#D9D9D9] mb-2">{feature.title}</h3>
@@ -355,9 +355,9 @@ export default function ClubePage() {
           {/* Planos do Clube */}
           <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6 mb-16">
             {/* Clube Mensal */}
-            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#E38817]/30 shadow-2xl shadow-[#E38817]/10 overflow-hidden">
+            <Card className="relative bg-linear-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#E38817]/30 shadow-2xl shadow-[#E38817]/10 overflow-hidden">
               {/* Top glow */}
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#E38817] to-transparent" />
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-linear-to-r from-transparent via-[#E38817] to-transparent" />
               
               <CardContent className="p-6 text-center">
                 <Badge className="mb-4 bg-[#E38817]/20 text-[#E38817] border-[#E38817]/30 px-3 py-1">
@@ -408,14 +408,14 @@ export default function ClubePage() {
                     'Cancele quando quiser'
                   ].map((item, i) => (
                     <li key={i} className="flex items-center text-[#D9D9D9]/80">
-                      <CheckCircle className="w-4 h-4 text-[#E38817] mr-2 flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-[#E38817] mr-2 shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
                 
                 <Link href="/auth/login" className="block">
-                  <Button className="w-full bg-gradient-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg h-12 shadow-lg shadow-[#E38817]/25 transition-all hover:scale-[1.02]">
+                  <Button className="w-full bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg h-12 shadow-lg shadow-[#E38817]/25 transition-all hover:scale-[1.02]">
                     Assinar Mensal
                   </Button>
                 </Link>
@@ -423,9 +423,9 @@ export default function ClubePage() {
             </Card>
 
             {/* Clube Vitalício */}
-            <Card className="relative bg-gradient-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#3B82F6]/30 shadow-2xl shadow-[#3B82F6]/10 overflow-hidden">
+            <Card className="relative bg-linear-to-b from-[#1E202F]/80 to-[#0A0B0F] border-[#3B82F6]/30 shadow-2xl shadow-[#3B82F6]/10 overflow-hidden">
               {/* Top glow */}
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#3B82F6] to-transparent" />
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-linear-to-r from-transparent via-[#3B82F6] to-transparent" />
               
               <CardContent className="p-6 text-center">
                 <Badge className="mb-4 bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/30 px-3 py-1">
@@ -457,14 +457,14 @@ export default function ClubePage() {
                     'Equivale a ~4 anos de mensalidade'
                   ].map((item, i) => (
                     <li key={i} className="flex items-center text-[#D9D9D9]/80">
-                      <CheckCircle className="w-4 h-4 text-[#3B82F6] mr-2 flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-[#3B82F6] mr-2 shrink-0" />
                       {item}
                     </li>
                   ))}
                 </ul>
                 
                 <Link href="/auth/login" className="block">
-                  <Button className="w-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#60A5FA] hover:to-[#3B82F6] text-white text-lg h-12 shadow-lg shadow-[#3B82F6]/25 transition-all hover:scale-[1.02]">
+                  <Button className="w-full bg-linear-to-r from-[#3B82F6] to-[#2563EB] hover:from-[#60A5FA] hover:to-[#3B82F6] text-white text-lg h-12 shadow-lg shadow-[#3B82F6]/25 transition-all hover:scale-[1.02]">
                     Garantir Vitalício
                   </Button>
                 </Link>

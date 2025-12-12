@@ -144,12 +144,16 @@ export function InstagramFeedCarousel({
             <button
               onClick={prevSlide}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-black flex items-center justify-center shadow-lg hover:bg-white transition-colors z-10"
+              title="Post anterior"
+              aria-label="Post anterior"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={nextSlide}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 text-black flex items-center justify-center shadow-lg hover:bg-white transition-colors z-10"
+              title="Próximo post"
+              aria-label="Próximo post"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -185,6 +189,8 @@ export function InstagramFeedCarousel({
                   ? 'bg-[#E38817] w-4' 
                   : 'bg-[#D9D9D9]/30 hover:bg-[#D9D9D9]/50'
               }`}
+              title={`Ir para post ${index + 1}`}
+              aria-label={`Ir para post ${index + 1}`}
             />
           ))}
         </div>

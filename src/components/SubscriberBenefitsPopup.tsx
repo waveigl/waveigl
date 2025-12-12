@@ -150,10 +150,12 @@ export default function SubscriberBenefitsPopup({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header com confetti */}
-          <div className="relative bg-gradient-to-r from-orange-600 to-amber-500 p-6 text-center">
+          <div className="relative bg-linear-to-r from-orange-600 to-amber-500 p-6 text-center">
             <button
               onClick={handleDismiss}
               className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
+              title="Fechar"
+              aria-label="Fechar"
             >
               <X size={20} />
             </button>
@@ -214,6 +216,8 @@ export default function SubscriberBenefitsPopup({
                         <button
                           onClick={handleCopyCode}
                           className="p-2 hover:bg-zinc-700 rounded transition-colors"
+                          title="Copiar código"
+                          aria-label="Copiar código"
                         >
                           {copied ? (
                             <Check size={18} className="text-green-400" />

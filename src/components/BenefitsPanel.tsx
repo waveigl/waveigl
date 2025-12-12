@@ -232,6 +232,8 @@ export default function BenefitsPanel({ isOpen, onClose, onOpenOnboarding }: Ben
                           <button
                             onClick={() => setExpandedBenefit(isExpanded ? null : benefit.id)}
                             className="w-full p-3 flex items-center justify-between hover:bg-zinc-700/50 transition-colors"
+                            title={isExpanded ? 'Recolher detalhes' : 'Expandir detalhes'}
+                            aria-label={isExpanded ? 'Recolher detalhes' : 'Expandir detalhes'}
                           >
                             <div className="flex items-center gap-3">
                               <div className={`w-2 h-8 rounded-full ${getPlatformColor(benefit.platform)}`} />
@@ -310,6 +312,8 @@ export default function BenefitsPanel({ isOpen, onClose, onOpenOnboarding }: Ben
                                         <button
                                           onClick={() => handleCopyCode(benefit.whatsapp_code!)}
                                           className="p-1 hover:bg-zinc-600 rounded"
+                                          title="Copiar código"
+                                          aria-label="Copiar código"
                                         >
                                           {copied ? (
                                             <Check size={14} className="text-green-400" />

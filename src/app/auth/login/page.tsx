@@ -23,7 +23,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-zinc-900 to-amber-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-black via-zinc-900 to-amber-950 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-card/90 border border-border/60">
         <CardHeader className="text-center">
           <CardTitle className="text-white text-2xl">Acesse sua conta</CardTitle>
@@ -69,7 +69,7 @@ export default function LoginPage() {
           </div>
 
           <div className="pt-4">
-            <Badge className="w-full justify-center bg-gradient-to-r from-amber-500 to-yellow-400 text-black">
+            <Badge className="w-full justify-center bg-linear-to-r from-amber-500 to-yellow-400 text-black">
               🎉 Oferta de Lançamento: R$9,90/mês
             </Badge>
           </div>
