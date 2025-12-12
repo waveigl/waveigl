@@ -24,7 +24,7 @@ function GlowingOrb({ className, delay = 0 }: { className?: string; delay?: numb
   )
 }
 
-function StatCounter({ value, label, suffix = '' }: { value: number; label: string; suffix?: string }) {
+function StatCounter({ value, label, suffix = '', prefix = '' }: { value: number; label: string; suffix?: string; prefix?: string }) {
   const [count, setCount] = useState(0)
   
   useEffect(() => {
@@ -49,7 +49,7 @@ function StatCounter({ value, label, suffix = '' }: { value: number; label: stri
   return (
     <div className="text-center">
       <div className="text-4xl md:text-5xl font-bold text-[#E38817] mb-2">
-        {count.toLocaleString('pt-BR')}{suffix}
+        {prefix}{count.toLocaleString('pt-BR')}{suffix}
       </div>
       <div className="text-[#D9D9D9]/70 text-sm uppercase tracking-wider">{label}</div>
     </div>
@@ -260,10 +260,10 @@ export default function ClubePage() {
             
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
-              <StatCounter value={513} suffix="k" label="Seguidores" />
+              <StatCounter value={500} prefix="+" suffix="k" label="Seguidores" />
               <StatCounter value={2} suffix="M" label="Views/mês" />
               <StatCounter value={70} suffix="h" label="Live/semana" />
-              <StatCounter value={500} suffix="k+" label="Alunos" />
+              <StatCounter value={440} suffix="k" label="Alunos" />
             </div>
           </div>
         </div>

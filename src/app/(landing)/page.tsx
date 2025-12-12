@@ -24,7 +24,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 
-function StatCounter({ value, label, suffix = '' }: { value: number; label: string; suffix?: string }) {
+function StatCounter({ value, label, suffix = '', prefix = '' }: { value: number; label: string; suffix?: string; prefix?: string }) {
   const [count, setCount] = useState(0)
   
   useEffect(() => {
@@ -49,7 +49,7 @@ function StatCounter({ value, label, suffix = '' }: { value: number; label: stri
   return (
     <div className="text-center">
       <div className="text-4xl md:text-5xl font-bold text-[#E38817] mb-2">
-        {count.toLocaleString('pt-BR')}{suffix}
+        {prefix}{count.toLocaleString('pt-BR')}{suffix}
       </div>
       <div className="text-[#D9D9D9]/70 text-sm uppercase tracking-wider">{label}</div>
     </div>
@@ -62,9 +62,9 @@ function HeroCarousel() {
   
   const images = [
     { src: '/waveigl.webp', alt: 'WaveIGL - Professor de CS2' },
-    { src: '/dj_hope/dj_hope_oficial_mimadinha.jpg', alt: 'DJ Hope - Mimadinha' },
+    { src: '/dj_hope/dj_hope_2_in_1.jpg', alt: 'DJ Hope - Mimadinha' },
     { src: '/dj_hope/dj_hope_jurere.jpg', alt: 'DJ Hope - Jurerê' },
-    { src: '/dj_hope/dj_hope_concierge.jpg', alt: 'DJ Hope - Concierge VIP' },
+    { src: '/dj_hope/dj_hope_2_in_1_2.jpg', alt: 'DJ Hope - Concierge VIP' },
   ]
   
   useEffect(() => {
@@ -476,7 +476,7 @@ export default function HomePage() {
                       size="lg" 
                       className="border-[#D9D9D9]/20 text-[#D9D9D9] hover:bg-[#D9D9D9]/5 hover:border-[#D9D9D9]/40 text-lg px-10 h-14 backdrop-blur-sm transition-all group"
                     >
-                      Assistir na Twitch
+                      Logue
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
@@ -486,10 +486,10 @@ export default function HomePage() {
             
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
-              <StatCounter value={513} suffix="k" label="Seguidores" />
+              <StatCounter value={500} prefix="+" suffix="k" label="Seguidores" />
+              <StatCounter value={440} suffix="k" label="Alunos" />
               <StatCounter value={2} suffix="M" label="Views/mês" />
               <StatCounter value={70} suffix="h" label="Live/semana" />
-              <StatCounter value={500} suffix="k+" label="Alunos" />
             </div>
           </div>
         </div>
@@ -695,7 +695,7 @@ export default function HomePage() {
                   <Link href="/dashboard">
                     <Button variant="outline" className="border-[#E38817]/30 hover:bg-[#E38817]/10 hover:border-[#E38817] px-8">
                       <ExternalLink className="w-4 h-4 mr-2" />
-                      Assistir na Twitch
+                      Logue
                     </Button>
                   </Link>
                 </div>
