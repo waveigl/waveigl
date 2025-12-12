@@ -147,6 +147,17 @@ function InstagramCarousel({
     setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
   }
 
+  // Auto-play: muda de slide a cada 4 segundos
+  useEffect(() => {
+    if (images.length <= 1) return
+    
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length)
+    }, 4000)
+    
+    return () => clearInterval(interval)
+  }, [images.length])
+
   const aspectClasses = {
     square: 'aspect-square',
     portrait: 'aspect-[4/5]',
@@ -162,7 +173,7 @@ function InstagramCarousel({
           <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#E38817] to-[#B86A10] flex items-center justify-center">
             <span className="text-white text-xs font-bold">W</span>
           </div>
-          <span className="text-[#D9D9D9] text-sm font-medium">waveigl</span>
+          <span className="text-[#D9D9D9] text-sm font-medium">hopedjoficial</span>
         </div>
         
         {/* Image Container */}
@@ -218,7 +229,7 @@ function InstagramCarousel({
         {images[currentIndex].caption && (
           <div className="p-3 border-t border-[#E38817]/10">
             <p className="text-[#D9D9D9]/80 text-sm">
-              <span className="font-semibold text-[#D9D9D9]">waveigl</span>{' '}
+              <span className="font-semibold text-[#D9D9D9]">hopedjoficial</span>{' '}
               {images[currentIndex].caption}
             </p>
           </div>
@@ -496,18 +507,20 @@ export default function HomePage() {
                   Com mais de <span className="text-[#E38817] font-semibold">35 mil horas de jogo</span> e <span className="text-[#E38817] font-semibold">10 Milhões de pessoas alcançadas</span> nas redes sociais, 
                   Wave dedica sua carreira a ensinar e entreter jogadores de todos os níveis.
                 </p>
+                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
+                  <span className="text-[#E38817] font-semibold">Giuzinha</span>, aluna do WaveIGL, representou o Brasil no cenário mundial feminino 
+                  e conquistou o <span className="text-[#E38817] font-semibold">Top 5 no Mundial de CS2</span> pela Team Brazil.
+                </p>
+
                 <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
                   Começou a jogar Counter-Strike em <span className="text-[#E38817] font-semibold">Junho de 2002</span>, acumulando experiência competitiva que culminou em <span className="text-[#E38817] font-semibold">2011</span>, quando alcançou o <span className="text-[#E38817] font-semibold">Top 9 do Brasil em LAN</span> como IGL (stand-in) do time freNzy!. 
-                  Aos 18 anos, iniciou carreira como <span className="text-[#E38817] font-semibold">produtor de eventos</span>, evoluindo de camarotes de R$3k até se tornar <span className="text-[#E38817] font-semibold">concierge VIP</span> para clientes milionários - foi concierge e jantou com <span className="text-[#E38817] font-semibold">David Guetta</span> e já atendeu o <span className="text-[#E38817] font-semibold">Alok</span> em um evento como produtor de eventos. 
+                  Aos 18 anos, iniciou carreira como <span className="text-[#E38817] font-semibold">produtor de eventos</span>, evoluindo de camarotes de R$3k até se tornar <span className="text-[#E38817] font-semibold">concierge VIP</span> para clientes milionários - foi concierge e jantou com <span className="text-[#E38817] font-semibold">David Guetta</span> e já atendeu o <span className="text-[#E38817] font-semibold">Alok</span> como produtor de eventos. 
                   Em 2014, se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span>, tocando nos melhores eventos 
-                  como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>. 
+                  como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof, Playboy Party</span>. 
                   Em <span className="text-[#E38817] font-semibold">2017</span>, decidiu começar do zero como professor de CS2, sem nunca mencionar sua carreira anterior. 
                   Começou jogando servidores de DM com uma bind, conquistando alunos aos poucos até estourar e viralizar.
                 </p>
-                <p className="text-lg text-[#D9D9D9]/80 leading-relaxed">
-                  Seu maior case de sucesso é a aluna <span className="text-[#E38817] font-semibold">Giuzinha</span>, que representou o Brasil no cenário mundial feminino 
-                  e conquistou o <span className="text-[#E38817] font-semibold">Top 5 no Mundial de CS2</span> pela Team Brazil.
-                </p>
+                
               </CardContent>
             </Card>
 
