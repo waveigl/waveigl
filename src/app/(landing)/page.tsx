@@ -62,10 +62,8 @@ function HeroCarousel() {
   
   const images = [
     { src: '/waveigl.webp', alt: 'WaveIGL - Professor de CS2' },
-    { src: '/dj_hope/dj_hope_2_in_1.jpg', alt: 'DJ Hope - Mimadinha' },
     { src: '/dj_hope/dj_hope_girls.jpg', alt: 'DJ Hope - Girls' },
     { src: '/dj_hope/dj_hope_jurere.jpg', alt: 'DJ Hope - Jurerê' },
-    { src: '/dj_hope/dj_hope_and_the_girl.jpg', alt: 'DJ Hope - And The Girl' },
     { src: '/dj_hope/dj_hope_and_4_girls.jpg', alt: 'DJ Hope - And 4 Girls' },
     { src: '/dj_hope/dj_hope_2_in_1_2.jpg', alt: 'DJ Hope - Concierge VIP' },
   ]
