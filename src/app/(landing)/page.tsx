@@ -459,7 +459,7 @@ export default function HomePage() {
                       Conhecer o Clube
                     </Button>
                   </Link>
-                  <a href="https://twitch.tv/waveigl" target="_blank" rel="noopener noreferrer">
+                  <Link href="/dashboard">
                     <Button 
                       variant="outline" 
                       size="lg" 
@@ -468,7 +468,7 @@ export default function HomePage() {
                       Assistir na Twitch
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -498,7 +498,7 @@ export default function HomePage() {
                 </p>
                 <p className="text-lg text-[#D9D9D9]/80 leading-relaxed mb-6">
                   Começou a jogar Counter-Strike em <span className="text-[#E38817] font-semibold">Junho de 2002</span>, acumulando experiência competitiva que culminou em <span className="text-[#E38817] font-semibold">2011</span>, quando alcançou o <span className="text-[#E38817] font-semibold">Top 9 do Brasil em LAN</span> como IGL (stand-in) do time freNzy!. 
-                  Aos 18 anos, iniciou carreira como <span className="text-[#E38817] font-semibold">produtor de eventos</span>, evoluindo de camarotes de R$3k até se tornar <span className="text-[#E38817] font-semibold">concierge VIP</span> para clientes milionários - foi concierge de <span className="text-[#E38817] font-semibold">David Guetta</span> (jantou com ele) e <span className="text-[#E38817] font-semibold">Alok</span>. 
+                  Aos 18 anos, iniciou carreira como <span className="text-[#E38817] font-semibold">produtor de eventos</span>, evoluindo de camarotes de R$3k até se tornar <span className="text-[#E38817] font-semibold">concierge VIP</span> para clientes milionários - foi concierge e jantou com <span className="text-[#E38817] font-semibold">David Guetta</span> e já atendeu o <span className="text-[#E38817] font-semibold">Alok</span> em um evento como produtor de eventos. 
                   Em 2014, se tornou <span className="text-[#E38817] font-semibold">DJ profissional</span>, tocando nos melhores eventos 
                   como <span className="text-[#E38817]">Café de la Musique, Oxygen Party, The Roof</span>. 
                   Em <span className="text-[#E38817] font-semibold">2017</span>, decidiu começar do zero como professor de CS2, sem nunca mencionar sua carreira anterior. 
@@ -681,12 +681,12 @@ export default function HomePage() {
                       Conhecer o Clube
                     </Button>
                   </Link>
-                  <a href="https://twitch.tv/waveigl" target="_blank" rel="noopener noreferrer">
+                  <Link href="/dashboard">
                     <Button variant="outline" className="border-[#E38817]/30 hover:bg-[#E38817]/10 hover:border-[#E38817] px-8">
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Assistir na Twitch
                     </Button>
-                  </a>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
