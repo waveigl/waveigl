@@ -261,38 +261,23 @@ export default function ChatPopupPage() {
 
   return (
     <div className="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden">
-      {/* Header minimalista */}
-      <div className="bg-muted/50 border-b border-border px-3 py-1.5 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs font-medium">WaveIGL Chat</span>
-        </div>
-        {user && (
-          <span className="text-[10px] text-muted-foreground">
-            {user.username}
-          </span>
-        )}
-      </div>
-      
-      {/* Chat ocupa todo o espaço restante */}
-      <div className="flex-1 min-h-0">
-        <UnifiedChat
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isModerator={isModerator}
-          onModerate={handleModerate}
-          isLogged={!!user}
-          youtubeStatusFromSSE={youtubeStatus}
-          currentUser={user ? {
-            id: user.id,
-            is_moderator: isModerator,
-            role: (user.role as 'user' | 'moderator' | 'admin' | 'owner' | 'streamer') || 'user',
-            linkedAccounts
-          } : undefined}
-          isPopup={true}
-          defaultCompact={true}
-        />
-      </div>
+      {/* Chat ocupa todo o espaço - sem header */}
+      <UnifiedChat
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        isModerator={isModerator}
+        onModerate={handleModerate}
+        isLogged={!!user}
+        youtubeStatusFromSSE={youtubeStatus}
+        currentUser={user ? {
+          id: user.id,
+          is_moderator: isModerator,
+          role: (user.role as 'user' | 'moderator' | 'admin' | 'owner' | 'streamer') || 'user',
+          linkedAccounts
+        } : undefined}
+        isPopup={true}
+        defaultCompact={true}
+      />
     </div>
   )
 }

@@ -361,3 +361,74 @@ export async function grantModeratorAllPlatforms(userId: string): Promise<{
   return { results, anySuccess }
 }
 
+/**
+ * Revoga moderação de um usuário em todas as plataformas
+ * 
+ * @param userId - ID do usuário no sistema WaveIGL
+ * @returns Resultados por plataforma
+ */
+export async function revokeModeratorAllPlatforms(userId: string): Promise<{
+  results: GrantResult[]
+  anySuccess: boolean
+}> {
+  const supabase = getSupabaseAdmin()
+  
+  // Buscar contas vinculadas do usuário
+  const { data: linkedAccounts, error } = await supabase
+    .from('linked_accounts')
+    .select('platform, platform_user_id')
+    .eq('user_id', userId)
+  
+  if (error || !linkedAccounts) {
+    return {
+      results: [{
+        success: false,
+        error: 'Erro ao buscar contas vinculadas',
+        platform: 'all'
+      }],
+      anySuccess: false
+    }
+  }
+  
+  const results: GrantResult[] = []
+  
+  // Tentar remover moderador em cada plataforma
+  for (const account of linkedAccounts) {
+    if (account.platform === 'twitch') {
+      const result = await revokeTwitchModerator(account.platform_user_id)
+      results.push(result)
+    }
+    // Kick não suporta remover moderadores via API
+    // YouTube requer liveChatId ativo
+  }
+  
+  const anySuccess = results.some(r => r.success)
+  
+  // Se alguma plataforma teve sucesso, atualizar status interno
+  if (anySuccess) {
+    // Remover is_moderator de todas as contas vinculadas
+    await supabase
+      .from('linked_accounts')
+      .update({ is_moderator: false })
+      .eq('user_id', userId)
+    
+    // Rebaixar role para user se era apenas moderador
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    
+    if (profile?.role === 'moderator') {
+      await supabase
+        .from('profiles')
+        .update({ role: 'user' })
+        .eq('id', userId)
+    }
+    
+    console.log(`[Revoke Mod] Moderação removida do usuário ${userId}`)
+  }
+  
+  return { results, anySuccess }
+}
+

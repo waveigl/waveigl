@@ -697,115 +697,119 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
 
   return (
     <div className={`flex flex-col h-full overflow-hidden ${isPopup ? 'bg-background' : ''}`}>
-      {/* Barra de controle do chat (sempre visível) */}
-      <div className="border-b border-border p-1.5 flex items-center gap-1 shrink-0 bg-muted/30">
-        {/* Botão para expandir/recolher opções */}
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={toggleCompactMode}
-          title={isCompactMode ? 'Expandir opções' : 'Recolher opções'}
-          className="h-6 w-6 p-0"
-        >
-          {isCompactMode ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-        </Button>
-        
-        {/* Indicador de plataforma atual (modo compacto) */}
-        {isCompactMode && isLogged && (
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-            <span className={`w-2 h-2 rounded-full ${
-              sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500' :
-              sendPlatform === 'kick' ? 'bg-green-500' :
-              sendPlatform === 'twitch' ? 'bg-purple-600' :
-              sendPlatform === 'youtube' ? 'bg-red-600' : 'bg-muted'
-            }`} />
-            {sendPlatform === 'all' ? 'Todos' : sendPlatform.charAt(0).toUpperCase() + sendPlatform.slice(1)}
-          </span>
-        )}
-        
-        <div className="ml-auto flex items-center gap-1">
-          {/* Botão popup (não mostra se já está em popup) */}
-          {!isPopup && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={openChatPopup}
-              title="Abrir chat em popup"
-              className="h-6 w-6 p-0"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Button>
+      {/* Barra de controle do chat (NÃO aparece no modo popup) */}
+      {!isPopup && (
+        <>
+          {/* Modo compacto: apenas botão minimalista para expandir */}
+          {isCompactMode ? (
+            <div className="border-b border-border p-0.5 flex items-center justify-center shrink-0 bg-muted/20">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={toggleCompactMode}
+                title="Expandir opções do chat"
+                className="h-4 w-full p-0 hover:bg-muted/50"
+              >
+                <ChevronDown className="w-3 h-3 text-muted-foreground" />
+              </Button>
+            </div>
+          ) : (
+            /* Modo expandido: barra completa */
+            <div className="border-b border-border p-1.5 flex items-center gap-1 shrink-0 bg-muted/30">
+              {/* Botão para recolher */}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={toggleCompactMode}
+                title="Recolher opções"
+                className="h-6 w-6 p-0"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </Button>
+              
+              <div className="ml-auto flex items-center gap-1">
+                {/* Botão popup */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={openChatPopup}
+                  title="Abrir chat em popup"
+                  className="h-6 w-6 p-0"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Button>
+                
+                {/* Botão de configurações */}
+                {isLogged && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowChatSettings(true)}
+                    title="Configurações do chat"
+                    className="h-6 w-6 p-0"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
           
-          {/* Botão de configurações */}
-          {isLogged && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowChatSettings(true)}
-              title="Configurações do chat"
-              className="h-6 w-6 p-0"
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </Button>
+          {/* Platform Send Selector (só aparece se logado e NÃO está em modo compacto) */}
+          {isLogged && !isCompactMode && (
+            <div className="border-b border-border p-2 flex items-center gap-2 shrink-0">
+              <span className="text-xs text-muted-foreground">Enviar como:</span>
+              <Button
+                size="sm"
+                variant={sendPlatform === 'all' ? 'default' : 'outline'}
+                onClick={() => setSendPlatform('all')}
+                className={`h-6 text-xs ${sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500 hover:opacity-90 text-white' : ''}`}
+                title="Enviar para Twitch, YouTube e Kick simultaneamente"
+              >
+                Todos
+              </Button>
+              <Button
+                size="sm"
+                variant={sendPlatform === 'kick' ? 'default' : 'outline'}
+                onClick={() => setSendPlatform('kick')}
+                className={`h-6 text-xs ${sendPlatform === 'kick' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+              >
+                Kick
+              </Button>
+              <Button
+                size="sm"
+                variant={sendPlatform === 'twitch' ? 'default' : 'outline'}
+                onClick={() => setSendPlatform('twitch')}
+                className={`h-6 text-xs ${sendPlatform === 'twitch' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+              >
+                Twitch
+              </Button>
+              <Button
+                size="sm"
+                variant={sendPlatform === 'youtube' ? 'default' : 'outline'}
+                onClick={async () => {
+                  if (youtubeIsLive) {
+                    setSendPlatform('youtube')
+                  } else {
+                    await checkYouTubeStatus()
+                  }
+                }}
+                disabled={!youtubeIsLive}
+                className={`h-6 text-xs ${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Clique para verificar'}
+              >
+                YouTube
+                {!youtubeIsLive && <span className="ml-1 text-[10px]">(off)</span>}
+              </Button>
+            </div>
           )}
-        </div>
-      </div>
-      
-      {/* Platform Send Selector (só aparece se logado e NÃO está em modo compacto) */}
-      {isLogged && !isCompactMode && (
-        <div className="border-b border-border p-2 flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground">Enviar como:</span>
-          <Button
-            size="sm"
-            variant={sendPlatform === 'all' ? 'default' : 'outline'}
-            onClick={() => setSendPlatform('all')}
-            className={`h-6 text-xs ${sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500 hover:opacity-90 text-white' : ''}`}
-            title="Enviar para Twitch, YouTube e Kick simultaneamente"
-          >
-            Todos
-          </Button>
-          <Button
-            size="sm"
-            variant={sendPlatform === 'kick' ? 'default' : 'outline'}
-            onClick={() => setSendPlatform('kick')}
-            className={`h-6 text-xs ${sendPlatform === 'kick' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
-          >
-            Kick
-          </Button>
-          <Button
-            size="sm"
-            variant={sendPlatform === 'twitch' ? 'default' : 'outline'}
-            onClick={() => setSendPlatform('twitch')}
-            className={`h-6 text-xs ${sendPlatform === 'twitch' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
-          >
-            Twitch
-          </Button>
-          <Button
-            size="sm"
-            variant={sendPlatform === 'youtube' ? 'default' : 'outline'}
-            onClick={async () => {
-              if (youtubeIsLive) {
-                setSendPlatform('youtube')
-              } else {
-                // Se não está live, verificar novamente (lazy check - apenas quando clicado)
-                await checkYouTubeStatus()
-              }
-            }}
-            disabled={!youtubeIsLive}
-            className={`h-6 text-xs ${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={youtubeIsLive ? 'Enviar pelo YouTube' : 'YouTube offline - Clique para verificar'}
-          >
-            YouTube
-            {!youtubeIsLive && <span className="ml-1 text-[10px]">(off)</span>}
-          </Button>
-        </div>
+        </>
       )}
       
       {/* Modal de configurações do chat */}
       {showChatSettings && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg p-4 w-80 shadow-xl">
+          <div className="bg-background border border-border rounded-lg p-4 w-80 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Configurações do Chat</h3>
               <Button
@@ -819,6 +823,54 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
             </div>
             
             <div className="space-y-4">
+              {/* Seletor de plataforma (sempre visível no modal) */}
+              <div>
+                <label className="text-sm text-muted-foreground block mb-2">
+                  Enviar mensagens como:
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={sendPlatform === 'all' ? 'default' : 'outline'}
+                    onClick={() => setSendPlatform('all')}
+                    className={`h-7 text-xs ${sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500 hover:opacity-90 text-white' : ''}`}
+                  >
+                    Todos
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={sendPlatform === 'kick' ? 'default' : 'outline'}
+                    onClick={() => setSendPlatform('kick')}
+                    className={`h-7 text-xs ${sendPlatform === 'kick' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+                  >
+                    Kick
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={sendPlatform === 'twitch' ? 'default' : 'outline'}
+                    onClick={() => setSendPlatform('twitch')}
+                    className={`h-7 text-xs ${sendPlatform === 'twitch' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+                  >
+                    Twitch
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={sendPlatform === 'youtube' ? 'default' : 'outline'}
+                    onClick={async () => {
+                      if (youtubeIsLive) {
+                        setSendPlatform('youtube')
+                      } else {
+                        await checkYouTubeStatus()
+                      }
+                    }}
+                    disabled={!youtubeIsLive}
+                    className={`h-7 text-xs ${sendPlatform === 'youtube' ? 'bg-red-600 hover:bg-red-700 text-white' : ''} ${!youtubeIsLive ? 'opacity-50' : ''}`}
+                  >
+                    YouTube {!youtubeIsLive && '(off)'}
+                  </Button>
+                </div>
+              </div>
+              
               {/* Limite de mensagens */}
               <div>
                 <label className="text-sm text-muted-foreground block mb-2">
@@ -1098,9 +1150,21 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       </div>
 
       {/* Message Input */}
-      <div className="border-t border-border p-4 shrink-0">
+      <div className="border-t border-border p-2 shrink-0">
         {isLogged ? (
-          <form onSubmit={handleSendMessage} className="flex space-x-2">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+            {/* Indicador de plataforma (modo popup ou compacto) */}
+            {(isPopup || isCompactMode) && (
+              <span 
+                className={`w-3 h-3 rounded-full shrink-0 ${
+                  sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500' :
+                  sendPlatform === 'kick' ? 'bg-green-500' :
+                  sendPlatform === 'twitch' ? 'bg-purple-600' :
+                  sendPlatform === 'youtube' ? 'bg-red-600' : 'bg-muted'
+                }`}
+                title={`Enviando para: ${sendPlatform === 'all' ? 'Todos' : sendPlatform}`}
+              />
+            )}
             <input
               ref={inputRef}
               type="text"
@@ -1108,13 +1172,26 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Digite sua mensagem..."
               disabled={isSending}
-              className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
             />
+            {/* Botão de config (visível no modo popup ou compacto) */}
+            {(isPopup || isCompactMode) && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowChatSettings(true)}
+                title="Configurações"
+                className="h-9 w-9 p-0 shrink-0"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+            )}
             <Button
               type="submit"
               size="sm"
               disabled={isSending || !newMessage.trim()}
-              className="bg-primary hover:bg-primary/80 text-primary-foreground disabled:opacity-50"
+              className="bg-primary hover:bg-primary/80 text-primary-foreground disabled:opacity-50 h-9 w-9 p-0 shrink-0"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
