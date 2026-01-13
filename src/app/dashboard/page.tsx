@@ -31,12 +31,12 @@ const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: strin
 }
 
 // Componente para item de conta vinculada com desvinculação
-function LinkedAccountItem({ 
-  platform, 
-  account, 
-  onLink, 
-  onUnlink 
-}: { 
+function LinkedAccountItem({
+  platform,
+  account,
+  onLink,
+  onUnlink
+}: {
   platform: 'twitch' | 'youtube' | 'kick'
   account: any | null
   onLink: () => void
@@ -73,7 +73,7 @@ function LinkedAccountItem({
 
   const handleConfirmUnlink = async () => {
     if (unlinkText.toLowerCase() !== 'desvincular') return
-    
+
     setIsUnlinking(true)
     try {
       await onUnlink(platform)
@@ -121,11 +121,11 @@ function LinkedAccountItem({
             <CheckCircle2 className="w-4 h-4 text-green-500" />
           )}
         </div>
-        
+
         {needsReauth ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onLink}
             className="border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
           >
@@ -133,9 +133,9 @@ function LinkedAccountItem({
             Reautorizar
           </Button>
         ) : unlinkStep === 'idle' && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleUnlinkClick}
             className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
           >
@@ -146,17 +146,17 @@ function LinkedAccountItem({
 
         {!needsReauth && unlinkStep === 'confirm' && (
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCancel}
               className="text-muted-foreground"
             >
               Cancelar
             </Button>
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleUnlinkClick}
             >
               Confirmar
@@ -187,17 +187,17 @@ function LinkedAccountItem({
               className="h-8 text-sm bg-background"
               autoFocus
             />
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCancel}
               className="h-8"
             >
               Cancelar
             </Button>
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleConfirmUnlink}
               disabled={unlinkText.toLowerCase() !== 'desvincular' || isUnlinking}
               className="h-8"
@@ -220,19 +220,20 @@ export default function DashboardPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [accountsNeedingReauth, setAccountsNeedingReauth] = useState<Array<{ platform: string; missingScopes: string[] }>>([])
   const [isChatEnabled, setIsChatEnabled] = useState(true) // Controle de chat para o streamer
-  
+
   // Estados para sistema de benefícios
   const [benefits, setBenefits] = useState<any[]>([])
   const [discordConnection, setDiscordConnection] = useState<any>(null)
   const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
   const [showBenefitsPanel, setShowBenefitsPanel] = useState(false)
   const [pendingBenefit, setPendingBenefit] = useState<any>(null)
-  
+
   // Estados para assinatura do Clube
   const [showClubOnboarding, setShowClubOnboarding] = useState(false)
   const [clubOnboardingData, setClubOnboardingData] = useState<any>(null)
   const [isClubMember, setIsClubMember] = useState(false)
-  
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
+
   // Status do YouTube (recebido via SSE para evitar polling)
   const [youtubeStatus, setYoutubeStatus] = useState<{
     isLive: boolean
@@ -256,7 +257,7 @@ export default function DashboardPage() {
     })),
     isModerator
   }), [user, linkedAccounts, isModerator])
-  
+
   // Hook que responde às solicitações de sessão do popup
   useSessionProvider(sessionData)
 
@@ -266,13 +267,13 @@ export default function DashboardPage() {
       const res = await fetch('/api/me')
       const data = await res.json()
       const linkedAccounts = data.linked_accounts || []
-      
+
       // Determinar role correto baseado nas contas vinculadas (mais confiável)
       const computedRole = getUserRole(linkedAccounts)
-      
+
       // Se o role computado for diferente do banco, usar o computado (prioridade)
       const finalRole = computedRole !== 'user' ? computedRole : (data.user?.role || 'user')
-      
+
       setUser({
         ...data.user,
         role: finalRole
@@ -292,11 +293,11 @@ export default function DashboardPage() {
       console.log('[Dashboard] Verificando status de moderador via API...')
       const res = await fetch('/api/me/check-moderator', { method: 'POST' })
       const data = await res.json()
-      
+
       if (data.success) {
         console.log('[Dashboard] Resultado da verificação:', data)
         setIsModerator(data.isModerator)
-        
+
         // Recarregar dados do usuário para atualizar linkedAccounts e role
         // Isso garante que a UI reflita as mudanças feitas pelo check-moderator
         await loadUser()
@@ -309,28 +310,28 @@ export default function DashboardPage() {
 
   // Badges que indicam moderador
   const MODERATOR_BADGES = ['moderator', 'mod', 'broadcaster', 'owner', 'staff', 'admin']
-  
+
   // Refs para evitar re-criação do EventSource
   const linkedAccountsRef = useRef(linkedAccounts)
   const isModeratorRef = useRef(isModerator)
   // Rastrear quais plataformas já verificamos para moderador
   const moderatorCheckedPlatformsRef = useRef<Set<string>>(new Set())
-  
+
   // Atualizar refs quando estados mudam
   useEffect(() => {
     linkedAccountsRef.current = linkedAccounts
   }, [linkedAccounts])
-  
+
   useEffect(() => {
     isModeratorRef.current = isModerator
   }, [isModerator])
-  
+
   // Verifica se o usuário atual é moderador baseado nas badges
   const checkIfUserIsModerator = (badges: string[]) => {
     if (!badges || badges.length === 0) return false
     return badges.some(badge => MODERATOR_BADGES.includes(badge.toLowerCase()))
   }
-  
+
   // Atualiza o status de moderador no banco de dados
   const updateModeratorStatus = async (platform: string, isMod: boolean) => {
     try {
@@ -353,10 +354,10 @@ export default function DashboardPage() {
         const data = await res.json()
         setBenefits(data.benefits || [])
         setDiscordConnection(data.discordConnection)
-        
+
         // Verificar se há benefício pendente de onboarding
         if (data.hasPendingOnboarding && data.benefits.length > 0) {
-          const pending = data.benefits.find((b: any) => 
+          const pending = data.benefits.find((b: any) =>
             b.onboarding_step < 3 && !b.onboarding_dismissed_at
           )
           if (pending) {
@@ -369,7 +370,7 @@ export default function DashboardPage() {
       console.error('Erro ao carregar benefícios:', e)
     }
   }
-  
+
   // Verificar status de membro do Clube
   const checkClubStatus = async () => {
     try {
@@ -383,16 +384,19 @@ export default function DashboardPage() {
       console.error('Erro ao verificar status do clube:', e)
     }
   }
-  
+
   // Iniciar processo de assinatura do Clube
   const handleSubscribeClick = async () => {
+    if (isCheckingEligibility) return
+
+    setIsCheckingEligibility(true)
     try {
       const res = await fetch('/api/subscription/check-eligibility')
       const data = await res.json()
-      
+
       if (data.eligible) {
         // Se já tem todos os dados, ir direto para checkout
-        goToCheckout()
+        await goToCheckout()
       } else {
         // Mostrar popup de onboarding
         setClubOnboardingData(data.user)
@@ -401,9 +405,11 @@ export default function DashboardPage() {
     } catch (e) {
       console.error('Erro ao iniciar assinatura:', e)
       alert('Erro ao processar. Tente novamente.')
+    } finally {
+      setIsCheckingEligibility(false)
     }
   }
-  
+
   // Ir para checkout do Mercado Pago
   const goToCheckout = async () => {
     try {
@@ -412,9 +418,9 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user?.id })
       })
-      
+
       const data = await res.json()
-      
+
       if (res.status === 409 && data.already_subscribed) {
         // Usuário já tem assinatura ativa
         alert('Você já possui uma assinatura ativa do Clube WaveIGL. Se você não tem acesso, entre em contato com o suporte.')
@@ -422,7 +428,7 @@ export default function DashboardPage() {
         await checkClubStatus()
         return
       }
-      
+
       if (data.init_point) {
         // Redirecionar para o checkout do Mercado Pago
         window.location.href = data.init_point
@@ -435,13 +441,13 @@ export default function DashboardPage() {
       alert('Erro ao processar pagamento. Tente novamente.')
     }
   }
-  
+
   // Callback quando onboarding completo
   const handleOnboardingComplete = () => {
     setShowClubOnboarding(false)
     goToCheckout()
   }
-  
+
   useEffect(() => {
     // Carregar dados do usuário e verificar moderador
     const initializeUser = async () => {
@@ -453,7 +459,7 @@ export default function DashboardPage() {
       await loadBenefits()
       // Verificar status do Clube
       await checkClubStatus()
-      
+
       // Verificar se voltou do OAuth do Discord durante onboarding
       const params = new URLSearchParams(window.location.search)
       if (params.get('onboarding') === 'continue') {
@@ -475,7 +481,7 @@ export default function DashboardPage() {
     es.onmessage = (ev) => {
       try {
         const payload = JSON.parse(ev.data)
-        
+
         // Evento de status do YouTube (live on/off)
         if (payload.eventType === 'youtube_status') {
           console.log('[Dashboard] Status YouTube via SSE:', payload.isLive ? 'ONLINE' : 'OFFLINE')
@@ -486,18 +492,18 @@ export default function DashboardPage() {
           })
           return
         }
-        
+
         // Evento de moderação (alguém foi promovido/removido de moderador)
         if (payload.eventType === 'moderation') {
           console.log('[Dashboard] Evento de moderação:', payload)
           const currentLinkedAccounts = linkedAccountsRef.current
-          
+
           // Verificar se o evento é sobre o usuário atual
           const matchingAccount = currentLinkedAccounts.find(
-            acc => acc.platform === payload.platform && 
-                   acc.platform_username?.toLowerCase() === payload.username?.toLowerCase()
+            acc => acc.platform === payload.platform &&
+              acc.platform_username?.toLowerCase() === payload.username?.toLowerCase()
           )
-          
+
           if (matchingAccount) {
             if (payload.type === 'mod_added') {
               console.log('[Dashboard] Você foi promovido a moderador em', payload.platform)
@@ -511,7 +517,7 @@ export default function DashboardPage() {
           }
           return
         }
-        
+
         // Mensagem de chat normal
         if (payload && payload.message && payload.platform) {
           const messageId = String(payload.id || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
@@ -524,7 +530,7 @@ export default function DashboardPage() {
             timestamp: payload.timestamp || Date.now(),
             badges: payload.badges || []
           }
-          
+
           // Usar função de atualização para evitar duplicatas
           setMessages((curr) => {
             // Verificar se já existe mensagem com este ID
@@ -533,21 +539,21 @@ export default function DashboardPage() {
             }
             return [...curr.slice(-200), newMessage]
           })
-          
+
           // Verificar se esta mensagem é do usuário atual e tem badge de moderador
           const currentLinkedAccounts = linkedAccountsRef.current
           if (currentLinkedAccounts.length > 0) {
             const matchingAccount = currentLinkedAccounts.find(
               acc => acc.platform === payload.platform && acc.platform_user_id === payload.userId
             )
-            
+
             // Se é mensagem do usuário atual e tem badges de moderador
             if (matchingAccount && checkIfUserIsModerator(payload.badges)) {
               // Verificar se já checamos esta plataforma
               if (!moderatorCheckedPlatformsRef.current.has(payload.platform)) {
                 moderatorCheckedPlatformsRef.current.add(payload.platform)
                 console.log(`[Dashboard] Usuário é moderador em ${payload.platform}:`, payload.badges)
-                
+
                 // Ativar modo moderador localmente
                 setIsModerator(true)
                 // Salvar no banco de dados para persistir
@@ -556,12 +562,12 @@ export default function DashboardPage() {
             }
           }
         }
-      } catch {}
+      } catch { }
     }
     return () => {
       es.close()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Executar apenas uma vez na montagem
 
   const handleSendMessage = (message: string) => {
@@ -570,17 +576,17 @@ export default function DashboardPage() {
 
   const handleModerate = async (userId: string, platform: string, action: string, duration?: number, reason?: string) => {
     console.log('Moderando usuário:', userId, 'plataforma:', platform, 'ação:', action, 'duração:', duration, 'motivo:', reason)
-    
+
     if (!user?.id) {
       console.error('Usuário não autenticado')
       return
     }
-    
+
     try {
       // Determinar qual endpoint chamar baseado na ação
       let endpoint = ''
       let body: Record<string, unknown> = {}
-      
+
       if (action === 'timeout') {
         endpoint = '/api/moderation/timeout'
         body = {
@@ -609,21 +615,21 @@ export default function DashboardPage() {
         console.error('Ação de moderação desconhecida:', action)
         return
       }
-      
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok) {
         console.log('Moderação aplicada com sucesso:', data)
-        
+
         const moderatorName = linkedAccounts.find(acc => acc.platform === platform)?.platform_username || user.username || 'Moderador'
         const durationText = duration ? formatDuration(duration) : ''
-        
+
         // Texto da ação de moderação
         let systemTag = ''
         if (action === 'ban') {
@@ -633,7 +639,7 @@ export default function DashboardPage() {
         } else {
           systemTag = ` [🛡️ Timeout ${durationText} por ${moderatorName}]`
         }
-        
+
         // Atualizar a última mensagem do usuário para incluir a tag de sistema
         // e marcar as mensagens anteriores como deletadas
         setMessages(curr => {
@@ -641,7 +647,7 @@ export default function DashboardPage() {
           const lastMsgIndex = curr.map((msg, idx) => ({ msg, idx }))
             .filter(({ msg }) => msg.userId === userId && msg.platform === platform)
             .pop()?.idx
-          
+
           return curr.map((msg, idx) => {
             if (msg.userId === userId && msg.platform === platform) {
               if (idx === lastMsgIndex) {
@@ -674,7 +680,7 @@ export default function DashboardPage() {
       alert('Erro ao aplicar moderação')
     }
   }
-  
+
   // Formatar duração em texto legível
   const formatDuration = (seconds: number): string => {
     if (seconds < 60) return `${seconds}s`
@@ -699,9 +705,9 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform })
       })
-      
+
       const data = await res.json()
-      
+
       if (res.ok) {
         // Recarregar dados do usuário para atualizar a UI
         await loadUser()
@@ -717,18 +723,18 @@ export default function DashboardPage() {
   const handleLinkDiscord = () => {
     window.location.href = '/api/auth/discord'
   }
-  
+
   // Desvincular Discord
   const handleUnlinkDiscord = async () => {
     if (!confirm('Tem certeza que deseja desvincular o Discord?')) return
-    
+
     try {
       const res = await fetch('/api/auth/discord', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'disconnect' })
       })
-      
+
       if (res.ok) {
         setDiscordConnection(null)
         await loadBenefits() // Recarregar benefícios para atualizar status
@@ -745,21 +751,56 @@ export default function DashboardPage() {
     return linkedAccounts.find(acc => acc.platform === platform) || null
   }
 
+  // Helper para verificar se é o usuário específico para sync forçado
+  const isTargetUserForSync = useMemo(() => {
+    if (!user) return false
+    return (
+      (user.email === 'gabrieltothgoncalves@gmail.com') ||
+      linkedAccounts.some(acc =>
+        (acc.platform === 'twitch' && acc.platform_username?.toLowerCase() === 'ogabrieltoth') ||
+        (acc.platform === 'kick' && acc.platform_username?.toLowerCase() === 'ogabrieltoth')
+      )
+    )
+  }, [user, linkedAccounts])
+
+  // Forçar sincronização de assinatura (para Gabriel Toth)
+  const handleForceSync = async () => {
+    if (!isTargetUserForSync) return
+
+    if (!confirm('Dev Mode: Forçar sincronização de assinatura com Mercado Pago?')) return
+
+    try {
+      const res = await fetch('/api/subscription/sync', { method: 'POST' })
+      const data = await res.json()
+
+      if (res.ok) {
+        alert(`Sincronização realizada!\nStatus anterior: ${data.previous_status}\nNovo status: ${data.current_status}`)
+        if (data.updated) {
+          window.location.reload()
+        }
+      } else {
+        alert(`Erro na sincronização: ${data.error}`)
+      }
+    } catch (e) {
+      alert('Erro ao chamar API de sincronização')
+    }
+  }
+
   // Determinar nome a exibir no header
   // Prioridade: full_name > display_name (username da plataforma) > email
   const getDisplayName = () => {
     if (!user) return 'Usuário'
-    
+
     // Se tem nome real cadastrado, usa ele
     if (user.full_name && user.full_name.trim()) {
       return user.full_name
     }
-    
+
     // Senão, usa o display_name (que vem do username da plataforma)
     if (user.display_name) {
       return user.display_name
     }
-    
+
     // Fallback para email
     return user.email || 'Usuário'
   }
@@ -771,10 +812,10 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Image 
-                src="/favicon.webp" 
-                alt="WaveIGL" 
-                width={32} 
+              <Image
+                src="/favicon.webp"
+                alt="WaveIGL"
+                width={32}
                 height={32}
                 className="rounded-lg"
               />
@@ -789,23 +830,36 @@ export default function DashboardPage() {
                 </Badge>
               ) : (
                 <>
-                  <Badge className="bg-zinc-700/50 text-zinc-400 border border-zinc-600">
+                  <Badge
+                    className={`bg-zinc-700/50 text-zinc-400 border border-zinc-600 ${isTargetUserForSync ? 'cursor-pointer hover:bg-zinc-700' : ''}`}
+                    onClick={isTargetUserForSync ? handleForceSync : undefined}
+                  >
                     <XCircle className="w-3 h-3 mr-1" />
                     Sem Clube
                   </Badge>
                   <Button
                     onClick={handleSubscribeClick}
                     size="sm"
-                    className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25"
+                    disabled={isCheckingEligibility}
+                    className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25 transition-all"
                   >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Assinar Clube
+                    {isCheckingEligibility ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Assinar Clube
+                      </>
+                    )}
                   </Button>
                 </>
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {user && (
               <>
@@ -816,10 +870,10 @@ export default function DashboardPage() {
                     // Determinar role final (priorizar role computado das contas vinculadas)
                     const computedRole = getUserRole(linkedAccounts)
                     const displayRole = computedRole !== 'user' ? computedRole : (user.role || 'user')
-                    
+
                     // Mapear 'owner' para 'streamer' na UI
                     const uiRole = displayRole === 'owner' ? 'streamer' : displayRole
-                    
+
                     return uiRole && ROLE_CONFIG[uiRole] && (
                       <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${ROLE_CONFIG[uiRole].bgColor} ${ROLE_CONFIG[uiRole].color}`}>
                         {ROLE_CONFIG[uiRole].icon}
@@ -830,16 +884,16 @@ export default function DashboardPage() {
                 </div>
 
                 <ProfileEditor user={user} onUpdate={loadUser} />
-                
+
                 {/* Painel de moderação - apenas para admin/streamer */}
                 {(user.role === 'admin' || user.role === 'streamer') && (
                   <ModerationPanel isAdmin={true} />
                 )}
-                
+
                 {/* Indicador de benefícios para subs */}
                 {benefits.length > 0 && (
                   <>
-                    <BenefitsIndicator 
+                    <BenefitsIndicator
                       hasPendingBenefits={benefits.some(b => b.onboarding_step < 3 && !b.onboarding_dismissed_at)}
                       onClick={() => setShowBenefitsPanel(true)}
                     />
@@ -848,7 +902,7 @@ export default function DashboardPage() {
                 )}
               </>
             )}
-            
+
             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-foreground hover:bg-muted">
@@ -863,32 +917,32 @@ export default function DashboardPage() {
                 <div className="grid gap-4 py-4">
                   <h4 className="text-sm font-medium leading-none mb-2">Contas Vinculadas</h4>
                   <div className="flex flex-col gap-3">
-                    <LinkedAccountItem 
+                    <LinkedAccountItem
                       platform="twitch"
                       account={getLinkedAccount('twitch')}
                       onLink={() => handleLinkAccount('twitch')}
                       onUnlink={handleUnlinkAccount}
                     />
-                    <LinkedAccountItem 
+                    <LinkedAccountItem
                       platform="youtube"
                       account={getLinkedAccount('youtube')}
                       onLink={() => handleLinkAccount('youtube')}
                       onUnlink={handleUnlinkAccount}
                     />
-                    <LinkedAccountItem 
+                    <LinkedAccountItem
                       platform="kick"
                       account={getLinkedAccount('kick')}
                       onLink={() => handleLinkAccount('kick')}
                       onUnlink={handleUnlinkAccount}
                     />
-                    
+
                     {/* Discord - vinculação separada */}
                     <div className={`border rounded-lg overflow-hidden ${discordConnection ? 'bg-muted/50' : 'bg-muted/50'}`}>
                       <div className="flex items-center justify-between p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-5 h-5 bg-[#5865F2] rounded flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+                              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
                             </svg>
                           </div>
                           {discordConnection ? (
@@ -901,9 +955,9 @@ export default function DashboardPage() {
                           )}
                         </div>
                         {discordConnection ? (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={handleUnlinkDiscord}
                             className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
                           >
@@ -954,12 +1008,12 @@ export default function DashboardPage() {
           <AlertTriangle className="h-4 w-4 text-yellow-500" />
           <AlertTitle className="text-yellow-400">Ação necessária</AlertTitle>
           <AlertDescription className="text-yellow-200/80">
-            {accountsNeedingReauth.length === 1 
+            {accountsNeedingReauth.length === 1
               ? `Sua conta ${accountsNeedingReauth[0].platform.toUpperCase()} precisa de novas permissões.`
               : `${accountsNeedingReauth.length} contas precisam de novas permissões.`
             }
             {' '}
-            <button 
+            <button
               onClick={() => setIsSettingsOpen(true)}
               className="underline hover:text-yellow-100"
             >
@@ -980,7 +1034,7 @@ export default function DashboardPage() {
               availablePlatforms={['twitch', 'youtube', 'kick']}
             />
           </div>
-          
+
           <div className="flex-1 p-6 min-h-0">
             <VideoPlayer
               platform={selectedPlatform}
@@ -1015,7 +1069,7 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          
+
           <div className="flex-1 min-h-0">
             {isChatEnabled ? (
               <UnifiedChat
@@ -1058,14 +1112,14 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
-  {JSON.stringify(user, null, 2)}
-  Linked: {JSON.stringify(linkedAccounts, null, 2)}
+                {JSON.stringify(user, null, 2)}
+                Linked: {JSON.stringify(linkedAccounts, null, 2)}
               </pre>
             </CardContent>
           </Card>
         </div>
       )}
-      
+
       {/* Popup de onboarding de benefícios para novos subs */}
       {pendingBenefit && (
         <SubscriberBenefitsPopup
@@ -1081,7 +1135,7 @@ export default function DashboardPage() {
           discordConnected={!!discordConnection}
         />
       )}
-      
+
       {/* Painel completo de benefícios */}
       <BenefitsPanel
         isOpen={showBenefitsPanel}
@@ -1092,7 +1146,7 @@ export default function DashboardPage() {
           setShowBenefitsPopup(true)
         }}
       />
-      
+
       {/* Popup de onboarding para assinatura do Clube */}
       {clubOnboardingData && (
         <ClubOnboardingPopup
