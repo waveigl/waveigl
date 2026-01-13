@@ -395,8 +395,11 @@ export default function DashboardPage() {
       const data = await res.json()
 
       if (data.eligible) {
-        // Se já tem todos os dados, ir direto para checkout
-        await goToCheckout()
+        // Se já tem todos os dados, mostrar confirmação antes de redirecionar
+        const confirmSub = confirm('Você está elegível para assinar o Clube!\n\nClique em OK para ir para o pagamento no Mercado Pago.')
+        if (confirmSub) {
+          await goToCheckout()
+        }
       } else {
         // Mostrar popup de onboarding
         setClubOnboardingData(data.user)
@@ -774,12 +777,20 @@ export default function DashboardPage() {
       const data = await res.json()
 
       if (res.ok) {
-        alert(`Sincronização realizada!\nStatus anterior: ${data.previous_status}\nNovo status: ${data.current_status}`)
+        let msg = `Sincronização realizada!\n`
+        msg += `Status anterior: ${data.db_status_before}\n`
+        msg += `Status novo: ${data.db_status_after}\n`
+        msg += `Mercado Pago (Status): ${data.mp_status}\n`
+        msg += `Mercado Pago (ID): ${data.mp_id}\n`
+        if (data.recovered_via_search) msg += `[Recuperado via Busca por Email]\n`
+        msg += `Atualizado no Banco: ${data.updated ? 'SIM' : 'NÃO'}`
+
+        alert(msg)
         if (data.updated) {
           window.location.reload()
         }
       } else {
-        alert(`Erro na sincronização: ${data.error}`)
+        alert(`Erro na sincronização: ${data.error}\nDetalhes: ${data.details || ''}\nStatus: ${data.status || ''}`)
       }
     } catch (e) {
       alert('Erro ao chamar API de sincronização')
