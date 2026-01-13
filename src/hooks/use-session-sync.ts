@@ -79,7 +79,7 @@ export function useSessionReceiver(
   fallbackFetch: () => Promise<void>
 ) {
   const hasReceivedSession = useRef(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const requestSession = useCallback(() => {
     // Verifica se BroadcastChannel é suportado
