@@ -150,7 +150,8 @@ export default function ClubOnboardingPopup({
 
   const handleDiscordConnect = () => {
     // Redirecionar para OAuth do Discord
-    window.location.href = '/api/auth/discord?return_to=/dashboard?onboarding=continue'
+    const returnUrl = encodeURIComponent('/dashboard?onboarding=continue')
+    window.location.href = `/api/auth/discord?return_to=${returnUrl}`
   }
 
   const steps: { key: Step; label: string; icon: React.ReactNode }[] = [

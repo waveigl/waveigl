@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 // Canal do WaveIGL em cada plataforma
 const WAVEIGL_CHANNELS = {
   twitch: process.env.WAVEIGL_TWITCH_CHANNEL || 'waveigl',
-  kick: 'waveigloficial',
+  kick: 'waveigl',
   youtube: process.env.YOUTUBE_CHANNEL_ID || ''
 }
 

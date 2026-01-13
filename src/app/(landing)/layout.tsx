@@ -55,8 +55,8 @@ const personSchema = {
     "https://twitch.tv/waveigl",
     "https://youtube.com/@waveigl",
     "https://instagram.com/waveigl",
-    "https://kick.com/waveigloficial",
-    "https://tiktok.com/@waveigloficial",
+    "https://kick.com/waveigl",
+    "https://tiktok.com/@waveigl",
     "https://facebook.com/waveigl"
   ],
   "worksFor": {

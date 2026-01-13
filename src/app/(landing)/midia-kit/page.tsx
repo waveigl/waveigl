@@ -250,7 +250,7 @@ export default function MidiaKitPage() {
                 followers="840" 
                 viewShare="5%"
                 color="#53FC18"
-                url="https://kick.com/waveigloficial"
+                url="https://kick.com/waveigl"
               />
               <PlatformCard 
                 name="Facebook" 

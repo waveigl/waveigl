@@ -107,7 +107,7 @@ async function refreshKickTokenForBroadcaster(
 }
 
 /**
- * Envia mensagem na Kick como streamer (waveigloficial)
+ * Envia mensagem na Kick como streamer (waveigl)
  * Inclui refresh automático de token se expirado
  */
 async function sendKickMessage(message: string): Promise<boolean> {
@@ -118,7 +118,7 @@ async function sendKickMessage(message: string): Promise<boolean> {
       .from('linked_accounts')
       .select('user_id, access_token, refresh_token, platform_user_id')
       .eq('platform', 'kick')
-      .ilike('platform_username', 'waveigloficial')
+      .ilike('platform_username', 'waveigl')
       .maybeSingle()
     
     if (!broadcasterAccount?.access_token) {

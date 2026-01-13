@@ -527,8 +527,8 @@ export default function ClubePage() {
               { name: 'YouTube', url: 'https://youtube.com/@waveigl', followers: '34.5k', color: '#FF0000' },
               { name: 'Instagram', url: 'https://instagram.com/waveigl', followers: '20.7k', color: '#E4405F' },
               { name: 'Instagram DJ', url: 'https://instagram.com/hopedjoficial', followers: '7.9k', color: '#E4405F' },
-              { name: 'Kick', url: 'https://kick.com/waveigloficial', followers: '840', color: '#53FC18' },
-              { name: 'TikTok', url: 'https://tiktok.com/@waveigloficial', followers: '500', color: '#000000' },
+              { name: 'Kick', url: 'https://kick.com/waveigl', followers: '840', color: '#53FC18' },
+              { name: 'TikTok', url: 'https://tiktok.com/@waveigl', followers: '500', color: '#000000' },
               { name: 'Kwai', url: 'https://kwai.com/@waveigl', followers: '200', color: '#FF6600' },
               { name: 'Facebook', url: 'https://facebook.com/waveigl', followers: '3.2k', color: '#1877F2' },
               { name: 'Facebook DJ', url: 'https://facebook.com/hopedjoficial', followers: '4.9k', color: '#1877F2' },
@@ -611,8 +611,8 @@ export default function ClubePage() {
                 <li><a href="https://twitch.tv/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Twitch</a></li>
                 <li><a href="https://youtube.com/@waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">YouTube</a></li>
                 <li><a href="https://instagram.com/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Instagram</a></li>
-                <li><a href="https://kick.com/waveigloficial" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Kick</a></li>
-                <li><a href="https://tiktok.com/@waveigloficial" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">TikTok</a></li>
+                <li><a href="https://kick.com/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Kick</a></li>
+                <li><a href="https://tiktok.com/@waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">TikTok</a></li>
                 <li><a href="https://facebook.com/waveigl" target="_blank" rel="noopener noreferrer" className="hover:text-[#E38817] transition-colors">Facebook</a></li>
               </ul>
             </div>

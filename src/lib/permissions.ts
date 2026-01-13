@@ -4,7 +4,7 @@ import { LinkedAccount, UserRole } from '@/types'
 export const OWNER_ACCOUNT_IDS: Record<string, string> = {
   twitch: '173162545',      // waveigl
   youtube: 'waveigl',       // YouTube usa channel handle
-  kick: '54454625'          // waveigloficial
+  kick: '54454625'          // waveigl
 }
 
 // IDs das contas admin - mais seguro que usernames
@@ -18,7 +18,7 @@ export const ADMIN_ACCOUNT_IDS: Record<string, string> = {
 export const OWNER_ACCOUNTS = {
   twitch: 'waveigl',
   youtube: '@waveigl',
-  kick: 'waveigloficial'
+  kick: 'waveigl'
 }
 
 export const ADMIN_ACCOUNTS = {

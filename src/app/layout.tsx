@@ -138,9 +138,9 @@ const organizationSchema = {
   "sameAs": [
     "https://twitch.tv/waveigl",
     "https://youtube.com/@waveigl",
-    "https://kick.com/waveigloficial",
+    "https://kick.com/waveigl",
     "https://instagram.com/waveigl",
-    "https://tiktok.com/@waveigloficial",
+    "https://tiktok.com/@waveigl",
     "https://facebook.com/waveigl",
     "https://kwai.com/@waveigl"
   ]

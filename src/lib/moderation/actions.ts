@@ -14,7 +14,7 @@ async function getBroadcasterToken(platform: 'twitch' | 'kick' | 'youtube'): Pro
   const db = getSupabaseAdmin()
   
   const channelName = platform === 'twitch' ? TWITCH_CHANNEL : 
-                      platform === 'kick' ? 'waveigloficial' : 'waveigl'
+                      platform === 'kick' ? 'waveigl' : 'waveigl'
   
   const { data: account } = await db
     .from('linked_accounts')

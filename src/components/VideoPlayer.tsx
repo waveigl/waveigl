@@ -123,8 +123,8 @@ export function VideoPlayer({ platform, channelId = 'waveigl', className, youtub
 
         case 'kick':
           const kickEmbed = document.createElement('iframe')
-          // Canal da Kick corrigido: waveigloficial
-          const kickChannel = channelId === 'waveigl' ? 'waveigloficial' : channelId
+          // Canal da Kick corrigido: waveigl
+          const kickChannel = channelId === 'waveigl' ? 'waveigl' : channelId
           kickEmbed.src = `https://player.kick.com/${kickChannel}`
           kickEmbed.width = '100%'
           kickEmbed.height = '100%'

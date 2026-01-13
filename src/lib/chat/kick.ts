@@ -8,7 +8,7 @@ import { processCommand } from './commands'
 import { triggerYouTubeCheck } from './youtube'
 import WebSocket from 'ws'
 
-const KICK_CHANNEL = 'waveigloficial'
+const KICK_CHANNEL = 'waveigl'
 
 // Usar globalThis para persistir estado entre HMR
 declare global {
@@ -325,7 +325,7 @@ export async function sendKickMessage(
     
     if (!broadcasterId) {
       console.error('[Kick] Não foi possível obter o broadcaster_user_id')
-      console.error('[Kick] Configure KICK_BROADCASTER_USER_ID no .env.local com o ID do canal waveigloficial')
+      console.error('[Kick] Configure KICK_BROADCASTER_USER_ID no .env.local com o ID do canal waveigl')
       return false
     }
 
@@ -422,8 +422,8 @@ async function getBroadcasterUserIdWithAuth(accessToken: string): Promise<number
       return fallbackId
     }
 
-    // Último fallback: usar o ID do canal waveigloficial se conhecido
-    // Você pode descobrir o ID acessando: https://kick.com/api/v1/channels/waveigloficial
+    // Último fallback: usar o ID do canal waveigl se conhecido
+    // Você pode descobrir o ID acessando: https://kick.com/api/v1/channels/waveigl
     // e procurando pelo campo "user_id" ou "id"
     console.error('[Kick] IMPORTANTE: Configure KICK_BROADCASTER_USER_ID ou KICK_CHANNEL_ID no .env.local')
     console.error('[Kick] Para encontrar o ID, acesse o painel de desenvolvedor da Kick')

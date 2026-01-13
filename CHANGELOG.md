@@ -1,5 +1,21 @@
 # Changelog - WaveIGL
 
+## [0.0.3] - 2025-01-13
+
+### 🐛 Bug Fixes
+
+#### Club Subscription Widget
+- **Fixed**: ClubSubscriptionWidget now correctly displays "Clube Ativo" badge when user already has an active subscription
+- **Issue**: Component was only checking `subscription_status === 'active'` but API returns `reason: 'already_subscribed'` when subscription exists
+- **Solution**: Updated status detection logic to check both `subscription_status === 'active'` OR `reason === 'already_subscribed'`
+- **Result**: Badge now correctly changes from "Sem Clube" to "Clube Ativo" (green with Crown icon) and "Assinar Clube" button disappears when user is already subscribed
+- **Tests**: Added comprehensive test suite with 11 test cases covering all subscription status scenarios
+
+### 📝 Tests Added
+- `tests/unit/ClubSubscriptionWidget.test.ts` - 11 new tests for subscription status detection and transitions
+
+---
+
 ## [0.0.0] - 2025-10-21
 
 ### ✨ Implementação Inicial Completa
@@ -161,7 +177,7 @@ npm run db:push      # Push migrations
 #### Owner (WaveIGL)
 - Twitch: `waveigl`
 - YouTube: `@waveigl`
-- Kick: `waveigloficial`
+- Kick: `waveigl`
 - Permissões: Todas (timeout, ban, gerenciar moderadores)
 
 #### Admin (Gabriel Toth)
