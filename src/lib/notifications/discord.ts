@@ -48,12 +48,12 @@ function formatPhoneDisplay(phone: string): string {
  * Envia notificação de sub para o Discord
  */
 export async function sendDiscordSubNotification(notification: DiscordSubNotification): Promise<boolean> {
-  const webhookUrl = process.env.DISCORD_SUB_WEBHOOK_URL
+  const webhookUrl = process.env.DISCORD_SUB_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL
   const notifyUnregistered = process.env.NOTIFY_UNREGISTERED_SUBS !== 'false' // Default: true
 
   // Se não tiver webhook configurado, apenas loga
   if (!webhookUrl) {
-    console.warn('[Discord] DISCORD_SUB_WEBHOOK_URL não configurado')
+    console.warn('[Discord] DISCORD_SUB_WEBHOOK_URL nem DISCORD_WEBHOOK_URL configurados')
     return false
   }
 

@@ -6,6 +6,8 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { queueMessage } from './queue'
 import { createOrUpdateBenefit } from '@/lib/benefits'
+import { sendDiscordSubNotification } from '@/lib/notifications/discord'
+import { findLinkedUserWithProfileByUsername } from '@/lib/notifications/subscription'
 import tmi from 'tmi.js'
 
 // Configuração
@@ -39,22 +41,22 @@ function isCommandDuplicate(ctx: CommandContext): boolean {
   const hash = getCommandHash(ctx)
   const lastProcessed = processedCommands.get(hash)
   const now = Date.now()
-  
+
   if (lastProcessed && (now - lastProcessed) < COMMAND_COOLDOWN_MS) {
     console.log(`[Commands] Comando duplicado ignorado: ${ctx.message} de ${ctx.username}`)
     return true
   }
-  
+
   // Registrar este comando
   processedCommands.set(hash, now)
-  
+
   // Limpar comandos antigos (mais de 1 minuto)
   for (const [key, timestamp] of processedCommands.entries()) {
     if (now - timestamp > 60000) {
       processedCommands.delete(key)
     }
   }
-  
+
   return false
 }
 
@@ -66,10 +68,10 @@ async function sendDiscordNotification(content: string, embedTitle?: string, emb
     console.log('[Commands] DISCORD_WEBHOOK_URL não configurado')
     return false
   }
-  
+
   try {
     const payload: any = {}
-    
+
     if (embedTitle || embedDescription) {
       payload.embeds = [{
         title: embedTitle || 'Notificação',
@@ -80,18 +82,18 @@ async function sendDiscordNotification(content: string, embedTitle?: string, emb
     } else {
       payload.content = content
     }
-    
+
     const response = await fetch(DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    
+
     if (!response.ok) {
       console.error('[Commands] Erro ao enviar para Discord:', response.status)
       return false
     }
-    
+
     console.log('[Commands] ✅ Notificação enviada ao Discord')
     return true
   } catch (error) {
@@ -106,7 +108,7 @@ async function sendDiscordNotification(content: string, embedTitle?: string, emb
 async function sendStreamerMessage(message: string): Promise<boolean> {
   try {
     const supabase = getSupabaseAdmin()
-    
+
     // Buscar token do streamer waveigl
     const { data: streamerAccount } = await supabase
       .from('linked_accounts')
@@ -114,12 +116,12 @@ async function sendStreamerMessage(message: string): Promise<boolean> {
       .eq('platform', 'twitch')
       .ilike('platform_username', TWITCH_CHANNEL)
       .maybeSingle()
-    
+
     if (!streamerAccount?.access_token) {
       console.log('[Commands] Token do streamer não encontrado')
       return false
     }
-    
+
     const client = new tmi.Client({
       identity: {
         username: streamerAccount.platform_username,
@@ -128,11 +130,11 @@ async function sendStreamerMessage(message: string): Promise<boolean> {
       channels: [TWITCH_CHANNEL],
       connection: { secure: true, reconnect: false }
     })
-    
+
     await client.connect()
     await client.say(TWITCH_CHANNEL, message)
     await client.disconnect()
-    
+
     console.log('[Commands] ✅ Mensagem enviada no chat como streamer')
     return true
   } catch (error) {
@@ -153,7 +155,7 @@ async function sendStreamerMessage(message: string): Promise<boolean> {
 async function sendStreamerWhisper(targetUsername: string, message: string): Promise<boolean> {
   try {
     const supabase = getSupabaseAdmin()
-    
+
     // Buscar token do streamer waveigl
     const { data: streamerAccount } = await supabase
       .from('linked_accounts')
@@ -161,28 +163,28 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
       .eq('platform', 'twitch')
       .ilike('platform_username', TWITCH_CHANNEL)
       .maybeSingle()
-    
+
     if (!streamerAccount?.access_token) {
       console.log('[Commands] Token do streamer não encontrado para whisper')
       return false
     }
-    
+
     // Verificar se o streamer tem o scope necessário
     const scopes = streamerAccount.authorized_scopes as string[] | null
     if (!scopes?.includes('user:manage:whispers')) {
       console.log('[Commands] ⚠️ Streamer precisa reautenticar para obter scope user:manage:whispers')
       console.log('[Commands] Scopes atuais:', scopes)
-      
+
       // Marcar que precisa reautenticação
       await supabase
         .from('linked_accounts')
         .update({ needs_reauth: true })
         .eq('platform', 'twitch')
         .ilike('platform_username', TWITCH_CHANNEL)
-      
+
       return false
     }
-    
+
     // Buscar ID do usuário alvo
     const userResponse = await fetch(
       `https://api.twitch.tv/helix/users?login=${targetUsername}`,
@@ -193,20 +195,20 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
         }
       }
     )
-    
+
     if (!userResponse.ok) {
       console.error('[Commands] Erro ao buscar usuário para whisper:', userResponse.status)
       return false
     }
-    
+
     const userData = await userResponse.json()
     const targetUserId = userData.data?.[0]?.id
-    
+
     if (!targetUserId) {
       console.error('[Commands] Usuário não encontrado:', targetUsername)
       return false
     }
-    
+
     // Enviar whisper via API
     const whisperResponse = await fetch(
       `https://api.twitch.tv/helix/whispers?from_user_id=${streamerAccount.platform_user_id}&to_user_id=${targetUserId}`,
@@ -220,15 +222,15 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
         body: JSON.stringify({ message })
       }
     )
-    
+
     if (whisperResponse.status === 204) {
       console.log('[Commands] ✅ Whisper enviado para', targetUsername)
       return true
     }
-    
+
     const errorData = await whisperResponse.json().catch(() => ({}))
     const errorMessage = errorData.message || `Erro ${whisperResponse.status}`
-    
+
     // Tratar erros específicos
     if (whisperResponse.status === 401 && errorMessage.includes('Missing scope')) {
       console.log('[Commands] ⚠️ Scope ausente - streamer precisa reautenticar')
@@ -245,10 +247,10 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
     } else if (whisperResponse.status === 403) {
       console.log('[Commands] ⚠️ Erro 403 - conta do streamer pode precisar de verificação de telefone')
     }
-    
+
     console.error('[Commands] Erro ao enviar whisper:', whisperResponse.status, errorData)
     return false
-    
+
   } catch (error) {
     console.error('[Commands] Erro ao enviar whisper:', error)
     return false
@@ -294,16 +296,16 @@ async function broadcastSubscriptionMessage(message: string, priority: 'high' | 
  */
 async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
   console.log(`[Commands] Processando !testsub de ${ctx.username}`)
-  
+
   // Verificar se é moderador
   if (!isModerator(ctx.badges)) {
     console.log(`[Commands] !testsub negado - ${ctx.username} não é moderador`)
     return
   }
-  
+
   const platformName = getPlatformDisplayName(ctx.platform)
   const db = getSupabaseAdmin()
-  
+
   // Buscar user_id do usuário que executou o comando
   const { data: linkedAccount } = await db
     .from('linked_accounts')
@@ -311,7 +313,7 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
     .eq('platform', ctx.platform)
     .eq('platform_user_id', ctx.userId)
     .maybeSingle()
-  
+
   if (linkedAccount?.user_id) {
     // Criar benefício para o usuário (isso vai triggar o popup no frontend)
     const benefit = await createOrUpdateBenefit(
@@ -320,7 +322,7 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
       'Tier 1 (Teste)',
       false
     )
-    
+
     if (benefit) {
       console.log(`[Commands] ✅ Benefício criado para ${ctx.username} (ID: ${benefit.id})`)
     } else {
@@ -329,20 +331,20 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
   } else {
     console.log(`[Commands] ⚠️ Usuário ${ctx.username} não está cadastrado no sistema`)
   }
-  
+
   // Mensagem de inscrição
   const subMessage = `🎉 @${ctx.username} se inscreveu com Tier 1 na ${platformName} - Por enquanto, envie seu whatsapp no sussuro para ser convidado para o grupo exclusivo.`
-  
+
   // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-  
+
   // Notificar no Discord
   await sendDiscordNotification(
     '',
     '🎉 Nova Inscrição (Teste)',
     `**Usuário:** ${ctx.username}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testsub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
   )
-  
+
   console.log('[Commands] ✅ !testsub executado com sucesso')
 }
 
@@ -353,17 +355,17 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
  */
 async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
   console.log(`[Commands] Processando !testrecebersub de ${ctx.username}`)
-  
+
   // Verificar se é moderador
   if (!isModerator(ctx.badges)) {
     console.log(`[Commands] !testrecebersub negado - ${ctx.username} não é moderador`)
     return
   }
-  
+
   const platformName = getPlatformDisplayName(ctx.platform)
   const gifterName = 'principedosdragoes'
   const db = getSupabaseAdmin()
-  
+
   // Buscar user_id do usuário que executou o comando (recebedor)
   const { data: linkedAccount } = await db
     .from('linked_accounts')
@@ -371,7 +373,7 @@ async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
     .eq('platform', ctx.platform)
     .eq('platform_user_id', ctx.userId)
     .maybeSingle()
-  
+
   if (linkedAccount?.user_id) {
     // Criar benefício para o recebedor (isso vai triggar o popup no frontend)
     const benefit = await createOrUpdateBenefit(
@@ -381,7 +383,7 @@ async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
       true, // É um gift
       gifterName
     )
-    
+
     if (benefit) {
       console.log(`[Commands] ✅ Benefício gift criado para ${ctx.username} (ID: ${benefit.id})`)
     } else {
@@ -390,20 +392,20 @@ async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
   } else {
     console.log(`[Commands] ⚠️ Usuário ${ctx.username} não está cadastrado no sistema`)
   }
-  
+
   // Mensagem de recebimento de sub
   const subMessage = `🎁 @${ctx.username} recebeu inscrição de presente com Tier 1 de @${gifterName} na ${platformName} - Por enquanto, envie seu whatsapp no sussuro para ser convidado para o grupo exclusivo.`
-  
+
   // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-  
+
   // Notificar no Discord
   await sendDiscordNotification(
     '',
     '🎁 Inscrição de Presente Recebida (Teste)',
     `**Recebedor:** ${ctx.username}\n**Doador:** ${gifterName}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testrecebersub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
   )
-  
+
   console.log('[Commands] ✅ !testrecebersub executado com sucesso')
 }
 
@@ -413,29 +415,29 @@ async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
  */
 async function handleTestGiftSubCommand(ctx: CommandContext): Promise<void> {
   console.log(`[Commands] Processando !testdoarsub de ${ctx.username}`)
-  
+
   // Verificar se é moderador
   if (!isModerator(ctx.badges)) {
     console.log(`[Commands] !testdoarsub negado - ${ctx.username} não é moderador`)
     return
   }
-  
+
   const platformName = getPlatformDisplayName(ctx.platform)
   const receiverName = 'principedosdragoes'
-  
+
   // Mensagem de doação de sub
   const subMessage = `🎁 @${ctx.username} enviou uma assinatura de presente para @${receiverName}, portanto o @${ctx.username} pode enviar no sussurro do @waveigl o link da steam para receber assinatura`
-  
+
   // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-  
+
   // Notificar no Discord
   await sendDiscordNotification(
     '',
     '🎁 Inscrição de Presente Enviada (Teste)',
     `**Doador:** ${ctx.username}\n**Recebedor:** ${receiverName}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testdoarsub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
   )
-  
+
   console.log('[Commands] ✅ !testdoarsub executado com sucesso')
 }
 
@@ -446,15 +448,15 @@ async function handleTestGiftSubCommand(ctx: CommandContext): Promise<void> {
  */
 async function handleTestModCommand(ctx: CommandContext): Promise<void> {
   console.log(`[Commands] Processando !testmod de ${ctx.username} na ${ctx.platform}`)
-  
+
   // Comando só funciona na Kick
   if (ctx.platform !== 'kick') {
     console.log(`[Commands] !testmod ignorado - plataforma ${ctx.platform} não suportada`)
     return
   }
-  
+
   const supabase = getSupabaseAdmin()
-  
+
   // 1. Verificar se o usuário está cadastrado no sistema
   const { data: linkedAccount } = await supabase
     .from('linked_accounts')
@@ -462,41 +464,41 @@ async function handleTestModCommand(ctx: CommandContext): Promise<void> {
     .eq('platform', 'kick')
     .eq('platform_user_id', ctx.userId)
     .maybeSingle()
-  
+
   if (!linkedAccount) {
     console.log(`[Commands] !testmod: Usuário ${ctx.username} não está cadastrado no sistema`)
     // Enviar mensagem na Kick informando que precisa se cadastrar
     await sendKickMessage(`@${ctx.username} você precisa vincular sua conta Kick no nosso sistema para usar !testmod`)
     return
   }
-  
+
   // 2. Verificar se o usuário é moderador no sistema
   if (!linkedAccount.is_moderator) {
     console.log(`[Commands] !testmod: Usuário ${ctx.username} não é moderador no sistema`)
     await sendKickMessage(`@${ctx.username} você não tem status de moderador no sistema. Vincule uma conta onde você é moderador primeiro.`)
     return
   }
-  
+
   // 3. Usuário é moderador no sistema! Verificar se já tem mod na Kick
   // Verificar se tem badge de moderador nas badges recebidas
-  const hasKickModBadge = ctx.badges.some(b => 
+  const hasKickModBadge = ctx.badges.some(b =>
     b.toLowerCase() === 'moderator' || b.toLowerCase() === 'mod'
   )
-  
+
   if (hasKickModBadge) {
     // Já é moderador na Kick
     console.log(`[Commands] !testmod: ${ctx.username} já é moderador na Kick`)
     await sendKickMessage(`@${ctx.username} você já é moderador na Kick! 🛡️`)
     return
   }
-  
+
   // 4. É moderador no sistema mas NÃO tem mod na Kick - notificar Discord
   console.log(`[Commands] !testmod: ${ctx.username} é moderador no sistema mas NÃO tem mod na Kick. Notificando Discord...`)
-  
+
   try {
     // Enviar mensagem no chat da Kick
     await sendKickMessage(`@${ctx.username} você foi identificado como moderador no sistema WaveIGL! 🎉 O streamer foi notificado para adicionar você como mod na Kick.`)
-    
+
     // Enviar notificação IMPORTANTE no Discord para o streamer/admin adicionar manualmente
     await sendDiscordNotification(
       '@everyone', // Ping para chamar atenção
@@ -510,9 +512,9 @@ async function handleTestModCommand(ctx: CommandContext): Promise<void> {
       `\`\`\`\n/mod ${ctx.username}\n\`\`\`\n\n` +
       `**Horário:** ${new Date().toLocaleString('pt-BR')}`
     )
-    
+
     console.log(`[Commands] !testmod: Notificação enviada ao Discord para adicionar ${ctx.username} como mod`)
-    
+
   } catch (error) {
     console.error('[Commands] !testmod: Erro ao processar:', error)
     await sendKickMessage(`@${ctx.username} erro ao processar !testmod. Tente novamente mais tarde.`)
@@ -580,7 +582,7 @@ async function refreshKickTokenInternal(
  */
 async function sendKickMessage(message: string): Promise<boolean> {
   const supabase = getSupabaseAdmin()
-  
+
   // Buscar token do broadcaster da Kick
   const { data: broadcasterAccount } = await supabase
     .from('linked_accounts')
@@ -588,12 +590,12 @@ async function sendKickMessage(message: string): Promise<boolean> {
     .eq('platform', 'kick')
     .ilike('platform_username', 'waveigloficial')
     .maybeSingle()
-  
+
   if (!broadcasterAccount?.access_token) {
     console.error('[Commands] sendKickMessage: Token do broadcaster Kick não encontrado')
     return false
   }
-  
+
   // Função para tentar enviar
   const tryToSend = async (token: string): Promise<Response> => {
     return fetch('https://api.kick.com/public/v1/chat', {
@@ -610,35 +612,35 @@ async function sendKickMessage(message: string): Promise<boolean> {
       })
     })
   }
-  
+
   try {
     // Primeira tentativa
     let response = await tryToSend(broadcasterAccount.access_token)
-    
+
     // Se receber 401, tentar renovar o token
     if (response.status === 401 && broadcasterAccount.refresh_token) {
       console.log('[Commands] Token Kick expirado, tentando renovar...')
-      
+
       const newToken = await refreshKickTokenInternal(
         broadcasterAccount.refresh_token,
         broadcasterAccount.user_id
       )
-      
+
       if (newToken) {
         // Tentar novamente com o novo token
         response = await tryToSend(newToken)
       }
     }
-    
+
     if (response.ok) {
       console.log('[Commands] ✅ Mensagem enviada na Kick')
       return true
     }
-    
+
     const errorData = await response.json().catch(() => ({}))
     console.error('[Commands] Erro ao enviar mensagem na Kick:', response.status, errorData)
     return false
-    
+
   } catch (error) {
     console.error('[Commands] Erro ao enviar mensagem na Kick:', error)
     return false
@@ -694,16 +696,16 @@ export async function applyTimeoutWithReapply(
   maxDurationOverride?: number
 ): Promise<{ success: boolean; error?: string }> {
   const maxDuration = maxDurationOverride || PLATFORM_MAX_TIMEOUT[targetPlatform] || 86400
-  
+
   // Calcular duração do primeiro timeout (mínimo entre total e máximo da plataforma)
   const firstTimeoutDuration = Math.min(totalDurationSeconds, maxDuration)
-  
+
   console.log(`[Timeout] Iniciando timeout de ${totalDurationSeconds}s para ${targetUserId} no ${targetPlatform}`)
   console.log(`[Timeout] Máximo da plataforma: ${maxDuration}s, primeiro timeout: ${firstTimeoutDuration}s`)
-  
+
   // Importar dinamicamente para evitar dependência circular
   const { applyPlatformTimeout } = await import('@/lib/moderation/actions')
-  
+
   // Aplicar primeiro timeout
   const result = await applyPlatformTimeout(
     targetPlatform,
@@ -712,16 +714,16 @@ export async function applyTimeoutWithReapply(
     reason,
     moderatorId
   )
-  
+
   if (!result.success) {
     return result
   }
-  
+
   // Se a duração total é maior que o máximo, agendar reaplicação
   if (totalDurationSeconds > maxDuration) {
     const timeoutKey = `${targetPlatform}:${targetUserId}`
     const now = Date.now()
-    
+
     globalThis.__activeTimeouts.set(timeoutKey, {
       targetUserId,
       targetPlatform,
@@ -733,13 +735,13 @@ export async function applyTimeoutWithReapply(
       startedAt: now,
       nextReapplyAt: now + (firstTimeoutDuration * 1000) - 5000 // 5s antes de expirar
     })
-    
+
     console.log(`[Timeout] ⏰ Agendada reaplicação em ${firstTimeoutDuration - 5}s, restam ${totalDurationSeconds - firstTimeoutDuration}s`)
-    
+
     // Iniciar o verificador de reaplicação se não estiver rodando
     startTimeoutReapplyChecker()
   }
-  
+
   return { success: true }
 }
 
@@ -751,24 +753,24 @@ function startTimeoutReapplyChecker(): void {
   if (globalThis.__timeoutIntervalId) {
     return
   }
-  
+
   console.log('[Timeout] Iniciando verificador de reaplicação...')
-  
+
   globalThis.__timeoutIntervalId = setInterval(async () => {
     const now = Date.now()
-    
+
     for (const [key, timeout] of globalThis.__activeTimeouts.entries()) {
       if (now >= timeout.nextReapplyAt) {
         console.log(`[Timeout] ⏰ Reaplicando timeout para ${key}...`)
-        
+
         // Usar o override se existir, senão usar o limite padrão da plataforma
         const maxDuration = timeout.maxDurationOverride || PLATFORM_MAX_TIMEOUT[timeout.targetPlatform] || 86400
         const nextDuration = Math.min(timeout.remainingSeconds, maxDuration)
-        
+
         console.log(`[Timeout] Máximo: ${maxDuration}s, próximo timeout: ${nextDuration}s, restam: ${timeout.remainingSeconds}s`)
-        
+
         const { applyPlatformTimeout } = await import('@/lib/moderation/actions')
-        
+
         const result = await applyPlatformTimeout(
           timeout.targetPlatform,
           timeout.targetUserId,
@@ -776,10 +778,10 @@ function startTimeoutReapplyChecker(): void {
           timeout.reason,
           timeout.moderatorId
         )
-        
+
         if (result.success) {
           timeout.remainingSeconds -= nextDuration
-          
+
           if (timeout.remainingSeconds <= 0) {
             // Timeout completo, remover da lista
             globalThis.__activeTimeouts.delete(key)
@@ -796,7 +798,7 @@ function startTimeoutReapplyChecker(): void {
         }
       }
     }
-    
+
     // Se não há mais timeouts ativos, parar o verificador
     if (globalThis.__activeTimeouts.size === 0 && globalThis.__timeoutIntervalId) {
       clearInterval(globalThis.__timeoutIntervalId)
@@ -813,19 +815,19 @@ function startTimeoutReapplyChecker(): void {
  */
 async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
   console.log(`[Commands] Processando !testto de ${ctx.username}`)
-  
+
   // Verificar se é moderador
   if (!isModerator(ctx.badges)) {
     console.log(`[Commands] !testto negado - ${ctx.username} não é moderador`)
     return
   }
-  
+
   const targetUsername = 'principedosdragoes'
   const totalDurationSeconds = 5 * 60 // 5 minutos = 300 segundos
   const testTimeoutDuration = 20 // Timeout de teste de 20 segundos
-  
+
   const supabase = getSupabaseAdmin()
-  
+
   // Primeiro, buscar o token do moderador que executou o comando
   const { data: modAccount } = await supabase
     .from('linked_accounts')
@@ -833,29 +835,29 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
     .eq('platform', 'twitch')
     .ilike('platform_username', ctx.username)
     .maybeSingle()
-  
+
   if (!modAccount?.access_token) {
     console.log(`[Commands] !testto: Token do moderador ${ctx.username} não encontrado`)
     return
   }
-  
+
   // Buscar ID do usuário alvo na Twitch (primeiro no sistema, depois via API)
   let targetUserId: string | null = null
-  
+
   const { data: targetAccount } = await supabase
     .from('linked_accounts')
     .select('platform_user_id')
     .eq('platform', 'twitch')
     .ilike('platform_username', targetUsername)
     .maybeSingle()
-  
+
   if (targetAccount?.platform_user_id) {
     targetUserId = targetAccount.platform_user_id
     console.log(`[Commands] !testto: ID do alvo encontrado no sistema: ${targetUserId}`)
   } else {
     // Buscar via API da Twitch usando o token do moderador
     console.log(`[Commands] !testto: Buscando ${targetUsername} via API da Twitch...`)
-    
+
     const userResponse = await fetch(
       `https://api.twitch.tv/helix/users?login=${targetUsername}`,
       {
@@ -865,11 +867,11 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
         }
       }
     )
-    
+
     if (userResponse.ok) {
       const userData = await userResponse.json()
       targetUserId = userData.data?.[0]?.id
-      
+
       if (targetUserId) {
         console.log(`[Commands] !testto: ID do alvo obtido via API: ${targetUserId}`)
       }
@@ -878,7 +880,7 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
       console.error(`[Commands] !testto: Erro ao buscar usuário via API:`, userResponse.status, errorData)
     }
   }
-  
+
   if (!targetUserId) {
     console.log(`[Commands] !testto: Usuário ${targetUsername} não encontrado`)
     // Notificar no Discord sobre a falha
@@ -889,9 +891,9 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
     )
     return
   }
-  
+
   console.log(`[Commands] !testto: Iniciando timeout de ${totalDurationSeconds}s em blocos de ${testTimeoutDuration}s`)
-  
+
   // Aplicar timeout com sistema de reaplicação
   // Passando testTimeoutDuration como maxDurationOverride para forçar blocos de 20s
   const result = await applyTimeoutWithReapply(
@@ -902,7 +904,7 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
     modAccount.user_id, // Usar o ID do moderador para que a ação apareça no nome dele
     testTimeoutDuration // Override: usar blocos de 20s ao invés do limite padrão de 14 dias
   )
-  
+
   if (result.success) {
     // Notificar no Discord (não depende do token do streamer)
     await sendDiscordNotification(
@@ -910,10 +912,10 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
       '🧪 Teste de Timeout com Reaplicação',
       `**Iniciado por:** ${ctx.username}\n**Alvo:** ${targetUsername}\n**Duração total:** 5 minutos\n**Blocos de:** ${testTimeoutDuration}s\n**Reaplicações:** ${Math.ceil(totalDurationSeconds / testTimeoutDuration) - 1}\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
     )
-    
+
     // Enviar mensagem via sistema de filas (não depende do token do streamer)
     queueMessage(`🧪 @${ctx.username} iniciou teste de timeout: @${targetUsername} receberá timeout de 5 minutos (reaplicação a cada ${testTimeoutDuration}s)`, 'twitch', 'high')
-    
+
     console.log('[Commands] ✅ !testto executado com sucesso')
   } else {
     // Notificar falha no Discord
@@ -932,42 +934,42 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
  */
 export async function processCommand(ctx: CommandContext): Promise<boolean> {
   const message = ctx.message.trim().toLowerCase()
-  
+
   // Verificar se é um comando (começa com !)
   if (!message.startsWith('!')) {
     return false
   }
-  
+
   // Verificar se é comando duplicado (debounce)
   if (isCommandDuplicate(ctx)) {
     return false
   }
-  
+
   // Extrair comando e argumentos
   const parts = message.split(' ')
   const command = parts[0]
-  
+
   switch (command) {
     case '!testsub':
       await handleTestSubCommand(ctx)
       return true
-    
+
     case '!testrecebersub':
       await handleTestReceiveSubCommand(ctx)
       return true
-    
+
     case '!testdoarsub':
       await handleTestGiftSubCommand(ctx)
       return true
-    
+
     case '!testmod':
       await handleTestModCommand(ctx)
       return true
-    
+
     case '!testto':
       await handleTestTimeoutCommand(ctx)
       return true
-    
+
     default:
       return false
   }
@@ -997,23 +999,38 @@ export async function broadcastSubscriptionEvent(
   platform: 'twitch' | 'kick' | 'youtube'
 ): Promise<void> {
   const platformDisplayName = getPlatformDisplayName(platform)
-  
+
+  // Buscar informações do usuário para notificação rica e whisper
+  const userInfo = await findLinkedUserWithProfileByUsername(platform, username)
+
+  // Mensagem para whisper
+  const whisperMessage = `Obrigado por se inscrever! Vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
+
+  // Tentar enviar whisper na Twitch se for a plataforma
+  if (platform === 'twitch') {
+    await sendStreamerWhisper(username, whisperMessage)
+  }
+
   // Mensagem de inscrição
   const subMessage = `🎉 @${username} se inscreveu com ${tierName} na ${platformDisplayName} - Cadastre-se no site waveigl.com para ser convidado para o grupo exclusivo do WhatsApp`
-  
+
   // Usar o sistema de filas para respeitar rate limits
   queueMessage(subMessage, 'all', 'high') // Alta prioridade para subs normais
-  
-  // Notificar no Discord (imediato, não usa fila)
-  await sendDiscordNotification(
-    '',
-    '🎉 Nova Inscrição!',
-    `**Usuário:** ${username}\n**Tier:** ${tierName}\n**Plataforma:** ${platformDisplayName}\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-  )
-  
+
+  // Notificar no Discord (Rico) - Substitui a notificação simples
+  await sendDiscordSubNotification({
+    platform,
+    username,
+    platformUserId: userInfo?.platform_user_id || 'unknown',
+    phoneNumber: userInfo?.phone_number || null,
+    isRegistered: !!userInfo,
+    isGift: false,
+    tier: tierName
+  })
+
   // Criar benefício automaticamente se o usuário estiver cadastrado
   await createBenefitForUser(username, platform, tierName, false)
-  
+
   console.log(`[Commands] ✅ Evento de inscrição adicionado à fila: ${username} na ${platform}`)
 }
 
@@ -1029,28 +1046,44 @@ export async function broadcastGiftSubEvent(
   platform: 'twitch' | 'kick' | 'youtube'
 ): Promise<void> {
   const platformDisplayName = getPlatformDisplayName(platform)
-  
+
+  // Buscar informações do RECEBEDOR para notificação rica e whisper
+  const userInfo = await findLinkedUserWithProfileByUsername(platform, recipientUsername)
+
+  // Mensagem para whisper (para quem recebeu)
+  const whisperMessage = `Você recebeu uma inscrição de presente, vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
+
+  // Tentar enviar whisper na Twitch se for a plataforma
+  if (platform === 'twitch') {
+    await sendStreamerWhisper(recipientUsername, whisperMessage)
+  }
+
   // Mensagem para quem recebeu
   const receiverMessage = `🎁 @${recipientUsername} recebeu inscrição de presente com ${tierName} de @${gifterUsername} na ${platformDisplayName} - Cadastre-se no site waveigl.com para ser convidado para o grupo exclusivo do WhatsApp`
-  
+
   // Mensagem para quem deu
   const gifterMessage = `🎁 @${gifterUsername} enviou uma assinatura de presente para @${recipientUsername}, portanto o @${gifterUsername} pode enviar no sussurro do @waveigl o link da steam para receber assinatura`
-  
+
   // Usar o sistema de filas - as mensagens serão enviadas respeitando rate limits
   // Prioridade normal para que gift subs em massa não bloqueiem o chat
   queueMessage(receiverMessage, 'all', 'normal')
   queueMessage(gifterMessage, 'all', 'normal')
-  
-  // Notificar no Discord (imediato, não usa fila)
-  await sendDiscordNotification(
-    '',
-    '🎁 Inscrição de Presente!',
-    `**Doador:** ${gifterUsername}\n**Recebedor:** ${recipientUsername}\n**Tier:** ${tierName}\n**Plataforma:** ${platformDisplayName}\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-  )
-  
+
+  // Notificar no Discord (Rico)
+  await sendDiscordSubNotification({
+    platform,
+    username: recipientUsername,
+    platformUserId: userInfo?.platform_user_id || 'unknown',
+    phoneNumber: userInfo?.phone_number || null,
+    isRegistered: !!userInfo,
+    isGift: true,
+    donorUsername: gifterUsername,
+    tier: tierName
+  })
+
   // Criar benefício para quem RECEBEU (não para quem deu)
   await createBenefitForUser(recipientUsername, platform, tierName, true, gifterUsername)
-  
+
   console.log(`[Commands] ✅ Evento de gift sub adicionado à fila: ${gifterUsername} -> ${recipientUsername} na ${platform}`)
 }
 
@@ -1067,7 +1100,7 @@ async function createBenefitForUser(
 ): Promise<void> {
   try {
     const supabase = getSupabaseAdmin()
-    
+
     // Buscar o usuário pela conta vinculada
     const { data: linkedAccount } = await supabase
       .from('linked_accounts')
@@ -1075,15 +1108,15 @@ async function createBenefitForUser(
       .eq('platform', platform)
       .ilike('platform_username', username)
       .maybeSingle()
-    
+
     if (!linkedAccount) {
       console.log(`[Commands] Usuário ${username} não encontrado no sistema - benefício não criado`)
       return
     }
-    
+
     // Importar dinamicamente para evitar dependência circular
     const { createOrUpdateBenefit } = await import('@/lib/benefits')
-    
+
     const benefit = await createOrUpdateBenefit(
       linkedAccount.user_id,
       platform,
@@ -1091,11 +1124,11 @@ async function createBenefitForUser(
       isGift,
       gifterUsername
     )
-    
+
     if (benefit) {
       console.log(`[Commands] ✅ Benefício criado para ${username}: ${benefit.id}`)
     }
-    
+
   } catch (error) {
     console.error(`[Commands] Erro ao criar benefício para ${username}:`, error)
   }
