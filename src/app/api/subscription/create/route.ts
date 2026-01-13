@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!accessToken) {
       console.error('[Subscription] MERCADOPAGO_ACCESS_TOKEN não configurado')
       return NextResponse.json(
-        { error: 'Pagamento não configurado. Entre em contato com o suporte.' }, 
+        { error: 'Pagamento não configurado. Entre em contato com o suporte.' },
         { status: 503 }
       )
     }
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Verificar sessão do usuário
     const cookieHeader = request.headers.get('cookie')
     const session = await parseSessionCookie(cookieHeader)
-    
+
     if (!session?.userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
@@ -40,14 +40,14 @@ export async function POST(request: NextRequest) {
     if (profileError || !profile) {
       console.error('[Subscription] Perfil não encontrado:', profileError)
       return NextResponse.json(
-        { error: 'Perfil não encontrado' }, 
+        { error: 'Perfil não encontrado' },
         { status: 404 }
       )
     }
 
     if (!profile.email) {
       return NextResponse.json(
-        { error: 'Email não cadastrado. Por favor, vincule uma conta com email.' }, 
+        { error: 'Email não cadastrado. Por favor, vincule uma conta com email.' },
         { status: 400 }
       )
     }
@@ -61,16 +61,16 @@ export async function POST(request: NextRequest) {
 
     if (!discordConnection) {
       return NextResponse.json(
-        { error: 'Você precisa vincular seu Discord antes de assinar. O Clube funciona via Discord.' }, 
-        { status: 400, reason: 'discord_required' }
+        { error: 'Você precisa vincular seu Discord antes de assinar. O Clube funciona via Discord.', reason: 'discord_required' },
+        { status: 400 }
       )
     }
 
     // Verificar dados pessoais obrigatórios
     if (!profile.full_name || !profile.phone_number || !profile.birth_date) {
       return NextResponse.json(
-        { error: 'Preencha seus dados pessoais (nome, telefone e data de nascimento) antes de assinar.' }, 
-        { status: 400, reason: 'personal_data_required' }
+        { error: 'Preencha seus dados pessoais (nome, telefone e data de nascimento) antes de assinar.', reason: 'personal_data_required' },
+        { status: 400 }
       )
     }
 
@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--
     }
-    
+
     if (age < 18) {
       console.log('[Subscription] Usuário menor de 18 anos tentou assinar:', userId)
       return NextResponse.json(
-        { error: 'Você precisa ter pelo menos 18 anos para assinar o Clube WaveIGL.' }, 
-        { status: 403, reason: 'underage' }
+        { error: 'Você precisa ter pelo menos 18 anos para assinar o Clube WaveIGL.', reason: 'underage' },
+        { status: 403 }
       )
     }
 
@@ -95,11 +95,11 @@ export async function POST(request: NextRequest) {
     if (profile.subscription_status === 'active') {
       console.log('[Subscription] Usuário já possui assinatura ativa:', profile.subscription_id)
       return NextResponse.json(
-        { 
+        {
           error: 'Você já possui uma assinatura ativa do Clube WaveIGL',
           subscription_id: profile.subscription_id,
           already_subscribed: true
-        }, 
+        },
         { status: 409 } // Conflict
       )
     }
@@ -113,16 +113,16 @@ export async function POST(request: NextRequest) {
         const preapproval = new PreApproval(client)
         const existingPreapproval = await preapproval.get({ id: profile.subscription_id })
         const status = (existingPreapproval as any)?.status
-        
+
         // Status possíveis: authorized, pending, paused, cancelled
         if (status === 'authorized' || status === 'pending') {
           console.log('[Subscription] Assinatura existente ainda está ativa no MP:', status)
           return NextResponse.json(
-            { 
+            {
               error: 'Você já possui uma assinatura pendente ou ativa. Verifique seu email ou entre em contato com o suporte.',
               subscription_id: profile.subscription_id,
               already_subscribed: true
-            }, 
+            },
             { status: 409 }
           )
         }
@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
 
     // Determinar URLs (MP não aceita localhost)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://waveigl.com'
-    const backUrl = appUrl.includes('localhost') 
-      ? 'https://waveigl.com/dashboard?subscription=success' 
+    const backUrl = appUrl.includes('localhost')
+      ? 'https://waveigl.com/dashboard?subscription=success'
       : `${appUrl}/dashboard?subscription=success`
     const webhookUrl = appUrl.includes('localhost')
       ? undefined // Webhook não funciona em localhost mesmo
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[Subscription] Preapproval criado:', (preapproval as any)?.id)
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       init_point: (preapproval as any)?.init_point || (preapproval as any)?.sandbox_init_point || null,
       preapproval_id: (preapproval as any)?.id || null,
     })
@@ -177,25 +177,25 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const errorMessage = error?.message || error?.cause?.message || String(error)
     console.error('[Subscription] Erro ao criar preferência:', errorMessage)
-    
+
     // Erro de verificação de dados do vendedor
     if (errorMessage.includes('personal data verification')) {
       return NextResponse.json(
-        { error: 'Sistema de pagamento em configuração. Tente novamente em breve.' }, 
+        { error: 'Sistema de pagamento em configuração. Tente novamente em breve.' },
         { status: 503 }
       )
     }
-    
+
     // Erro de autenticação do Mercado Pago
     if (errorMessage.includes('Unauthorized') || error?.status === 401) {
       return NextResponse.json(
-        { error: 'Token do Mercado Pago inválido. Verifique as configurações.' }, 
+        { error: 'Token do Mercado Pago inválido. Verifique as configurações.' },
         { status: 503 }
       )
     }
-    
+
     return NextResponse.json(
-      { error: 'Falha ao processar pagamento. Tente novamente.' }, 
+      { error: 'Falha ao processar pagamento. Tente novamente.' },
       { status: 500 }
     )
   }
