@@ -400,6 +400,11 @@ export default function DashboardPage() {
         if (confirmSub) {
           await goToCheckout()
         }
+      } else if (data.reason === 'already_subscribed') {
+        // Casos onde o backend já detecta assinatura ativa no check-eligibility
+        setIsClubMember(true)
+        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status será atualizado.')
+        await checkClubStatus() // Forçar refresh
       } else {
         // Mostrar popup de onboarding
         setClubOnboardingData(data.user)
@@ -425,9 +430,18 @@ export default function DashboardPage() {
       const data = await res.json()
 
       if (res.status === 409 && data.already_subscribed) {
-        // Usuário já tem assinatura ativa
-        alert('Você já possui uma assinatura ativa do Clube WaveIGL. Se você não tem acesso, entre em contato com o suporte.')
+        // Usuário já tem assinatura ativa (detectado pelo backend)
+        setIsClubMember(true)
+        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status foi atualizado.')
         // Recarregar status do clube
+        await checkClubStatus()
+        return
+      }
+
+      // Se o backend retornou eligible:false com reason:already_subscribed no check-eligibility
+      if (data.eligible === false && data.reason === 'already_subscribed') {
+        setIsClubMember(true)
+        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status foi atualizado.')
         await checkClubStatus()
         return
       }
