@@ -1109,8 +1109,10 @@ export async function broadcastSubscriptionEvent(
   // Mensagem de inscrição
   const subMessage = `🎉 @${username} se inscreveu com ${tierName} na ${platformDisplayName} - Cadastre-se no site waveigl.com para ser convidado para o grupo exclusivo do WhatsApp`
 
-  // Usar o sistema de filas para respeitar rate limits
-  queueMessage(subMessage, 'all', 'high') // Alta prioridade para subs normais
+  // TEMPORARIAMENTE DESABILITADO: Notificação no chat
+  // TODO: Reativar quando whisper estiver funcionando corretamente
+  // queueMessage(subMessage, 'all', 'high') // Alta prioridade para subs normais
+  console.log(`[Commands] ⏸️ Notificação no chat DESABILITADA temporariamente: ${subMessage.substring(0, 50)}...`)
 
   // Notificar no Discord (Rico) - Substitui a notificação simples
   await sendDiscordSubNotification({
@@ -1159,10 +1161,11 @@ export async function broadcastGiftSubEvent(
   // Mensagem para quem deu
   const gifterMessage = `🎁 @${gifterUsername} enviou uma assinatura de presente para @${recipientUsername}, portanto o @${gifterUsername} pode enviar no sussurro do @waveigl o link da steam para receber assinatura`
 
-  // Usar o sistema de filas - as mensagens serão enviadas respeitando rate limits
-  // Prioridade normal para que gift subs em massa não bloqueiem o chat
-  queueMessage(receiverMessage, 'all', 'normal')
-  queueMessage(gifterMessage, 'all', 'normal')
+  // TEMPORARIAMENTE DESABILITADO: Notificação no chat
+  // TODO: Reativar quando whisper estiver funcionando corretamente
+  // queueMessage(receiverMessage, 'all', 'normal')
+  // queueMessage(gifterMessage, 'all', 'normal')
+  console.log(`[Commands] ⏸️ Notificação no chat DESABILITADA temporariamente para gift sub`)
 
   // Notificar no Discord (Rico)
   await sendDiscordSubNotification({

@@ -20,6 +20,10 @@
 - Improved: Logs detalhados no scraping do YouTube para debug
 - Improved: Discord OAuth callback com diagnóstico detalhado para erros 401 (invalid_client) e 400
 
+### ⏸️ Temporarily Disabled
+- Disabled: Notificações de sub no chat (queueMessage) - aguardando whisper funcionar corretamente
+- Note: Discord notifications e whispers continuam funcionando normalmente
+
 ### 📝 Documentation
 - Updated: TWITCH_WHISPER_FIX.md com informações sobre a função correta
 - Added: Logs explicando cada passo do envio de whisper
