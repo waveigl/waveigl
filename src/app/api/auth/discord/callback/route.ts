@@ -55,13 +55,19 @@ export async function GET(request: NextRequest) {
     }
 
     if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
-      console.error('[Discord Callback] Credenciais não configuradas')
+      console.error('[Discord Callback] ❌ Credenciais não configuradas')
+      console.error('[Discord Callback] DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID ? '✅ Configurado' : '❌ FALTANDO')
+      console.error('[Discord Callback] DISCORD_CLIENT_SECRET:', DISCORD_CLIENT_SECRET ? '✅ Configurado' : '❌ FALTANDO')
       return NextResponse.redirect(new URL('/dashboard?error=discord_not_configured', request.url))
     }
 
     // Construir redirect_uri dinamicamente
     const appUrl = getAppUrl(request)
     const redirectUri = `${appUrl}/api/auth/discord/callback`
+    
+    console.log('[Discord Callback] Trocando code por token...')
+    console.log('[Discord Callback] Client ID:', DISCORD_CLIENT_ID.substring(0, 8) + '...')
+    console.log('[Discord Callback] Redirect URI:', redirectUri)
 
     // Trocar code por access_token
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
@@ -80,7 +86,24 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}))
-      console.error('[Discord Callback] Erro ao trocar code:', tokenResponse.status, errorData)
+      console.error('[Discord Callback] ❌ Erro ao trocar code:', tokenResponse.status, errorData)
+      
+      // Diagnóstico detalhado
+      if (tokenResponse.status === 401) {
+        console.error('[Discord Callback] 🔐 ERRO 401 - invalid_client')
+        console.error('[Discord Callback] Possíveis causas:')
+        console.error('  → DISCORD_CLIENT_ID está incorreto')
+        console.error('  → DISCORD_CLIENT_SECRET está incorreto')
+        console.error('  → As credenciais foram regeneradas no Discord Developer Portal')
+        console.error('  → Verifique: https://discord.com/developers/applications')
+      } else if (tokenResponse.status === 400) {
+        console.error('[Discord Callback] ⚠️ ERRO 400 - Requisição inválida')
+        console.error('[Discord Callback] Possíveis causas:')
+        console.error('  → redirect_uri não bate com o configurado no Discord')
+        console.error('  → Redirect URI esperado:', redirectUri)
+        console.error('  → Verifique OAuth2 > Redirects no Discord Developer Portal')
+      }
+      
       return NextResponse.redirect(new URL('/dashboard?error=discord_token_error', request.url))
     }
 

@@ -147,6 +147,7 @@ async function forceTokenRenewalLive(): Promise<string | null> {
  * Busca o liveChatId usando a API do YouTube
  * Verifica bloqueio de quota antes de chamar
  * Se receber erro 401, tenta renovar o token automaticamente
+ * IMPORTANTE: Valida que é uma live AO VIVO do WaveIGL
  */
 async function fetchLiveChatIdFromAPI(videoId: string, accessToken: string, retryCount: number = 0): Promise<string | null> {
   try {
@@ -156,8 +157,9 @@ async function fetchLiveChatIdFromAPI(videoId: string, accessToken: string, retr
     }
     
     // Usar a API de videos para obter detalhes da live, incluindo liveChatId
+    // Buscar também channelId para validar que é do WaveIGL
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}`,
+      `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${videoId}`,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -190,15 +192,53 @@ async function fetchLiveChatIdFromAPI(videoId: string, accessToken: string, retr
     }
     
     const data = await response.json()
-    const liveChatId = data.items?.[0]?.liveStreamingDetails?.activeLiveChatId
+    const videoData = data.items?.[0]
     
-    if (liveChatId) {
-      console.log('[YouTube] ✅ liveChatId obtido via API:', liveChatId)
-      return liveChatId
+    if (!videoData) {
+      console.log('[YouTube] Vídeo não encontrado')
+      return null
     }
     
-    console.log('[YouTube] Vídeo não tem liveChatId ativo (pode não ser uma live)')
-    return null
+    const liveStreamingDetails = videoData.liveStreamingDetails
+    const snippet = videoData.snippet
+    
+    // ✅ VALIDAÇÃO 1: Verificar se é uma live AO VIVO (não vídeo pré-gravado)
+    // Uma live ao vivo tem actualStartTime mas NÃO tem actualEndTime
+    const actualStartTime = liveStreamingDetails?.actualStartTime
+    const actualEndTime = liveStreamingDetails?.actualEndTime
+    const liveChatId = liveStreamingDetails?.activeLiveChatId
+    
+    if (!actualStartTime) {
+      console.log('[YouTube] ❌ Não é uma live (sem actualStartTime)')
+      return null
+    }
+    
+    if (actualEndTime) {
+      console.log('[YouTube] ❌ Live já encerrada (tem actualEndTime):', actualEndTime)
+      return null
+    }
+    
+    if (!liveChatId) {
+      console.log('[YouTube] ❌ Não há liveChatId ativo (live não está ao vivo)')
+      return null
+    }
+    
+    // ✅ VALIDAÇÃO 2: Verificar se é do canal WaveIGL
+    const channelId = snippet?.channelId
+    const WAVEIGL_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID
+    
+    if (!channelId) {
+      console.log('[YouTube] ❌ Não foi possível obter channelId')
+      return null
+    }
+    
+    if (channelId !== WAVEIGL_CHANNEL_ID) {
+      console.log(`[YouTube] ❌ Live é de outro canal (${channelId}), não do WaveIGL (${WAVEIGL_CHANNEL_ID})`)
+      return null
+    }
+    
+    console.log('[YouTube] ✅ Live validada: ao vivo + do WaveIGL + liveChatId obtido:', liveChatId)
+    return liveChatId
     
   } catch (error) {
     console.error('[YouTube] Erro ao buscar liveChatId:', error)
@@ -208,21 +248,37 @@ async function fetchLiveChatIdFromAPI(videoId: string, accessToken: string, retr
 
 /**
  * Busca a live atual do canal via scraping + API
+ * IMPORTANTE: Valida que é uma live AO VIVO do WaveIGL
  */
 export async function getCurrentYouTubeLive(): Promise<LiveStreamInfo> {
   // Primeiro, tentar scraping para detectar se está ao vivo
   const scrapeResult = await scrapeLiveDetection()
   
+  // Se não detectou live ao vivo no scraping, retornar vazio
+  if (!scrapeResult.isLive || !scrapeResult.videoId) {
+    console.log('[YouTube] ❌ Nenhuma live ao vivo detectada')
+    return scrapeResult
+  }
+  
   // Se encontrou videoId mas não tem liveChatId, buscar via API
-  if (scrapeResult.isLive && scrapeResult.videoId && !scrapeResult.liveChatId) {
+  // A API vai validar que é realmente uma live ao vivo do WaveIGL
+  if (!scrapeResult.liveChatId) {
     const token = await getYouTubeToken()
     if (token) {
       const liveChatId = await fetchLiveChatIdFromAPI(scrapeResult.videoId, token)
       if (liveChatId) {
         scrapeResult.liveChatId = liveChatId
+      } else {
+        // Se a API não conseguiu obter liveChatId, não é uma live válida
+        console.log('[YouTube] ❌ Não foi possível validar a live via API')
+        scrapeResult.isLive = false
+        scrapeResult.videoId = null
       }
     } else {
-      console.log('[YouTube] Nenhum token disponível para buscar liveChatId')
+      console.log('[YouTube] ⚠️ Nenhum token disponível para validar live via API')
+      // Sem token, não podemos validar - considerar como não live
+      scrapeResult.isLive = false
+      scrapeResult.videoId = null
     }
   }
   
@@ -231,6 +287,8 @@ export async function getCurrentYouTubeLive(): Promise<LiveStreamInfo> {
 
 /**
  * Buscar via scraping da página do canal
+ * IMPORTANTE: Apenas detecta lives AO VIVO (não vídeos pré-gravados)
+ * IMPORTANTE: Valida que é do canal WaveIGL
  */
 async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
   const result: LiveStreamInfo = {
@@ -246,6 +304,8 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
     // Buscar a página de lives do canal
     const channelLiveUrl = `https://www.youtube.com/${YOUTUBE_CHANNEL_HANDLE}/live`
     
+    console.log(`[YouTube] Buscando live em: ${channelLiveUrl}`)
+    
     const res = await fetch(channelLiveUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -256,36 +316,94 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
     })
 
     if (!res.ok) {
+      console.log('[YouTube] Erro ao acessar página de lives:', res.status)
       return result
     }
 
     const html = await res.text()
 
-    // Extrair videoId do HTML
-    const videoIdMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/)
-    if (videoIdMatch) {
-      result.videoId = videoIdMatch[1]
-      
-      // Verificar se está ao vivo - múltiplos padrões
-      const isLiveMatch = html.match(/"isLive"\s*:\s*true/) || 
-                          html.match(/"isLiveContent"\s*:\s*true/) ||
-                          html.match(/\\"isLive\\":true/)
-      result.isLive = !!isLiveMatch
-
-      // Extrair título
-      const titleMatch = html.match(/"title"\s*:\s*"([^"]+)"/)
-      if (titleMatch) {
-        result.title = titleMatch[1]
-      }
-      
-      // Tentar extrair liveChatId do HTML
-      const liveChatIdMatch = html.match(/"liveChatId":"([^"]+)"/) ||
-                              html.match(/\\"liveChatId\\":\\"([^"\\]+)\\"/)
-      if (liveChatIdMatch) {
-        result.liveChatId = liveChatIdMatch[1]
-      }
+    // ✅ VALIDAÇÃO 1: Verificar se há indicador de live AO VIVO na página
+    // Procurar por indicadores de live ativa (não vídeo pré-gravado)
+    const hasLiveIndicator = html.match(/"isLive"\s*:\s*true/) || 
+                             html.match(/"isLiveContent"\s*:\s*true/) ||
+                             html.match(/\\"isLive\\":true/) ||
+                             html.match(/"isUpcoming"\s*:\s*false/) // Não é upcoming
+    
+    if (!hasLiveIndicator) {
+      console.log('[YouTube] ❌ Nenhuma live ao vivo detectada na página')
+      return result
     }
 
+    // Extrair videoId do HTML
+    const videoIdMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/)
+    if (!videoIdMatch) {
+      console.log('[YouTube] ❌ Não foi possível extrair videoId')
+      return result
+    }
+    
+    const videoId = videoIdMatch[1]
+    
+    // ✅ VALIDAÇÃO 2: Verificar se é do canal WaveIGL
+    // Extrair channelId do HTML para validar
+    const WAVEIGL_CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID
+    
+    // Tentar extrair channelId de várias formas
+    const channelIdMatch = html.match(/"channelId":"([^"]+)"/) ||
+                           html.match(/"externalChannelId":"([^"]+)"/) ||
+                           html.match(/\\"channelId\\":\\"([^"\\]+)\\"/)
+    
+    const extractedChannelId = channelIdMatch?.[1]
+    
+    console.log('[YouTube] Channel ID extraído:', extractedChannelId)
+    console.log('[YouTube] Channel ID esperado (WaveIGL):', WAVEIGL_CHANNEL_ID)
+    
+    // Se temos o YOUTUBE_CHANNEL_ID configurado, validar
+    if (WAVEIGL_CHANNEL_ID && extractedChannelId) {
+      if (extractedChannelId !== WAVEIGL_CHANNEL_ID) {
+        console.log(`[YouTube] ❌ Live é de outro canal (${extractedChannelId}), não do WaveIGL (${WAVEIGL_CHANNEL_ID})`)
+        console.log('[YouTube] ❌ Ignorando vídeo:', videoId)
+        return result
+      }
+      console.log('[YouTube] ✅ Channel ID validado: é do WaveIGL')
+    } else if (WAVEIGL_CHANNEL_ID && !extractedChannelId) {
+      // Não conseguiu extrair channelId do HTML - tentar validar via título/autor
+      // Procurar pelo nome do canal no HTML
+      const channelNameMatch = html.match(/"ownerChannelName":"([^"]+)"/) ||
+                               html.match(/"author":"([^"]+)"/)
+      const channelName = channelNameMatch?.[1]?.toLowerCase()
+      
+      console.log('[YouTube] Nome do canal extraído:', channelName)
+      
+      // Verificar se o nome contém "waveigl"
+      if (channelName && !channelName.includes('waveigl')) {
+        console.log(`[YouTube] ❌ Live parece ser de outro canal: ${channelName}`)
+        return result
+      }
+      
+      console.log('[YouTube] ⚠️ Não foi possível extrair channelId, mas nome parece ser WaveIGL')
+    } else if (!WAVEIGL_CHANNEL_ID) {
+      console.warn('[YouTube] ⚠️ YOUTUBE_CHANNEL_ID não configurado - não é possível validar canal')
+    }
+    
+    result.videoId = videoId
+    result.isLive = true // Indicador de live encontrado
+
+    // Extrair título
+    const titleMatch = html.match(/"title"\s*:\s*"([^"]+)"/)
+    if (titleMatch) {
+      result.title = titleMatch[1]
+      console.log('[YouTube] Título da live:', result.title)
+    }
+    
+    // Tentar extrair liveChatId do HTML (pode estar disponível no scraping)
+    const liveChatIdMatch = html.match(/"liveChatId":"([^"]+)"/) ||
+                            html.match(/\\"liveChatId\\":\\"([^"\\]+)\\"/)
+    if (liveChatIdMatch) {
+      result.liveChatId = liveChatIdMatch[1]
+      console.log('[YouTube] ✅ liveChatId obtido via scraping:', result.liveChatId)
+    }
+
+    console.log('[YouTube] ✅ Live ao vivo detectada via scraping:', result.videoId)
     return result
 
   } catch (error) {

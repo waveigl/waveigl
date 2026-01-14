@@ -1,5 +1,90 @@
 # Changelog - WaveIGL
 
+## [0.0.7] - 2025-01-13
+
+### 🐛 Bug Fixes
+- Fixed: `sendStreamerWhisper` em `commands.ts` não enviava whispers para subscribers reais
+- Fixed: Função bloqueava se `authorized_scopes` não estivesse no banco (agora tenta enviar mesmo assim)
+- Fixed: Falta de logs detalhados para diagnosticar problemas de whisper
+- Fixed: Token expirado não era renovado automaticamente
+- Fixed: YouTube detectava lives de outros canais em vez de apenas do WaveIGL
+- Fixed: Scraping do YouTube não validava channelId antes de considerar como live válida
+
+### 🔧 Improvements
+- Improved: Logs extremamente detalhados em `sendStreamerWhisper` para debug completo
+- Improved: Tratamento de `authorized_scopes` como string ou array
+- Improved: Diagnóstico detalhado para cada código de erro HTTP (400, 401, 403, 404, 429)
+- Improved: Renovação automática de token quando expirado (401)
+- Improved: Mensagens de erro explicativas para cada cenário de falha
+- Improved: YouTube scraping agora valida channelId e nome do canal antes de aceitar live
+- Improved: Logs detalhados no scraping do YouTube para debug
+- Improved: Discord OAuth callback com diagnóstico detalhado para erros 401 (invalid_client) e 400
+
+### 📝 Documentation
+- Updated: TWITCH_WHISPER_FIX.md com informações sobre a função correta
+- Added: Logs explicando cada passo do envio de whisper
+- Added: Logs de validação de canal no YouTube scraping
+- Added: Diagnóstico de erros de OAuth do Discord
+
+---
+
+## [0.0.6] - 2025-01-13
+
+### 🐛 Bug Fixes
+- Fixed: Whispers não estavam sendo enviados para subscribers na Twitch
+- Fixed: Função `sendTwitchWhisper` não validava `toUserId` corretamente
+- Fixed: Falta de tratamento de erros e logging estruturado no envio de whispers
+- Fixed: Credenciais não configuradas não eram diagnosticadas corretamente
+
+### ✨ Features
+- Added: Comprehensive Twitch whisper validation test suite (23 tests)
+- Added: Detailed error diagnostics para problemas comuns de whisper
+- Added: Validação de toUserId antes de enviar whisper
+
+### 🔧 Improvements
+- Improved: Logs estruturados com contexto completo para debug
+- Improved: Tratamento de erros específicos (400, 401, 403)
+- Improved: Mensagens de erro mais descritivas
+- Improved: Validação de credenciais com mensagens claras
+
+### 📝 Documentation
+- Added: Comments explicando requisitos de whisper na Twitch
+- Added: Diagnóstico de erros comuns (usuário não segue, bloqueou whispers, etc)
+
+### 🔐 Security
+- Added: Validação de toUserId para evitar injeção
+- Added: Verificação de credenciais antes de fazer requisição
+
+---
+
+## [0.0.5] - 2025-01-13
+
+### 🐛 Bug Fixes
+- Fixed: YouTube live detection agora valida que é uma live **AO VIVO** (não vídeo pré-gravado)
+- Fixed: YouTube live detection agora valida que é do canal **WaveIGL** (não outro canal)
+- Fixed: Chat offline mesmo com live online - agora valida `actualStartTime` e `actualEndTime` corretamente
+- Fixed: Removed vídeos pré-gravados sendo detectados como lives
+
+### ✨ Features
+- Added: Comprehensive YouTube live validation test suite (11 tests)
+- Added: API validation para confirmar live status antes de usar liveChatId
+- Added: Channel ID validation para garantir que é do WaveIGL
+
+### 🔧 Improvements
+- Improved: YouTube live detection agora usa API para validar status real
+- Improved: Scraping agora procura por indicadores de live ativa
+- Improved: Logs estruturados para debug de detecção de live
+- Improved: Validação em múltiplas camadas (scraping + API)
+
+### 📝 Documentation
+- Updated: Logs com mensagens claras sobre validação de live
+- Added: Comments explicando validações de live ao vivo
+
+### 🔐 Security
+- Added: Validação de channelId para evitar lives de outros canais
+
+---
+
 ## [0.0.4] - 2025-01-13
 
 ### 🐛 Bug Fixes
@@ -46,9 +131,7 @@
 
 ### ✨ Implementação Inicial Completa
 
-Primeira versão completa do sistema WaveIGL com todas as funcionalidades planejadas.
-
-### 🎉 Funcionalidades Implementadas
+Primeira versão completa do sistema WaveIGL com todas as funcionalidades planejadas.### 🎉 Funcionalidades Implementadas
 
 #### Core
 - ✅ Landing page SEO otimizada com metadata e schemas

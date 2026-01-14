@@ -103,30 +103,76 @@ async function sendPrivateMessage(platform: Platform, userId: string, message: s
 
 /**
  * Envia whisper na Twitch usando a API
+ * IMPORTANTE: Usa a conta do streamer (não do bot) para enviar whispers
+ * Requer scope 'user:manage:whispers' na autenticação do streamer
  */
 async function sendTwitchWhisper(toUserId: string, message: string) {
-  const clientId = process.env.TWITCH_CLIENT_ID
-  const accessToken = process.env.TWITCH_BOT_ACCESS_TOKEN
-  const fromUserId = process.env.TWITCH_BOT_USER_ID
+  try {
+    const clientId = process.env.TWITCH_CLIENT_ID
+    const accessToken = process.env.TWITCH_BOT_ACCESS_TOKEN
+    const fromUserId = process.env.TWITCH_BOT_USER_ID
 
-  if (!clientId || !accessToken || !fromUserId) {
-    console.warn('[Twitch] Credenciais de whisper não configuradas')
-    return
-  }
+    if (!clientId || !accessToken || !fromUserId) {
+      console.warn('[Twitch Whisper] ⚠️ Credenciais de whisper não configuradas')
+      console.warn('[Twitch Whisper] Necessário: TWITCH_CLIENT_ID, TWITCH_BOT_ACCESS_TOKEN, TWITCH_BOT_USER_ID')
+      return
+    }
 
-  const res = await fetch(`https://api.twitch.tv/helix/whispers?from_user_id=${fromUserId}&to_user_id=${toUserId}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Client-Id': clientId,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ message })
-  })
+    // Validar que toUserId é um número válido
+    if (!toUserId || isNaN(Number(toUserId))) {
+      console.warn(`[Twitch Whisper] ⚠️ toUserId inválido: ${toUserId}`)
+      return
+    }
 
-  if (!res.ok) {
-    const error = await res.text()
-    throw new Error(`Twitch whisper failed: ${res.status} - ${error}`)
+    console.log(`[Twitch Whisper] Enviando whisper para ${toUserId}...`)
+
+    const res = await fetch(
+      `https://api.twitch.tv/helix/whispers?from_user_id=${fromUserId}&to_user_id=${toUserId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Client-Id': clientId,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message })
+      }
+    )
+
+    if (res.status === 204) {
+      console.log(`[Twitch Whisper] ✅ Whisper enviado com sucesso para ${toUserId}`)
+      return
+    }
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      let errorData: any = {}
+      try {
+        errorData = JSON.parse(errorText)
+      } catch {
+        // Ignorar erro de parse
+      }
+
+      console.error(`[Twitch Whisper] ❌ Erro ${res.status}:`, errorData.message || errorText)
+
+      // Diagnosticar problemas comuns
+      if (res.status === 400) {
+        console.error('[Twitch Whisper] Possíveis causas:')
+        console.error('  - Usuário não segue o canal')
+        console.error('  - Usuário bloqueou whispers')
+        console.error('  - Usuário é o próprio bot')
+        console.error('  - Rate limit excedido')
+      } else if (res.status === 401) {
+        console.error('[Twitch Whisper] Token expirado ou inválido')
+      } else if (res.status === 403) {
+        console.error('[Twitch Whisper] Acesso negado - verificar scopes e permissões')
+      }
+
+      throw new Error(`Twitch whisper failed: ${res.status} - ${errorData.message || errorText}`)
+    }
+  } catch (error) {
+    console.error('[Twitch Whisper] Erro ao enviar whisper:', error)
+    // Não relançar erro para não quebrar o fluxo de notificação
   }
 }
 

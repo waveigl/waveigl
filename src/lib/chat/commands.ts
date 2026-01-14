@@ -153,39 +153,72 @@ async function sendStreamerMessage(message: string): Promise<boolean> {
  * - Só pode enviar para usuários que seguem o canal ou já interagiram
  */
 async function sendStreamerWhisper(targetUsername: string, message: string): Promise<boolean> {
+  console.log(`[Whisper] 📤 Iniciando envio de whisper para: ${targetUsername}`)
+  
   try {
     const supabase = getSupabaseAdmin()
 
     // Buscar token do streamer waveigl
-    const { data: streamerAccount } = await supabase
+    console.log(`[Whisper] Buscando conta do streamer: ${TWITCH_CHANNEL}`)
+    const { data: streamerAccount, error: dbError } = await supabase
       .from('linked_accounts')
-      .select('platform_username, access_token, platform_user_id, authorized_scopes')
+      .select('platform_username, access_token, platform_user_id, authorized_scopes, refresh_token')
       .eq('platform', 'twitch')
       .ilike('platform_username', TWITCH_CHANNEL)
       .maybeSingle()
 
-    if (!streamerAccount?.access_token) {
-      console.log('[Commands] Token do streamer não encontrado para whisper')
+    if (dbError) {
+      console.error('[Whisper] ❌ Erro ao buscar conta do streamer:', dbError)
+      return false
+    }
+
+    if (!streamerAccount) {
+      console.error('[Whisper] ❌ Conta do streamer não encontrada no banco de dados')
+      console.error('[Whisper] Verifique se existe uma conta com platform=twitch e platform_username=waveigl')
+      return false
+    }
+
+    console.log('[Whisper] ✅ Conta do streamer encontrada:', {
+      username: streamerAccount.platform_username,
+      hasToken: !!streamerAccount.access_token,
+      hasUserId: !!streamerAccount.platform_user_id,
+      scopes: streamerAccount.authorized_scopes
+    })
+
+    if (!streamerAccount.access_token) {
+      console.error('[Whisper] ❌ Token do streamer não encontrado')
+      return false
+    }
+
+    if (!streamerAccount.platform_user_id) {
+      console.error('[Whisper] ❌ platform_user_id do streamer não encontrado')
       return false
     }
 
     // Verificar se o streamer tem o scope necessário
-    const scopes = streamerAccount.authorized_scopes as string[] | null
-    if (!scopes?.includes('user:manage:whispers')) {
-      console.log('[Commands] ⚠️ Streamer precisa reautenticar para obter scope user:manage:whispers')
-      console.log('[Commands] Scopes atuais:', scopes)
+    // O campo authorized_scopes pode ser string, array, ou null
+    let scopes: string[] = []
+    if (streamerAccount.authorized_scopes) {
+      if (Array.isArray(streamerAccount.authorized_scopes)) {
+        scopes = streamerAccount.authorized_scopes
+      } else if (typeof streamerAccount.authorized_scopes === 'string') {
+        // Pode ser uma string separada por espaços ou vírgulas
+        scopes = streamerAccount.authorized_scopes.split(/[\s,]+/).filter(Boolean)
+      }
+    }
 
-      // Marcar que precisa reautenticação
-      await supabase
-        .from('linked_accounts')
-        .update({ needs_reauth: true })
-        .eq('platform', 'twitch')
-        .ilike('platform_username', TWITCH_CHANNEL)
+    console.log('[Whisper] Scopes do streamer:', scopes)
 
-      return false
+    // NOTA: Vamos tentar enviar mesmo sem o scope registrado no banco
+    // porque o scope pode ter sido concedido mas não salvo no banco
+    const hasWhisperScope = scopes.includes('user:manage:whispers')
+    if (!hasWhisperScope) {
+      console.warn('[Whisper] ⚠️ Scope user:manage:whispers NÃO encontrado no banco de dados')
+      console.warn('[Whisper] Tentando enviar mesmo assim (scope pode existir mas não estar salvo)...')
     }
 
     // Buscar ID do usuário alvo
+    console.log(`[Whisper] Buscando ID do usuário: ${targetUsername}`)
     const userResponse = await fetch(
       `https://api.twitch.tv/helix/users?login=${targetUsername}`,
       {
@@ -197,7 +230,40 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
     )
 
     if (!userResponse.ok) {
-      console.error('[Commands] Erro ao buscar usuário para whisper:', userResponse.status)
+      const errorText = await userResponse.text()
+      console.error(`[Whisper] ❌ Erro ao buscar usuário: ${userResponse.status}`, errorText)
+      
+      // Se token expirado, tentar renovar
+      if (userResponse.status === 401 && streamerAccount.refresh_token) {
+        console.log('[Whisper] 🔄 Token expirado, tentando renovar...')
+        console.log('[Whisper] Refresh token presente:', !!streamerAccount.refresh_token)
+        
+        const { refreshTwitchToken } = await import('./twitch')
+        // Precisamos do user_id do banco, não do platform_user_id
+        const { data: fullAccount } = await supabase
+          .from('linked_accounts')
+          .select('user_id')
+          .eq('platform', 'twitch')
+          .ilike('platform_username', TWITCH_CHANNEL)
+          .maybeSingle()
+        
+        if (fullAccount?.user_id) {
+          console.log('[Whisper] Chamando refreshTwitchToken...')
+          const newToken = await refreshTwitchToken(streamerAccount.refresh_token, fullAccount.user_id)
+          if (newToken) {
+            console.log('[Whisper] ✅ Token renovado com sucesso! Tentando whisper novamente...')
+            return sendStreamerWhisper(targetUsername, message) // Retry com novo token
+          } else {
+            console.error('[Whisper] ❌ Falha ao renovar token - refresh_token pode estar inválido')
+            console.error('[Whisper] → O streamer precisa reautenticar na Twitch')
+          }
+        } else {
+          console.error('[Whisper] ❌ user_id não encontrado para renovar token')
+        }
+      } else if (userResponse.status === 401 && !streamerAccount.refresh_token) {
+        console.error('[Whisper] ❌ Token expirado e SEM refresh_token no banco')
+        console.error('[Whisper] → O streamer precisa reautenticar na Twitch')
+      }
       return false
     }
 
@@ -205,11 +271,14 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
     const targetUserId = userData.data?.[0]?.id
 
     if (!targetUserId) {
-      console.error('[Commands] Usuário não encontrado:', targetUsername)
+      console.error(`[Whisper] ❌ Usuário não encontrado na Twitch: ${targetUsername}`)
       return false
     }
 
+    console.log(`[Whisper] ✅ ID do usuário encontrado: ${targetUserId}`)
+
     // Enviar whisper via API
+    console.log(`[Whisper] Enviando whisper de ${streamerAccount.platform_user_id} para ${targetUserId}...`)
     const whisperResponse = await fetch(
       `https://api.twitch.tv/helix/whispers?from_user_id=${streamerAccount.platform_user_id}&to_user_id=${targetUserId}`,
       {
@@ -224,35 +293,61 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
     )
 
     if (whisperResponse.status === 204) {
-      console.log('[Commands] ✅ Whisper enviado para', targetUsername)
+      console.log(`[Whisper] ✅ Whisper enviado com sucesso para ${targetUsername}!`)
       return true
     }
 
     const errorData = await whisperResponse.json().catch(() => ({}))
     const errorMessage = errorData.message || `Erro ${whisperResponse.status}`
 
-    // Tratar erros específicos
-    if (whisperResponse.status === 401 && errorMessage.includes('Missing scope')) {
-      console.log('[Commands] ⚠️ Scope ausente - streamer precisa reautenticar')
+    console.error(`[Whisper] ❌ Erro ${whisperResponse.status}:`, errorData)
+
+    // Tratar erros específicos com diagnóstico detalhado
+    if (whisperResponse.status === 401) {
+      console.error('[Whisper] 🔐 ERRO 401 - Não autorizado')
+      if (errorMessage.includes('Missing scope')) {
+        console.error('[Whisper] → Scope user:manage:whispers não foi concedido')
+        console.error('[Whisper] → O streamer precisa reautenticar com o scope correto')
+        console.error('[Whisper] → URL de reautenticação: https://id.twitch.tv/oauth2/authorize?...')
+      } else {
+        console.error('[Whisper] → Token pode estar expirado ou inválido')
+      }
+      
+      // Marcar que precisa reautenticação
       await supabase
         .from('linked_accounts')
         .update({ needs_reauth: true })
         .eq('platform', 'twitch')
         .ilike('platform_username', TWITCH_CHANNEL)
+        
     } else if (whisperResponse.status === 400) {
-      console.log('[Commands] ⚠️ Erro 400 - possíveis causas:')
-      console.log('  - Usuário não segue o canal')
-      console.log('  - Usuário bloqueou whispers')
-      console.log('  - Rate limit excedido')
+      console.error('[Whisper] ⚠️ ERRO 400 - Requisição inválida')
+      console.error('[Whisper] Possíveis causas:')
+      console.error('  → Usuário não segue o canal')
+      console.error('  → Usuário bloqueou whispers')
+      console.error('  → Usuário é o próprio streamer')
+      console.error('  → Rate limit excedido (3/s, 100/min)')
+      
     } else if (whisperResponse.status === 403) {
-      console.log('[Commands] ⚠️ Erro 403 - conta do streamer pode precisar de verificação de telefone')
+      console.error('[Whisper] 🚫 ERRO 403 - Acesso negado')
+      console.error('[Whisper] Possíveis causas:')
+      console.error('  → Conta do streamer precisa de verificação de telefone')
+      console.error('  → Conta do streamer está suspensa')
+      console.error('  → Whispers desabilitados para a conta')
+      
+    } else if (whisperResponse.status === 404) {
+      console.error('[Whisper] 🔍 ERRO 404 - Usuário não encontrado')
+      console.error(`  → Verifique se ${targetUsername} existe na Twitch`)
+      
+    } else if (whisperResponse.status === 429) {
+      console.error('[Whisper] ⏱️ ERRO 429 - Rate limit excedido')
+      console.error('  → Aguarde alguns segundos antes de tentar novamente')
     }
 
-    console.error('[Commands] Erro ao enviar whisper:', whisperResponse.status, errorData)
     return false
 
   } catch (error) {
-    console.error('[Commands] Erro ao enviar whisper:', error)
+    console.error('[Whisper] ❌ Erro inesperado ao enviar whisper:', error)
     return false
   }
 }

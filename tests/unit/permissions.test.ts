@@ -34,12 +34,12 @@ describe('permissions', () => {
     expect(canBan(role)).toBe(false)
   })
 
-  it('member caso contrário', () => {
+  it('user caso contrário', () => {
     const linked: LinkedAccount[] = [
       { platform: 'twitch', platform_username: 'user', platform_user_id: '1', user_id: 'u', id: 'la', is_moderator: false, access_token: null, refresh_token: null, created_at: '' }
     ] as any
     const role = getUserRole(linked)
-    expect(role).toBe('member')
+    expect(role).toBe('user')
     expect(canModerate(role)).toBe(false)
     expect(canBan(role)).toBe(false)
   })
