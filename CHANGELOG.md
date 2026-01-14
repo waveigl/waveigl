@@ -1,18 +1,44 @@
 # Changelog - WaveIGL
 
+## [0.0.4] - 2025-01-13
+
+### 🐛 Bug Fixes
+- Fixed: TypeScript error em `useClubSubscription.ts` - notificationData implicitly has type 'any'
+- Fixed: Duplicate `.env.example` and `env.example` files consolidated into single `.env.example`
+
+### ✨ Features
+- Added: Comprehensive versioning rules and documentation in `.kiro/steering/VERSIONING.md`
+- Added: Mandatory version update checklist before commits
+
+### 📝 Documentation
+- Updated: README.md with complete versionamento section
+- Updated: README.md with development scripts and testing information
+- Updated: README.md with links to all steering documentation
+- Updated: `.env.example` with consolidated environment variables
+- Created: `.kiro/steering/VERSIONING.md` with semantic versioning rules
+
+### 🔧 Improvements
+- Improved: Type safety in `useClubSubscription.ts` with explicit type annotation
+- Improved: Environment configuration documentation
+- Improved: Development workflow documentation
+
+---
+
 ## [0.0.3] - 2025-01-13
 
 ### 🐛 Bug Fixes
+- Fixed: ClubSubscriptionWidget não exibia "Clube Ativo" quando usuário já tinha assinatura
+- Fixed: TypeScript error em useClubSubscription com notificationData
 
-#### Club Subscription Widget
-- **Fixed**: ClubSubscriptionWidget now correctly displays "Clube Ativo" badge when user already has an active subscription
-- **Issue**: Component was only checking `subscription_status === 'active'` but API returns `reason: 'already_subscribed'` when subscription exists
-- **Solution**: Updated status detection logic to check both `subscription_status === 'active'` OR `reason === 'already_subscribed'`
-- **Result**: Badge now correctly changes from "Sem Clube" to "Clube Ativo" (green with Crown icon) and "Assinar Clube" button disappears when user is already subscribed
-- **Tests**: Added comprehensive test suite with 11 test cases covering all subscription status scenarios
+### ✨ Features
+- Added: Comprehensive test suite para ClubSubscriptionWidget (11 tests)
 
-### 📝 Tests Added
-- `tests/unit/ClubSubscriptionWidget.test.ts` - 11 new tests for subscription status detection and transitions
+### 📝 Documentation
+- Updated: CHANGELOG.md com novo formato
+- Updated: .env.example consolidado em um único arquivo
+
+### 🔧 Improvements
+- Improved: Type safety em testes com MockEligibilityData interface
 
 ---
 

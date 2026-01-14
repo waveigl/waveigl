@@ -2,6 +2,16 @@
 
 Sistema de clube de assinatura com chat unificado multi-plataforma (Twitch, YouTube, Kick) e sistema de moderação cross-platform.
 
+## 📋 Índice
+
+- [Funcionalidades](#-funcionalidades)
+- [Stack Tecnológica](#-stack-tecnológica)
+- [Pré-requisitos](#-pré-requisitos)
+- [Configuração](#-configuração)
+- [Desenvolvimento](#-desenvolvimento)
+- [Versionamento](#-versionamento)
+- [Documentação](#-documentação)
+
 ## 🚀 Funcionalidades
 
 - **Landing Page SEO Otimizada**: Página de conversão com metadata e schemas estruturados
@@ -15,15 +25,17 @@ Sistema de clube de assinatura com chat unificado multi-plataforma (Twitch, YouT
 
 ## 🛠️ Stack Tecnológica
 
-- **Frontend**: Next.js 14+ (App Router), TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16+ (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (Auth, PostgreSQL, Realtime)
 - **Pagamentos**: Mercado Pago SDK
 - **Deploy**: Vercel (Serverless Functions + Cron Jobs)
 - **Integrações**: Twitch API, YouTube API, Kick API, Discord.js
+- **Testing**: Vitest, Playwright
 
 ## 📋 Pré-requisitos
 
 - Node.js 18+
+- npm ou yarn
 - Conta no Supabase
 - Conta no Mercado Pago
 - Contas de desenvolvedor nas plataformas (Twitch, YouTube, Kick)
@@ -44,11 +56,17 @@ cd waveigl
 npm install
 ```
 
-> ⚠️ **Nota sobre as dependências**: Todas as dependências foram atualizadas para as versões mais recentes (Outubro 2025). Consulte o arquivo `ATUALIZACOES.md` para detalhes sobre as mudanças importantes, especialmente a migração do `@supabase/auth-helpers-nextjs` (deprecated) para `@supabase/ssr`.
+> ⚠️ **Nota sobre as dependências**: Todas as dependências foram atualizadas para as versões mais recentes. Consulte o arquivo `ATUALIZACOES.md` para detalhes sobre as mudanças importantes.
 
 ### 3. Configure as variáveis de ambiente
 
 Copie o arquivo `.env.example` para `.env.local` e preencha as variáveis:
+
+```bash
+cp .env.example .env.local
+```
+
+Variáveis obrigatórias:
 
 ```env
 # Supabase
@@ -56,24 +74,22 @@ NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima
 SUPABASE_SERVICE_ROLE_KEY=sua_chave_de_servico
 
-# Mercado Pago
-MERCADOPAGO_ACCESS_TOKEN=seu_token_de_acesso
-MERCADOPAGO_PUBLIC_KEY=sua_chave_publica
+# Aplicação
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SESSION_SECRET=chave_secreta_minimo_32_caracteres
 
 # Twitch
 TWITCH_CLIENT_ID=seu_client_id
 TWITCH_CLIENT_SECRET=seu_client_secret
-TWITCH_REDIRECT_URI=http://localhost:3000/api/auth/twitch
+TWITCH_BROADCASTER_ID=seu_broadcaster_id
 
 # YouTube (Google OAuth)
 GOOGLE_CLIENT_ID=seu_client_id
 GOOGLE_CLIENT_SECRET=seu_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/youtube
 
 # Kick
 KICK_CLIENT_ID=seu_client_id
 KICK_CLIENT_SECRET=seu_client_secret
-KICK_REDIRECT_URI=http://localhost:3000/api/auth/kick
 
 # Discord
 DISCORD_BOT_TOKEN=seu_bot_token
@@ -81,9 +97,11 @@ DISCORD_GUILD_ID=id_do_servidor
 DISCORD_CLIENT_ID=seu_client_id
 DISCORD_CLIENT_SECRET=seu_client_secret
 
-# URLs
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Mercado Pago (Opcional)
+MERCADOPAGO_ACCESS_TOKEN=seu_token_de_acesso
 ```
+
+Veja `.env.example` para todas as variáveis disponíveis.
 
 ### 4. Configure o Supabase
 
@@ -111,7 +129,7 @@ supabase db push
 #### YouTube
 1. Acesse [Google Cloud Console](https://console.cloud.google.com)
 2. Ative a YouTube Data API v3 e a Live Streaming API
-3. Configure OAuth 2.0 com os escopos: `openid`, `https://www.googleapis.com/auth/userinfo.email`, `https://www.googleapis.com/auth/userinfo.profile`, `https://www.googleapis.com/auth/youtube.readonly`
+3. Configure OAuth 2.0 com os escopos necessários
 
 #### Kick
 1. Acesse [Kick Developer Portal](https://kick.com/developer)
@@ -142,24 +160,9 @@ supabase db push
 vercel --prod
 ```
 
-### Configuração dos Cron Jobs
-
-Os seguintes cron jobs são configurados automaticamente:
-
-- **Reaplicação de Timeouts**: A cada 5 minutos (`*/5 * * * *`)
-- **Polling do Chat**: A cada minuto (`*/1 * * * *`)
-
-## 📊 Estrutura do Banco de Dados
-
-### Tabelas Principais
-
-- `users`: Usuários do sistema
-- `linked_accounts`: Contas vinculadas (Twitch, YouTube, Kick)
-- `moderation_actions`: Ações de moderação
-- `active_timeouts`: Timeouts ativos para reaplicação
-- `chat_messages`: Mensagens do chat unificado
-
 ## 🔧 Desenvolvimento
+
+### Scripts Disponíveis
 
 ```bash
 # Desenvolvimento
@@ -173,7 +176,80 @@ npm start
 
 # Lint
 npm run lint
+
+# Testes
+npm run test              # Testes unitários (watch mode)
+npm run test:unit         # Testes unitários (run once)
+npm run test:integration  # Testes de integração
+npm run test:e2e          # Testes E2E
+
+# Database
+npm run db:reset          # Reset do banco de dados
+npm run db:push           # Push das migrations
 ```
+
+## 📦 Versionamento
+
+Este projeto segue **Semantic Versioning (MAJOR.MINOR.PATCH)**.
+
+### Regras de Versionamento
+
+- **MAJOR** (X.0.0): Breaking changes
+- **MINOR** (X.Y.0): Novas features compatíveis
+- **PATCH** (X.Y.Z): Bug fixes
+
+### Antes de Cada Commit
+
+Toda mudança **DEVE** seguir este checklist:
+
+- [ ] Código implementado e funcionando
+- [ ] Testes criados/atualizados e passando
+- [ ] Tipos TypeScript corretos (sem `any`)
+- [ ] Tratamento de erros implementado
+- [ ] Logs estruturados adicionados
+- [ ] **CHANGELOG.md atualizado**
+- [ ] **Versão atualizada em package.json**
+
+### Atualizar Versão
+
+```bash
+# PATCH (bug fix)
+npm version patch
+
+# MINOR (nova feature)
+npm version minor
+
+# MAJOR (breaking change)
+npm version major
+```
+
+Veja `.kiro/steering/VERSIONING.md` para detalhes completos.
+
+## 📚 Documentação
+
+### Arquivos de Referência
+
+- **`.kiro/steering/README.md`** - Índice de documentação
+- **`.kiro/steering/AI_GUIDELINES.md`** - Diretrizes para IAs
+- **`.kiro/steering/PROJECT_STANDARDS.md`** - Padrões técnicos
+- **`.kiro/steering/NAMING_CONVENTIONS.md`** - Convenções de nomenclatura
+- **`.kiro/steering/ARCHITECTURE.md`** - Arquitetura do sistema
+- **`.kiro/steering/ERROR_HANDLING.md`** - Tratamento de erros
+- **`.kiro/steering/AUTOMATION.md`** - Automação e CI/CD
+- **`.kiro/steering/VERSIONING.md`** - Regras de versionamento
+- **`CHANGELOG.md`** - Histórico de mudanças
+- **`ATUALIZACOES.md`** - Atualizações recentes
+
+## 📊 Estrutura do Banco de Dados
+
+### Tabelas Principais
+
+- `profiles`: Usuários do sistema
+- `linked_accounts`: Contas vinculadas (Twitch, YouTube, Kick)
+- `discord_connections`: Conexões com Discord
+- `subscriber_benefits`: Benefícios de assinante
+- `moderation_actions`: Ações de moderação
+- `active_timeouts`: Timeouts ativos para reaplicação
 
 ## 📈 Monitoramento
 
@@ -194,6 +270,7 @@ npm run lint
 - Validação de permissões em todas as operações
 - Rate limiting nas APIs
 - Sanitização de inputs
+- Variáveis de ambiente protegidas
 
 ## 💰 Custos
 
@@ -209,10 +286,12 @@ npm run lint
 ## 🤝 Contribuição
 
 1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+2. Crie uma branch para sua feature (`feat/descricao`)
+3. Commit suas mudanças (`git commit -m "feat: descrição"`)
+4. Atualize a versão (`npm version patch|minor|major`)
+5. Atualize o CHANGELOG.md
+6. Push para a branch
+7. Abra um Pull Request
 
 ## 📄 Licença
 

@@ -47,7 +47,7 @@ export function useClubSubscription() {
       const birthDateSet = !!eligibilityData.user.birth_date
 
       // Verificar notificações do Mercado Pago
-      let notificationData = undefined
+      let notificationData: { found: boolean; count: number; updates: string[] } | undefined = undefined
       if (!isSubscriber) {
         try {
           const syncRes = await fetch('/api/subscription/sync', { method: 'POST' })
