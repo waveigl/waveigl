@@ -1,6 +1,7 @@
 /**
  * Hook para gerenciar o painel admin
  * Apenas Gabriel Toth pode usar
+ * Requer verificação de senha
  */
 
 import { useState, useEffect, useCallback } from 'react'
@@ -31,6 +32,8 @@ export function useAdminPanel() {
 
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminInfo, setAdminInfo] = useState<any>(null)
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   // Verificar se é admin
   useEffect(() => {
@@ -42,8 +45,8 @@ export function useAdminPanel() {
         setIsAdmin(data.isAdmin)
         if (data.isAdmin) {
           setAdminInfo(data)
-          // Se é admin, carregar módulos
-          await loadModules()
+          // Se é admin, mostrar modal de senha
+          setShowPasswordModal(true)
         }
       } catch (error) {
         console.error('[useAdminPanel] Erro ao verificar admin:', error)
@@ -213,6 +216,10 @@ export function useAdminPanel() {
     isAdmin,
     adminInfo,
     state,
+    isPasswordVerified,
+    showPasswordModal,
+    setShowPasswordModal,
+    setIsPasswordVerified,
     loadModules,
     toggleModule,
     toggleMessage,

@@ -19,6 +19,7 @@ import BenefitsIndicator, { SubBadge } from '@/components/BenefitsIndicator'
 import SubscriberBenefitsPopup from '@/components/SubscriberBenefitsPopup'
 import BenefitsPanel from '@/components/BenefitsPanel'
 import ClubOnboardingPopup from '@/components/ClubOnboardingPopup'
+import { AdminPanel } from '@/components/AdminPanel'
 import { getUserRole } from '@/lib/permissions'
 import { useSessionProvider } from '@/hooks/use-session-sync'
 
@@ -233,6 +234,9 @@ export default function DashboardPage() {
   const [clubOnboardingData, setClubOnboardingData] = useState<any>(null)
   const [isClubMember, setIsClubMember] = useState(false)
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
+
+  // Estado para painel admin
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   // Status do YouTube (recebido via SSE para evitar polling)
   const [youtubeStatus, setYoutubeStatus] = useState<{
@@ -860,26 +864,30 @@ export default function DashboardPage() {
                     onClick={isTargetUserForSync ? handleForceSync : undefined}
                   >
                     <XCircle className="w-3 h-3 mr-1" />
-                    Sem Clube
+                    {/* Condicional: Mudar texto baseado no status de assinatura */}
+                    {clubOnboardingData?.subscription_status === 'active' ? 'Assinante' : 'Sem Clube'}
                   </Badge>
-                  <Button
-                    onClick={handleSubscribeClick}
-                    size="sm"
-                    disabled={isCheckingEligibility}
-                    className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25 transition-all"
-                  >
-                    {isCheckingEligibility ? (
-                      <>
-                        <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Verificando...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Assinar Clube
-                      </>
-                    )}
-                  </Button>
+                  {/* Botão "Assinar Clube" - Apenas visível para usuários não assinantes */}
+                  {!isClubMember && (
+                    <Button
+                      onClick={handleSubscribeClick}
+                      size="sm"
+                      disabled={isCheckingEligibility}
+                      className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25 transition-all"
+                    >
+                      {isCheckingEligibility ? (
+                        <>
+                          <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Verificando...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Assinar Clube
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </>
               )}
             </div>
@@ -900,7 +908,17 @@ export default function DashboardPage() {
                     const uiRole = displayRole === 'owner' ? 'streamer' : displayRole
 
                     return uiRole && ROLE_CONFIG[uiRole] && (
-                      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${ROLE_CONFIG[uiRole].bgColor} ${ROLE_CONFIG[uiRole].color}`}>
+                      <div
+                        onClick={() => {
+                          // Apenas admin e streamer podem abrir o painel
+                          if (uiRole === 'admin' || uiRole === 'streamer') {
+                            setShowAdminPanel(true)
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${ROLE_CONFIG[uiRole].bgColor} ${ROLE_CONFIG[uiRole].color} ${
+                          (uiRole === 'admin' || uiRole === 'streamer') ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                        }`}
+                      >
                         {ROLE_CONFIG[uiRole].icon}
                         <span className="text-xs font-medium">{ROLE_CONFIG[uiRole].label}</span>
                       </div>
@@ -1180,6 +1198,11 @@ export default function DashboardPage() {
           userData={clubOnboardingData}
           onComplete={handleOnboardingComplete}
         />
+      )}
+
+      {/* Painel Admin - Apenas para Gabriel Toth */}
+      {showAdminPanel && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
     </div>
   )

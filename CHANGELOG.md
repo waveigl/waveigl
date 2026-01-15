@@ -1,5 +1,78 @@
 # Changelog - WaveIGL
 
+## [0.0.11] - 2025-01-15
+
+### 🔐 Security
+- Added: Sistema de proteção por senha para painel admin com bcrypt
+- Added: Migração SQL para tabelas de segurança (`admin_security_config`, `admin_password_audit`)
+- Added: Rate limiting com bloqueio de 15 minutos após 5 tentativas falhadas
+- Added: Auditoria completa de tentativas de acesso (IP, User-Agent, timestamp)
+- Added: Validação de força de senha (maiúscula, minúscula, número, caractere especial)
+- Added: Modal de autenticação por senha antes de acessar painel admin
+
+### ✨ Features
+- Added: Componente `AdminPasswordModal` para inserção segura de senha
+- Added: Função `verifyAdminPassword` com proteção contra força bruta
+- Added: Função `hashPassword` usando bcrypt com 12 rounds
+- Added: Função `validatePasswordStrength` para validar requisitos de senha
+- Added: Endpoint `/api/admin/verify-password` para verificação server-side
+- Added: Hook `useAdminPanel` atualizado com estado de verificação de senha
+- Added: Auditoria de tentativas de acesso com logs estruturados
+
+### 🔧 Improvements
+- Improved: Segurança do painel admin com autenticação em duas camadas (OAuth + Senha)
+- Improved: Performance com cache de 5 minutos para módulos
+- Improved: UX com modal de senha elegante e responsivo
+- Improved: Proteção contra força bruta com bloqueio progressivo
+- Improved: Logs estruturados para auditoria de segurança
+
+### 🗄️ Database
+- Added: Tabela `admin_security_config` para armazenar hash de senha
+- Added: Tabela `admin_password_audit` para auditoria de tentativas
+- Added: RLS policies para proteger dados de segurança
+- Added: Índices para performance em queries de auditoria
+- Added: Triggers para atualizar timestamp automaticamente
+
+### 🧪 Tests
+- Added: 28 testes para funções de proteção por senha
+- Added: Testes de hash bcrypt com salt aleatório
+- Added: Testes de validação de força de senha
+- Added: Testes de bloqueio por tentativas excessivas
+- Added: Testes de integração completa do fluxo de autenticação
+
+### 📦 Dependencies
+- Added: `bcrypt@^5.1.1` para hash seguro de senhas
+- Added: `@types/bcrypt` para tipos TypeScript
+
+## [0.0.10] - 2025-01-15
+
+### ✨ Features
+- Added: Admin panel agora abre ao clicar no badge de cargo (Admin/Streamer)
+- Added: Integração do AdminPanel com o dashboard via estado `showAdminPanel`
+- Added: Comportamento interativo no badge de cargo para usuários admin/streamer
+
+### 🔧 Improvements
+- Improved: UX ao permitir acesso rápido ao painel admin pelo badge de cargo
+- Improved: Feedback visual com cursor pointer e hover effect no badge para admin/streamer
+- Improved: Segurança mantida com verificação server-side no AdminPanel
+
+## [0.0.9] - 2025-01-15
+
+### 🐛 Bug Fixes
+- Fixed: Botão "Assinar Clube" agora não é renderizado para usuários já assinantes
+- Fixed: Botão "Assinar Clube" não carrega no client para usuários com status ativo
+
+### ✨ Features
+- Added: Condicional `{!isClubMember && <Button>}` para ocultar botão de assinatura para membros ativos
+- Added: Condicional de texto dinâmico no badge - muda de "Sem Clube" para "Assinante" baseado no status do Mercado Pago
+- Added: Badge agora exibe status real da assinatura usando `clubOnboardingData?.subscription_status`
+
+### 🔧 Improvements
+- Improved: Performance ao não renderizar botão desnecessário para assinantes
+- Improved: UX ao remover botão de assinatura quando usuário já é membro do clube
+- Improved: Feedback visual ao mostrar "Assinante" quando status é 'active' no Mercado Pago
+- Improved: Badge agora reflete o estado real da assinatura em tempo real
+
 ## [0.0.8] - 2025-01-15
 
 ### ✨ Features

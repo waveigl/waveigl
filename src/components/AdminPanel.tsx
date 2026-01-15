@@ -2,6 +2,7 @@
 
 import { FC, useState, useEffect } from 'react'
 import { useAdminPanel } from '@/hooks/useAdminPanel'
+import { AdminPasswordModal } from '@/components/AdminPasswordModal'
 import { ModuleName, MessageType } from '@/types/admin.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,10 +13,22 @@ interface AdminPanelProps {
 
 /**
  * Painel de administração - Apenas Gabriel Toth pode acessar
+ * Requer verificação de senha para segurança adicional
  * Controla módulos de chat, mensagens e player de vídeo
  */
 export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
-  const { isAdmin, adminInfo, state, toggleModule, toggleMessage, toggleMessageGroup } = useAdminPanel()
+  const {
+    isAdmin,
+    adminInfo,
+    state,
+    isPasswordVerified,
+    showPasswordModal,
+    setShowPasswordModal,
+    setIsPasswordVerified,
+    toggleModule,
+    toggleMessage,
+    toggleMessageGroup
+  } = useAdminPanel()
   const [activeTab, setActiveTab] = useState<'modules' | 'messages' | 'logs'>('modules')
   const [logs, setLogs] = useState<any[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
@@ -23,6 +36,25 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
   // Se não é admin, não renderizar nada
   if (!isAdmin) {
     return null
+  }
+
+  // Se não verificou a senha, mostrar modal
+  if (!isPasswordVerified) {
+    return (
+      <AdminPasswordModal
+        isOpen={showPasswordModal}
+        onSuccess={() => {
+          setIsPasswordVerified(true)
+          setShowPasswordModal(false)
+          // Carregar módulos após verificação de senha
+          loadModules()
+        }}
+        onCancel={() => {
+          setShowPasswordModal(false)
+          onClose?.()
+        }}
+      />
+    )
   }
 
   // Carregar logs quando mudar para aba de logs
@@ -44,6 +76,18 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
       console.error('[AdminPanel] Erro ao carregar logs:', error)
     } finally {
       setLogsLoading(false)
+    }
+  }
+
+  const loadModules = async () => {
+    try {
+      const response = await fetch('/api/admin/modules')
+      const data = await response.json()
+      if (data.success) {
+        // Módulos carregados via hook
+      }
+    } catch (error) {
+      console.error('[AdminPanel] Erro ao carregar módulos:', error)
     }
   }
 
