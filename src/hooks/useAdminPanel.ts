@@ -45,8 +45,20 @@ export function useAdminPanel() {
         setIsAdmin(data.isAdmin)
         if (data.isAdmin) {
           setAdminInfo(data)
-          // Se é admin, mostrar modal de senha
-          setShowPasswordModal(true)
+          
+          // Verificar se a senha está configurada
+          const passwordCheckResponse = await fetch('/api/admin/password-configured')
+          const passwordCheckData = await passwordCheckResponse.json()
+          
+          // Só mostrar modal se a senha estiver configurada
+          if (passwordCheckData.isConfigured) {
+            setShowPasswordModal(true)
+          } else {
+            // Se não está configurada, considerar como verificado
+            setIsPasswordVerified(true)
+            // Carregar módulos imediatamente
+            loadModules()
+          }
         }
       } catch (error) {
         console.error('[useAdminPanel] Erro ao verificar admin:', error)

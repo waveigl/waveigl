@@ -1,5 +1,48 @@
 # Changelog - WaveIGL
 
+## [0.0.13] - 2025-01-15
+
+### ✨ Features
+- Added: Página web de setup `/admin/setup` para configurar senha sem terminal
+- Added: Assistente interativo com 4 passos (Welcome → User ID → Password → SQL)
+- Added: Endpoint `/api/admin/my-user-id` para obter User ID automaticamente
+- Added: Endpoint `/api/admin/generate-password-hash` para gerar hash bcrypt
+- Added: Validação de força de senha em tempo real na página
+- Added: Botão de copiar comando SQL para clipboard
+- Added: Suporte para mostrar contas vinculadas (Twitch, Kick, YouTube)
+
+### 🔧 Improvements
+- Improved: UX ao permitir setup via interface web (sem terminal)
+- Improved: Validação visual de requisitos de senha
+- Improved: Feedback em tempo real enquanto digita a senha
+- Improved: Design responsivo e moderno com Tailwind
+
+### 📝 Documentation
+- Added: Scripts auxiliares em `scripts/README.md`
+- Added: Página de setup acessível em `/admin/setup`
+
+## [0.0.12] - 2025-01-15
+
+### 🔐 Security
+- Fixed: Modal de senha agora só aparece se a senha estiver configurada no banco
+- Added: Endpoint `/api/admin/password-configured` para verificar se senha está configurada
+- Added: Script `scripts/setup-admin-password.js` para gerar hash bcrypt de forma segura
+- Added: Script `scripts/find-admin-user-id.sql` para encontrar User ID no Supabase
+
+### ✨ Features
+- Added: Verificação automática se senha está configurada antes de mostrar modal
+- Added: Se senha não estiver configurada, painel abre sem pedir autenticação
+- Added: Suporte para setup gradual da senha (pode ser configurada depois)
+
+### 🔧 Improvements
+- Improved: UX ao não forçar senha se não estiver configurada
+- Improved: Fluxo de setup com scripts auxiliares
+- Improved: Documentação com instruções passo a passo
+
+### 📝 Documentation
+- Added: `docs/ADMIN_PASSWORD_SETUP.md` com guia completo de setup
+- Added: Scripts para facilitar configuração da senha
+
 ## [0.0.11] - 2025-01-15
 
 ### 🔐 Security
