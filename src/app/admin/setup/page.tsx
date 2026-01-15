@@ -48,7 +48,14 @@ export default function AdminSetupPage() {
         setError(data.message || 'Erro ao obter User ID')
       }
     } catch (err) {
-      setError('Erro ao conectar com o servidor')
+      const errorMsg = err instanceof Error ? err.message : 'Erro ao conectar'
+      
+      // Verificar se é erro de tabela não existente
+      if (errorMsg.includes('admin_security_config') || errorMsg.includes('does not exist')) {
+        setError('⚠️ As tabelas ainda não foram criadas no banco de dados. Siga as instruções em docs/SETUP_MIGRATION.md para criar as tabelas.')
+      } else {
+        setError(errorMsg)
+      }
       console.error(err)
     } finally {
       setLoading(false)
@@ -250,6 +257,14 @@ export default function AdminSetupPage() {
                   </div>
                 )}
               </div>
+
+              <Alert className="bg-blue-500/10 border-blue-500/50">
+                <AlertTriangle className="h-4 w-4 text-blue-500" />
+                <AlertTitle className="text-blue-400">Próximo Passo</AlertTitle>
+                <AlertDescription className="text-blue-200/80">
+                  Clique em "Próximo" para definir sua senha
+                </AlertDescription>
+              </Alert>
 
               <Button
                 onClick={() => setStep('password')}

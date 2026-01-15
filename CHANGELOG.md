@@ -1,5 +1,38 @@
 # Changelog - WaveIGL
 
+## [0.0.15] - 2025-01-15
+
+### ✨ Features
+- Added: Scripts automáticos para fazer push da migração via Supabase CLI
+- Added: `push-migration.ps1` para Windows (PowerShell)
+- Added: `push-migration.sh` para macOS/Linux (Bash)
+- Added: Guia completo de Supabase CLI em `docs/SUPABASE_CLI_SETUP.md`
+
+### 🔧 Improvements
+- Improved: Documentação dos scripts com 3 opções de setup
+- Improved: Instruções claras para cada sistema operacional
+- Improved: Troubleshooting expandido
+
+### 📝 Documentation
+- Added: `docs/SUPABASE_CLI_SETUP.md` - Guia do Supabase CLI
+- Updated: `scripts/README.md` com todas as opções de setup
+
+## [0.0.14] - 2025-01-15
+
+### 🔧 Improvements
+- Improved: Mensagens de erro mais claras quando tabelas não existem
+- Improved: Documentação de setup da migração
+- Improved: Script SQL com instruções passo a passo
+
+### 📝 Documentation
+- Added: `docs/SETUP_MIGRATION.md` com guia completo de migração
+- Added: `scripts/run-migration.sql` com SQL pronto para copiar/colar
+- Added: Instruções claras para executar migração no Supabase
+
+### 🐛 Bug Fixes
+- Fixed: Detecção de erro quando tabelas não existem
+- Fixed: Mensagem de erro mais informativa na página de setup
+
 ## [0.0.13] - 2025-01-15
 
 ### ✨ Features
