@@ -14,6 +14,48 @@ Diretrizes para IAs (Claude, Gemini, Grok, Cursor Composer, ChatGPT, modelos loc
 4. **Manter compatibilidade** com todas as plataformas suportadas
 5. **Documentar mudanças** em CHANGELOG.md
 6. **Executar automaticamente** sem aguardar aprovação
+7. **NÃO criar arquivos .md de documentação** automaticamente (ver seção abaixo)
+
+## 🚫 Arquivos de Documentação (.md)
+
+**REGRA IMPORTANTE**: NÃO criar arquivos `.md` automaticamente ao fazer fixes ou implementações.
+
+### ❌ NÃO FAZER:
+- Criar arquivos como `FIX_NOME.md`, `IMPLEMENTATION.md`, `ANALYSIS.md`
+- Criar documentação de fix em `.kiro/` ou qualquer outra pasta
+- Criar resumos ou relatórios em markdown
+
+### ✅ FAZER:
+- Atualizar apenas o `CHANGELOG.md` com as mudanças
+- Criar arquivos `.md` **SOMENTE** quando:
+  - O usuário pedir explicitamente
+  - Houver instruções específicas para criar documentação
+  - For um arquivo de steering (em `.kiro/steering/`)
+
+### Exemplo:
+```
+# ❌ ERRADO - Criar automaticamente
+Criando arquivo .kiro/TWITCH_FIX.md para documentar...
+
+# ✅ CORRETO - Apenas atualizar CHANGELOG
+Atualizando CHANGELOG.md com as mudanças...
+```
+7. **NÃO criar arquivos .md** para documentar fixes ou mudanças
+
+## 🚫 Regras Importantes
+
+### NÃO CRIAR arquivos de documentação para fixes
+
+Ao implementar correções ou melhorias:
+
+- ❌ **NÃO** criar arquivos como `FIX_NOME.md`, `CORREÇÃO_X.md`, `SOLUÇÃO_Y.md`
+- ❌ **NÃO** criar arquivos na pasta `.kiro/` para documentar fixes
+- ❌ **NÃO** criar READMEs específicos para cada correção
+- ✅ **SIM** documentar no `CHANGELOG.md` (obrigatório)
+- ✅ **SIM** adicionar comentários no código quando necessário
+- ✅ **SIM** usar logs estruturados para debug
+
+A documentação de fixes deve ser feita **apenas** no `CHANGELOG.md` seguindo o formato padrão.
 
 ## 🔄 Fluxo de Desenvolvimento
 

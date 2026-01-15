@@ -1,5 +1,50 @@
 # Changelog - WaveIGL
 
+## [0.0.8] - 2025-01-15
+
+### ✨ Features
+- Added: Painel admin completo para Gabriel Toth (ogabrieltoth)
+- Added: Controle individual de módulos de chat (Twitch, Kick, YouTube)
+- Added: Controle individual de tipos de mensagens (sub, gift, raid, follow, cheer, host, etc)
+- Added: Grupo de mensagens com toggle global (desativa todas mantendo config individual)
+- Added: Controle de player de vídeo (ligar/desligar)
+- Added: Controle de mensagens internas do sistema
+- Added: Auditoria completa de ações do admin (logs com IP, User-Agent, timestamp)
+- Added: Hook `useAdminPanel` para gerenciar painel admin
+- Added: Hook `useChatStatus` para verificar status dos módulos
+- Added: Componente `ChatOfflineNotice` para mostrar quando chat está offline
+- Added: Componente `AdminModuleStatus` para debug de status
+- Added: Filtro de mensagens baseado em configurações de admin
+
+### 🔧 Improvements
+- Improved: Sistema de cache para módulos (5 minutos TTL)
+- Improved: Detecção automática de tipo de mensagem por badges e conteúdo
+- Improved: API endpoints com verificação de permissão server-side
+- Improved: Segurança: Painel admin não renderiza client-side para usuários comuns
+- Improved: Auditoria: Todas as ações registram IP, User-Agent e timestamp
+
+### 🗄️ Database
+- Added: Tabela `admin_module_settings` para configurações de módulos
+- Added: Tabela `admin_message_settings` para configurações de mensagens
+- Added: Tabela `admin_action_log` para auditoria de ações
+- Added: RLS policies para proteger dados de admin
+- Added: Índices para performance em queries de logs
+
+### 🧪 Tests
+- Added: Testes unitários para verificação de admin (verify.test.ts)
+- Added: Testes unitários para filtro de chat (chat-filter.test.ts)
+
+### 📝 Documentation
+- Added: Tipos TypeScript para admin (admin.types.ts)
+- Added: Comentários JSDoc em todas as funções públicas
+- Added: Exemplos de integração em `src/lib/chat/message-processor.ts` e `src/lib/chat/hub-with-filters.ts`
+
+### 🔐 Security
+- Security: Apenas Gabriel Toth (ID Twitch: 129980106, ID Kick: 4053403) pode acessar painel
+- Security: Verificação server-side em todos os endpoints
+- Security: Componente admin não renderiza para usuários comuns
+- Security: Auditoria completa de todas as ações
+
 ## [0.0.7] - 2025-01-13
 
 ### 🐛 Bug Fixes
