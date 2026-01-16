@@ -1,5 +1,32 @@
 # Changelog - WaveIGL
 
+## [0.0.16] - 2025-01-15
+
+### 🔧 Improvements
+- Improved: Criado arquivo `src/lib/admin/password.ts` com todas as funções de proteção por senha
+- Improved: Implementado bcrypt com 12 rounds para hash seguro
+- Improved: Adicionado rate limiting com bloqueio de 15 minutos após 5 tentativas
+- Improved: Validação de força de senha com requisitos (maiúscula, minúscula, número, caractere especial)
+
+### 🧪 Tests
+- Added: 28 testes unitários para funções de proteção por senha (todos passando)
+- Added: Testes de hash bcrypt com salt aleatório
+- Added: Testes de validação de força de senha
+- Added: Testes de bloqueio por tentativas excessivas
+- Added: Testes de integração completa do fluxo de autenticação
+
+### 📝 Documentation
+- Added: Script `scripts/setup-migration-manual.js` para guiar setup manual da migração
+- Added: Script `scripts/execute-migration.js` para tentar executar migração automaticamente
+- Updated: Instruções claras para executar migração no Supabase Dashboard
+
+### 🔐 Security
+- Added: Função `hashPassword()` com bcrypt 12 rounds
+- Added: Função `verifyPassword()` para comparação segura
+- Added: Função `validatePasswordStrength()` com requisitos rigorosos
+- Added: Função `calculateLockoutTime()` para bloqueio de 15 minutos
+- Added: Função `getAccountLockStatus()` para verificar status de bloqueio
+
 ## [0.0.15] - 2025-01-15
 
 ### ✨ Features

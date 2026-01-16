@@ -40,8 +40,8 @@ export async function handleSubscriptionEvent(event: SubEvent) {
 
   // Mensagem para quem RECEBEU a inscrição (privada)
   const recipientMessage = event.isGift
-    ? `Você recebeu uma inscrição de presente, vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
-    : `Obrigado por se inscrever! Vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
+    ? `Você recebeu uma inscrição de presente, envie seu numero aqui para ser convidado para o grupo do Whatsapp`
+    : `Obrigado por se inscrever! Envie seu numero aqui para ser convidado para o grupo do Whatsapp`
 
   // Mensagem broadcast no chat (apenas para gifts)
   if (event.isGift && event.donorUsername) {

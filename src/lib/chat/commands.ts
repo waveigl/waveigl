@@ -1099,7 +1099,7 @@ export async function broadcastSubscriptionEvent(
   const userInfo = await findLinkedUserWithProfileByUsername(platform, username)
 
   // Mensagem para whisper
-  const whisperMessage = `Obrigado por se inscrever! Vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
+  const whisperMessage = `Obrigado por se inscrever! Envie seu numero aqui para ser convidado para o grupo do Whatsapp`
 
   // Tentar enviar whisper na Twitch se for a plataforma
   if (platform === 'twitch') {
@@ -1148,7 +1148,7 @@ export async function broadcastGiftSubEvent(
   const userInfo = await findLinkedUserWithProfileByUsername(platform, recipientUsername)
 
   // Mensagem para whisper (para quem recebeu)
-  const whisperMessage = `Você recebeu uma inscrição de presente, vincule seu numero no nosso site para ser convidado para o grupo do Whatsapp`
+  const whisperMessage = `Você recebeu uma inscrição de presente, envie seu numero aqui para ser convidado para o grupo do Whatsapp`
 
   // Tentar enviar whisper na Twitch se for a plataforma
   if (platform === 'twitch') {

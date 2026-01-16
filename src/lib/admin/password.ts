@@ -1,38 +1,50 @@
 /**
- * Funções de segurança para proteção por senha do painel admin
- * Usa bcrypt para hash seguro da senha
+ * Funções de proteção por senha do painel admin
+ * Usa bcrypt para hash seguro e implementa rate limiting
  */
 
 import bcrypt from 'bcrypt'
 
-const SALT_ROUNDS = 12 // Rounds de bcrypt (mais seguro, mas mais lento)
-const MAX_FAILED_ATTEMPTS = 5
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutos
+/**
+ * Configurações de segurança de senha
+ */
+export const PASSWORD_CONFIG = {
+  SALT_ROUNDS: 12,
+  MAX_FAILED_ATTEMPTS: 5,
+  LOCKOUT_DURATION_MS: 15 * 60 * 1000, // 15 minutos
+  MIN_LENGTH: 8,
+  REQUIREMENTS: {
+    uppercase: true,
+    lowercase: true,
+    numbers: true,
+    specialChars: true,
+  },
+} as const
 
 /**
- * Gera hash bcrypt da senha
+ * Gera hash bcrypt seguro da senha
  * @param password - Senha em texto plano
  * @returns Hash bcrypt da senha
+ * @throws Error se senha for inválida
  */
 export async function hashPassword(password: string): Promise<string> {
-  if (!password || password.length < 8) {
-    throw new Error('Senha deve ter no mínimo 8 caracteres')
+  if (!password) {
+    throw new Error('Senha é obrigatória')
   }
 
-  try {
-    const hash = await bcrypt.hash(password, SALT_ROUNDS)
-    return hash
-  } catch (error) {
-    console.error('[AdminPassword] Erro ao gerar hash:', error)
-    throw new Error('Erro ao processar senha')
+  if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
+    throw new Error(`Senha deve ter no mínimo ${PASSWORD_CONFIG.MIN_LENGTH} caracteres`)
   }
+
+  const hash = await bcrypt.hash(password, PASSWORD_CONFIG.SALT_ROUNDS)
+  return hash
 }
 
 /**
  * Verifica se a senha corresponde ao hash
  * @param password - Senha em texto plano
  * @param hash - Hash bcrypt armazenado
- * @returns true se a senha está correta
+ * @returns true se a senha está correta, false caso contrário
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   if (!password || !hash) {
@@ -43,15 +55,14 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
     const isValid = await bcrypt.compare(password, hash)
     return isValid
   } catch (error) {
-    console.error('[AdminPassword] Erro ao verificar senha:', error)
     return false
   }
 }
 
 /**
- * Valida força da senha
+ * Valida a força da senha
  * @param password - Senha a validar
- * @returns Objeto com validação e mensagens de erro
+ * @returns Objeto com isValid e lista de erros
  */
 export function validatePasswordStrength(password: string): {
   isValid: boolean
@@ -64,36 +75,45 @@ export function validatePasswordStrength(password: string): {
     return { isValid: false, errors }
   }
 
-  if (password.length < 8) {
-    errors.push('Senha deve ter no mínimo 8 caracteres')
+  if (password.length < PASSWORD_CONFIG.MIN_LENGTH) {
+    errors.push(`Senha deve ter no mínimo ${PASSWORD_CONFIG.MIN_LENGTH} caracteres`)
   }
 
-  if (!/[A-Z]/.test(password)) {
+  if (PASSWORD_CONFIG.REQUIREMENTS.uppercase && !/[A-Z]/.test(password)) {
     errors.push('Senha deve conter pelo menos uma letra maiúscula')
   }
 
-  if (!/[a-z]/.test(password)) {
+  if (PASSWORD_CONFIG.REQUIREMENTS.lowercase && !/[a-z]/.test(password)) {
     errors.push('Senha deve conter pelo menos uma letra minúscula')
   }
 
-  if (!/[0-9]/.test(password)) {
+  if (PASSWORD_CONFIG.REQUIREMENTS.numbers && !/\d/.test(password)) {
     errors.push('Senha deve conter pelo menos um número')
   }
 
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (PASSWORD_CONFIG.REQUIREMENTS.specialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
     errors.push('Senha deve conter pelo menos um caractere especial (!@#$%^&*)')
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   }
 }
 
 /**
- * Calcula se a conta está bloqueada por tentativas excessivas
+ * Calcula o tempo de bloqueio da conta (15 minutos no futuro)
+ * @returns String ISO do timestamp de desbloqueio
+ */
+export function calculateLockoutTime(): string {
+  const lockoutTime = new Date(Date.now() + PASSWORD_CONFIG.LOCKOUT_DURATION_MS)
+  return lockoutTime.toISOString()
+}
+
+/**
+ * Verifica o status de bloqueio da conta
  * @param failedAttempts - Número de tentativas falhadas
- * @param lockedUntil - Timestamp até quando está bloqueada
+ * @param lockedUntil - Timestamp ISO até quando a conta está bloqueada
  * @returns Objeto com status de bloqueio
  */
 export function getAccountLockStatus(
@@ -108,49 +128,27 @@ export function getAccountLockStatus(
     return {
       isLocked: false,
       remainingTime: 0,
-      message: ''
+      message: '',
     }
   }
 
-  const lockTime = new Date(lockedUntil).getTime()
-  const now = Date.now()
+  const lockoutDate = new Date(lockedUntil)
+  const now = new Date()
+  const remainingTime = lockoutDate.getTime() - now.getTime()
 
-  if (now < lockTime) {
-    const remainingMs = lockTime - now
-    const remainingMinutes = Math.ceil(remainingMs / 60000)
-
+  if (remainingTime <= 0) {
     return {
-      isLocked: true,
-      remainingTime: remainingMs,
-      message: `Conta bloqueada. Tente novamente em ${remainingMinutes} minuto(s).`
+      isLocked: false,
+      remainingTime: 0,
+      message: '',
     }
   }
+
+  const remainingMinutes = Math.ceil(remainingTime / (60 * 1000))
 
   return {
-    isLocked: false,
-    remainingTime: 0,
-    message: ''
-  }
-}
-
-/**
- * Calcula o novo timestamp de bloqueio
- * @returns Timestamp para bloqueio de 15 minutos
- */
-export function calculateLockoutTime(): string {
-  const lockoutTime = new Date(Date.now() + LOCKOUT_DURATION_MS)
-  return lockoutTime.toISOString()
-}
-
-export const PASSWORD_CONFIG = {
-  SALT_ROUNDS,
-  MAX_FAILED_ATTEMPTS,
-  LOCKOUT_DURATION_MS,
-  MIN_LENGTH: 8,
-  REQUIREMENTS: {
-    uppercase: true,
-    lowercase: true,
-    numbers: true,
-    specialChars: true
+    isLocked: true,
+    remainingTime,
+    message: `Conta bloqueada por ${remainingMinutes} minuto(s) após ${failedAttempts} tentativas falhadas`,
   }
 }
