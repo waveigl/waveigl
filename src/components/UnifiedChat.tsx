@@ -920,7 +920,16 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages - Só mostra para usuários logados (economiza quota) */}
+      {!isLogged ? (
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center text-muted-foreground">
+            <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm font-medium">Chat disponível apenas para usuários logados</p>
+            <p className="text-xs mt-1 opacity-70">Faça login para ver e participar do chat</p>
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         {allMessages.map((message) => {
           // Verifica se é uma mensagem local
@@ -1151,6 +1160,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
         })}
         <div ref={messagesEndRef} />
       </div>
+      )}
 
       {/* Message Input */}
       <div className="border-t border-border p-2 shrink-0">

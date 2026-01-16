@@ -1,5 +1,35 @@
 # Changelog - WaveIGL
 
+## [0.0.18] - 2025-01-16
+
+### 🔧 Improvements
+- Improved: Chat agora só é visível para usuários logados (economiza quota da API do YouTube)
+- Improved: Usuários não logados veem mensagem "Chat disponível apenas para usuários logados"
+- Improved: YouTube API só é chamada quando Twitch/Kick detecta que o streamer está ao vivo (já implementado)
+
+### 🔐 Security
+- Security: Redução de consumo de quota do YouTube ao esconder chat de visitantes não autenticados
+
+### 📝 Notes
+- YouTube live detection usa `search.list?eventType=live` (não inclui lives programadas/upcoming)
+- Trigger do YouTube é acionado automaticamente quando Twitch ou Kick recebe primeira mensagem
+
+## [0.0.17] - 2025-01-16
+
+### 🐛 Bug Fixes
+- Fixed: YouTube mostrando "offline" mesmo com live ao vivo
+- Fixed: Detecção de live agora busca especificamente o canal WaveIGL usando `channels.list` + `search.list`
+- Fixed: Todos os usuários no dashboard agora veem a live do WaveIGL (não apenas o dono do token)
+
+### 🔧 Improvements
+- Improved: Usa `channels.list?forHandle=waveigl` para obter o channelId do WaveIGL
+- Improved: Usa `search.list?channelId=X&eventType=live` para buscar lives ativas do canal
+- Improved: Scraping como fallback quando não há token disponível
+
+### 📝 Documentation
+- Ref: https://developers.google.com/youtube/v3/docs/search/list
+- Ref: https://developers.google.com/youtube/v3/docs/channels/list
+
 ## [0.0.16] - 2025-01-15
 
 ### 🔧 Improvements
