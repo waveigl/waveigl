@@ -1,11 +1,24 @@
 # Changelog - WaveIGL
 
-## [0.0.21] - 2025-01-16
+## [0.0.21] - 2025-01-17
 
 ### 🐛 Bug Fixes
 - Fixed: React error #310 no dashboard ao clicar no badge de admin
 - Fixed: Dependências faltando no useEffect do dashboard
 - Fixed: useCallback adicionado para evitar recriação de funções
+- Fixed: Erro de sintaxe JSX no chat section header (extra closing divs)
+- Fixed: ModerationStats agora renderiza corretamente no header do chat
+
+### ✨ Features
+- Added: LiveInfoPanel component para exibir bans e timeouts ativos
+- Added: ModerationStats component para mostrar contadores de moderação
+- Added: API endpoints para gerenciar ações de moderação (`/api/moderation/actions`)
+- Added: Painel de informações de live para streamer/admin com refresh automático
+
+### 🔧 Improvements
+- Improved: Dashboard agora carrega ações de moderação na inicialização
+- Improved: Contadores de moderação aparecem no header do chat quando há ações ativas
+- Improved: Painel de live info exibe bans e timeouts com tempo restante
 
 ## [0.0.20] - 2025-01-16
 

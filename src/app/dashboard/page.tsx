@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { UnifiedChat } from '@/components/UnifiedChat'
 import { PlatformSelector } from '@/components/PlatformSelector'
+import { LiveInfoPanel } from '@/components/LiveInfoPanel'
+import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
 import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, CreditCard, XCircle } from 'lucide-react'
 import Image from 'next/image'
@@ -237,6 +239,9 @@ export default function DashboardPage() {
 
   // Estado para painel admin
   const [showAdminPanel, setShowAdminPanel] = useState(false)
+
+  // Estado para ações de moderação
+  const [moderationActions, setModerationActions] = useState<any[]>([])
 
   // Status do YouTube (recebido via SSE para evitar polling)
   const [youtubeStatus, setYoutubeStatus] = useState<{
@@ -469,12 +474,26 @@ export default function DashboardPage() {
     goToCheckout()
   }
 
+  // Carregar ações de moderação
+  const loadModerationActions = async () => {
+    try {
+      const res = await fetch('/api/moderation/actions')
+      if (res.ok) {
+        const data = await res.json()
+        setModerationActions(data.actions || [])
+      }
+    } catch (e) {
+      console.error('Erro ao carregar ações de moderação:', e)
+    }
+  }
+
   // Envolver funções em useCallback para evitar recriação
   const handleInitializeUser = useCallback(async () => {
     await loadUser()
     await checkModeratorViaAPI()
     await loadBenefits()
     await checkClubStatus()
+    await loadModerationActions()
 
     const params = new URLSearchParams(window.location.search)
     if (params.get('onboarding') === 'continue') {
@@ -1083,7 +1102,7 @@ export default function DashboardPage() {
         {/* Chat Section */}
         <div className="w-96 border-l border-border bg-card flex flex-col shrink-0">
           <div className="p-4 border-b border-border shrink-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
                 <p className="text-sm text-muted-foreground">
@@ -1103,6 +1122,11 @@ export default function DashboardPage() {
                 </Button>
               )}
             </div>
+            
+            {/* Contadores de Moderação */}
+            {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
+              <ModerationStats actions={moderationActions} compact={true} />
+            )}
           </div>
 
           <div className="flex-1 min-h-0">
@@ -1137,6 +1161,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Painel de Informações de Live */}
+      {(user?.role === 'streamer' || user?.role === 'admin') && (
+        <div className="p-6 border-t border-border">
+          <LiveInfoPanel
+            isStreamer={user?.role === 'streamer'}
+            isAdmin={user?.role === 'admin'}
+            onRefresh={loadModerationActions}
+          />
+        </div>
+      )}
 
       {/* Painel Dev: dados do usuário e contas vinculadas */}
       {process.env.NODE_ENV === 'development' && (
