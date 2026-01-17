@@ -1,5 +1,51 @@
 # Changelog - WaveIGL
 
+## [0.3.0] - 2025-01-17
+
+### ✨ Features - Complete Discount Coupons System
+- Added: DiscountAnalyticsService com cálculo de estatísticas completas
+- Added: API endpoints para Direct User Discounts (CRUD)
+- Added: API endpoints para Discount Links (generate, list, delete)
+- Added: API endpoints para Coupon Codes (CRUD)
+- Added: API endpoints para validação de descontos (validate, apply)
+- Added: Mercado Pago integration com PreApproval customizado
+- Added: React components para gerenciamento de descontos (DiscountManagementPanel, tabs, forms, stats)
+- Added: Admin page para gerenciamento de descontos (/admin/discounts)
+- Added: Checkout integration para aplicação de descontos
+- Added: Permission checks e audit logging para operações de desconto
+- Added: Error handling com notificações Discord
+- Added: Analytics endpoints com exportação CSV
+
+### 🧪 Tests - 203 Testes Passando
+- Added: 12 testes de propriedade para DiscountAnalyticsService (Property 16)
+- Added: 4 testes unitários para Direct User Discount API
+- Added: 4 testes unitários para Discount Links API
+- Added: 4 testes unitários para Coupon Codes API
+- Added: 11 testes de propriedade para Discount Validation (Properties 8, 9, 14)
+- Added: 13 testes de propriedade para Mercado Pago Integration (Properties 8, 9, 10)
+- Added: Testes com edge cases (0, 1, 3, 100 resgates)
+- Added: Testes de precisão decimal e múltiplos tipos de desconto
+
+### 🔧 Improvements
+- Improved: Cálculo preciso de métricas de analytics com suporte a filtros
+- Improved: Validação completa de entrada em todos os endpoints
+- Improved: Tratamento de erros com contexto detalhado
+- Improved: Logs estruturados em todas as operações
+- Improved: Suporte a soft-delete para preservação de dados
+- Improved: Formatação de valores monetários em BRL
+
+### 📝 Documentation
+- Added: Tipos e interfaces para discount system em `src/types/discount.types.ts`
+- Added: Comentários JSDoc em todos os services e componentes
+- Added: Documentação de todas as 16 propriedades de correção no design.md
+- Added: Guia de permissões e audit logging
+
+### 🔐 Security
+- Added: Permission checks para acesso admin
+- Added: Audit logging para todas as operações
+- Added: Validação de entrada em todos os endpoints
+- Added: Rate limiting ready (estrutura preparada)
+
 ## [0.2.0] - 2025-01-17
 
 ### ✨ Features
