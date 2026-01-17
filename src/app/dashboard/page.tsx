@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -469,33 +469,27 @@ export default function DashboardPage() {
     goToCheckout()
   }
 
-  useEffect(() => {
-    // Carregar dados do usuário e verificar moderador
-    const initializeUser = async () => {
-      await loadUser()
-      // Verificar status de moderador via API após carregar usuário
-      // Isso garante que o status esteja atualizado mesmo se mudou fora da plataforma
-      await checkModeratorViaAPI()
-      // Carregar benefícios
-      await loadBenefits()
-      // Verificar status do Clube
-      await checkClubStatus()
+  // Envolver funções em useCallback para evitar recriação
+  const handleInitializeUser = useCallback(async () => {
+    await loadUser()
+    await checkModeratorViaAPI()
+    await loadBenefits()
+    await checkClubStatus()
 
-      // Verificar se voltou do OAuth do Discord durante onboarding
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('onboarding') === 'continue') {
-        // Limpar URL
-        window.history.replaceState({}, '', '/dashboard')
-        // Verificar elegibilidade e continuar onboarding
-        const res = await fetch('/api/subscription/check-eligibility')
-        const data = await res.json()
-        if (!data.eligible) {
-          setClubOnboardingData(data.user)
-          setShowClubOnboarding(true)
-        }
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('onboarding') === 'continue') {
+      window.history.replaceState({}, '', '/dashboard')
+      const res = await fetch('/api/subscription/check-eligibility')
+      const data = await res.json()
+      if (!data.eligible) {
+        setClubOnboardingData(data.user)
+        setShowClubOnboarding(true)
       }
     }
-    initializeUser()
+  }, [])
+
+  useEffect(() => {
+    handleInitializeUser()
 
     // Conectar SSE para chat em tempo real (apenas uma vez)
     const es = new EventSource('/api/chat/stream')
@@ -532,7 +526,6 @@ export default function DashboardPage() {
               updateModeratorStatus(payload.platform, true)
             } else if (payload.type === 'mod_removed') {
               console.log('[Dashboard] Você foi removido de moderador em', payload.platform)
-              // Re-verificar se ainda é moderador em outras plataformas
               checkModeratorViaAPI()
             }
           }
@@ -588,8 +581,7 @@ export default function DashboardPage() {
     return () => {
       es.close()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Executar apenas uma vez na montagem
+  }, [handleInitializeUser])
 
   const handleSendMessage = (message: string) => {
     console.log('Enviando mensagem:', message)

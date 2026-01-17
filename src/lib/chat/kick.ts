@@ -34,7 +34,11 @@ function checkYouTubeOnKickActivity(): void {
   if (globalThis.__kickFirstMessageReceived) return
   globalThis.__kickFirstMessageReceived = true
   
-  console.log('[Kick] Primeira mensagem recebida - sinalizando YouTube para verificar...')
+  console.log('='.repeat(60))
+  console.log('[STREAMER LIVE] 🟢 WaveIGL detectado AO VIVO na Kick!')
+  console.log('[STREAMER LIVE] Primeira mensagem recebida no chat da Kick')
+  console.log('[STREAMER LIVE] Disparando verificação do YouTube...')
+  console.log('='.repeat(60))
   
   setTimeout(() => {
     triggerYouTubeCheck().catch(err => {

@@ -1,5 +1,48 @@
 # Changelog - WaveIGL
 
+## [0.0.21] - 2025-01-16
+
+### 🐛 Bug Fixes
+- Fixed: React error #310 no dashboard ao clicar no badge de admin
+- Fixed: Dependências faltando no useEffect do dashboard
+- Fixed: useCallback adicionado para evitar recriação de funções
+
+## [0.0.20] - 2025-01-16
+
+### ✨ Features
+- Added: Calculadora de Custos de Streaming no painel admin (`/admin/streaming-calculator`)
+- Added: Comparativo de custos entre AWS, Azure, GCP e Cloudflare
+- Added: Cálculos atômicos para encoding, CDN, storage e interações
+- Added: Suporte a resoluções de 360p até 16K
+- Added: Suporte a FPS de 24 até 1000
+- Added: Suporte a codecs H.264, H.265, AV1, VP9 com chroma 4:2:0, 4:2:2, 4:4:4
+- Added: Suporte a HDR (SDR, HDR10, HDR10+, Dolby Vision, HLG)
+- Added: Presets rápidos (Casual, Standard, Pro, 4K Gaming, 4K Cinema, Extreme, Insane)
+- Added: Cálculo de bitrate estimado por perfil
+- Added: Custo por viewer e custo por viewer/hora
+- Added: Conversão USD → BRL com taxa configurável
+
+### 🧪 Tests
+- Added: 27 testes unitários para `cost-calculator.ts`
+- Added: Testes para cálculo de bitrate, multiplicadores, custos por provider
+- Added: Testes para formatação de valores (USD, BRL, bytes, bitrate)
+
+## [0.0.19] - 2025-01-16
+
+### ✨ Features
+- Added: Gabriel Toth pode criar/alterar senha do painel admin diretamente pelo site (`/admin/setup`)
+- Added: Endpoint `/api/admin/set-password` para salvar senha no banco automaticamente
+- Added: Logs detalhados na Vercel quando WaveIGL é detectado ao vivo na Twitch ou Kick
+
+### 🔧 Improvements
+- Improved: Logs `[STREAMER LIVE] 🟢 WaveIGL detectado AO VIVO` aparecem na Vercel quando streamer inicia live
+- Improved: Página `/admin/setup` agora salva senha diretamente no banco (sem precisar de SQL manual)
+- Improved: Verificação automática se usuário é Gabriel Toth antes de permitir configurar senha
+
+### 🔐 Security
+- Security: Apenas Gabriel Toth pode acessar `/admin/setup` e definir senha
+- Security: Validação de força de senha com requisitos (maiúscula, minúscula, número, especial)
+
 ## [0.0.18] - 2025-01-16
 
 ### 🔧 Improvements

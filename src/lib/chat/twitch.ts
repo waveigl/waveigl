@@ -50,7 +50,11 @@ function checkYouTubeOnTwitchActivity(): void {
   if (globalThis.__twitchFirstMessageReceived) return // Já verificou
   globalThis.__twitchFirstMessageReceived = true
   
-  console.log('[Twitch] Primeira mensagem recebida - sinalizando YouTube para verificar...')
+  console.log('='.repeat(60))
+  console.log('[STREAMER LIVE] 🟢 WaveIGL detectado AO VIVO na Twitch!')
+  console.log('[STREAMER LIVE] Primeira mensagem recebida no chat da Twitch')
+  console.log('[STREAMER LIVE] Disparando verificação do YouTube...')
+  console.log('='.repeat(60))
   
   // Usar setTimeout para não bloquear o processamento de mensagens
   setTimeout(() => {
