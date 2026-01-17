@@ -1,5 +1,34 @@
 # Changelog - WaveIGL
 
+## [0.2.0] - 2025-01-17
+
+### ✨ Features
+- Added: DiscountAnalyticsService para cálculo de estatísticas de descontos
+- Added: Suporte para análise de descontos por tipo (direct_user, link, coupon)
+- Added: Cálculo de revenue_impact (soma de discount_amounts)
+- Added: Cálculo de average_discount_value (média de discount_amounts)
+- Added: Geração de timeline de resgates por data
+- Added: Exportação de dados de descontos em formato CSV
+- Added: Funções de formatação para exibição de analytics (formatAnalytics, formatStats)
+
+### 🧪 Tests
+- Added: 12 testes de propriedade para DiscountAnalyticsService
+- Added: Property 16: Analytics Aggregation Accuracy - validação de precisão de agregação
+- Added: Testes com 0, 1, 3, 100 resgates para validar edge cases
+- Added: Testes de precisão decimal para valores monetários
+- Added: Testes de agregação com múltiplos tipos de desconto
+
+### 🔧 Improvements
+- Improved: Cálculo preciso de métricas de analytics com suporte a filtros
+- Improved: Suporte a filtros por tipo de desconto, data range e ordenação
+- Improved: Tratamento de casos vazios (0 resgates)
+- Improved: Formatação de valores monetários em BRL
+
+### 📝 Documentation
+- Added: Tipos e interfaces para analytics em `src/types/discount.types.ts`
+- Added: Comentários JSDoc em DiscountAnalyticsService
+- Added: Documentação de Property 16 no design.md
+
 ## [0.1.0] - 2025-01-17
 
 ### ✨ Features
