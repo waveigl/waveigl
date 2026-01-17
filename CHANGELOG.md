@@ -1,5 +1,40 @@
 # Changelog - WaveIGL
 
+## [0.1.0] - 2025-01-17
+
+### ✨ Features
+- Added: Painel de edição de informações de streaming (`/admin/streaming-info`)
+- Added: Componente `StreamingInfoPanel` para editar título, descrição, categoria, tags, idioma e conteúdo adulto
+- Added: Suporte para editar informações em múltiplas plataformas (Twitch, YouTube, Kick)
+- Added: Opção "Aplicar a todas as plataformas" para sincronizar informações
+- Added: API endpoint `/api/streaming/info` para salvar informações
+- Added: Hook `useStreamingInfo` para gerenciar estado de streaming
+- Added: Categorias pré-configuradas para cada plataforma (10+ categorias por plataforma)
+- Added: Suporte a 10+ idiomas diferentes (Português, Inglês, Espanhol, Francês, Alemão, Italiano, Japonês, Coreano, Chinês, Russo)
+- Added: Validação de comprimento de título (100 caracteres) e descrição (5000 caracteres)
+- Added: Sistema de tags com visualização em badges
+- Added: Checkbox para marcar conteúdo adulto/maduro (18+)
+- Added: Tipos TypeScript completos para streaming (`StreamingInfo`, `StreamingInfoFormData`, `StreamingInfoResponse`)
+
+### 🧪 Tests
+- Added: 13 testes unitários para tipos de streaming
+- Added: Testes de validação de categorias e idiomas
+- Added: Testes de unicidade de IDs e códigos
+- Added: Testes de validação de dados vazios
+
+### 🔧 Improvements
+- Improved: Interface intuitiva com seletor de plataformas
+- Improved: Feedback visual com mensagens de sucesso/erro
+- Improved: Suporte a diferentes campos por plataforma (Twitch sem descrição, YouTube com descrição)
+- Improved: Contador de caracteres em tempo real
+- Improved: Carregamento automático de contas vinculadas
+- Improved: Página dedicada com dicas de uso e informações sobre plataformas
+
+### 📝 Documentation
+- Added: Tipos e interfaces documentadas em `src/types/streaming.types.ts`
+- Added: Comentários JSDoc em componentes e hooks
+- Added: Página de admin com guia de uso
+
 ## [0.0.21] - 2025-01-17
 
 ### 🐛 Bug Fixes
