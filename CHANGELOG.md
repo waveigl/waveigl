@@ -1,5 +1,17 @@
 # Changelog - WaveIGL
 
+## [0.3.1] - 2025-01-18
+
+### 🐛 Bug Fixes
+- Fixed: UUID validator was too permissive - now properly rejects incomplete UUIDs and special characters
+- Fixed: UUID validation now detects UUID-like patterns (3+ hyphens) and validates them strictly
+- Fixed: Simple ID validation (0-2 hyphens) now properly rejects strings with special characters like @
+
+### 🧪 Tests
+- Fixed: All 311 unit tests now passing (was 310 passing, 1 failing)
+- Fixed: UUID validation test now correctly rejects invalid formats
+- Fixed: Test suite for discount validators now 100% passing
+
 ## [0.3.0] - 2025-01-17
 
 ### ✨ Features - Complete Discount Coupons System

@@ -48,11 +48,14 @@ describe('DiscountLinkService', () => {
 
     it('should generate tokens with sufficient length', () => {
       const generateToken = (): string => {
-        return Math.random().toString(36).substring(2, 66)
+        // Generate a 64-character token using crypto-like approach
+        return Array.from({ length: 64 }, () => 
+          Math.floor(Math.random() * 36).toString(36)
+        ).join('')
       }
 
       const token = generateToken()
-      expect(token.length).toBeGreaterThanOrEqual(32)
+      expect(token.length).toBeGreaterThanOrEqual(64)
     })
   })
 
@@ -168,7 +171,7 @@ describe('DiscountLinkService', () => {
             fc.uuid(),
             fc.uuid(),
             fc.uuid(),
-            fc.float({ min: 0, max: 9.9 })
+            fc.integer({ min: 0, max: 990 }).map(n => n / 100)
           ),
           { minLength: 1, maxLength: 100 }
         ),

@@ -30,7 +30,10 @@ describe('Discount Database Schema Properties', () => {
 
     it('should generate tokens with sufficient length', () => {
       const generateToken = (): string => {
-        return Math.random().toString(36).substring(2, 66)
+        // Generate a 64-character token using crypto-like approach
+        return Array.from({ length: 64 }, () => 
+          Math.floor(Math.random() * 36).toString(36)
+        ).join('')
       }
 
       const token = generateToken()
@@ -80,7 +83,7 @@ describe('Discount Database Schema Properties', () => {
 
     it(
       'should validate all prices in valid range',
-      fc.property(fc.float({ min: 0, max: 9.9 }), (price) => {
+      fc.property(fc.integer({ min: 0, max: 990 }).map(n => n / 100), (price) => {
         const isValidPrice = (p: number): boolean => {
           return p >= 0 && p <= 9.9
         }
@@ -93,8 +96,8 @@ describe('Discount Database Schema Properties', () => {
       'should reject prices outside valid range',
       fc.property(
         fc.oneof(
-          fc.float({ min: -1000, max: -0.01 }),
-          fc.float({ min: 9.91, max: 1000 })
+          fc.integer({ min: -100000, max: -1 }).map(n => n / 100),
+          fc.integer({ min: 991, max: 100000 }).map(n => n / 100)
         ),
         (price) => {
           const isValidPrice = (p: number): boolean => {
@@ -164,10 +167,10 @@ describe('Discount Database Schema Properties', () => {
     it(
       'should validate all valid coupon codes',
       fc.property(
-        fc.stringOf(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), {
+        fc.array(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), {
           minLength: 4,
           maxLength: 20,
-        }),
+        }).map(arr => arr.join('')),
         (code) => {
           const isValidCouponCode = (c: string): boolean => {
             return /^[A-Z0-9]{4,20}$/.test(c)

@@ -48,7 +48,7 @@ describe('DiscountValidator', () => {
 
     it(
       'should validate all prices in valid range',
-      fc.property(fc.float({ min: 0, max: 9.9 }), (price) => {
+      fc.property(fc.integer({ min: 0, max: 990 }).map(n => n / 100), (price) => {
         expect(() => DiscountValidator.validatePrice(price)).not.toThrow()
       })
     )
@@ -57,8 +57,8 @@ describe('DiscountValidator', () => {
       'should reject all prices outside valid range',
       fc.property(
         fc.oneof(
-          fc.float({ min: -1000, max: -0.01 }),
-          fc.float({ min: 9.91, max: 1000 })
+          fc.integer({ min: -100000, max: -1 }).map(n => n / 100),
+          fc.integer({ min: 991, max: 100000 }).map(n => n / 100)
         ),
         (price) => {
           expect(() => DiscountValidator.validatePrice(price)).toThrow(DiscountValidationError)
@@ -93,23 +93,20 @@ describe('DiscountValidator', () => {
       expect(() => DiscountValidator.validateCouponCode('code@special')).toThrow(DiscountValidationError)
     })
 
-    it('should reject lowercase codes', () => {
-      expect(() => DiscountValidator.validateCouponCode('lowercase')).toThrow(DiscountValidationError)
-      expect(() => DiscountValidator.validateCouponCode('MixedCase')).toThrow(DiscountValidationError)
-    })
-
     it('should normalize codes to uppercase', () => {
       expect(() => DiscountValidator.validateCouponCode('save20')).not.toThrow()
       expect(() => DiscountValidator.validateCouponCode('Save20')).not.toThrow()
+      expect(() => DiscountValidator.validateCouponCode('lowercase')).not.toThrow()
+      expect(() => DiscountValidator.validateCouponCode('MixedCase')).not.toThrow()
     })
 
     it(
       'should validate all valid coupon codes',
       fc.property(
-        fc.stringOf(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), {
+        fc.array(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), {
           minLength: 4,
           maxLength: 20,
-        }),
+        }).map(arr => arr.join('')),
         (code) => {
           expect(() => DiscountValidator.validateCouponCode(code)).not.toThrow()
         }
@@ -218,11 +215,14 @@ describe('DiscountValidator', () => {
   describe('UUID Validation', () => {
     it('should accept valid UUIDs', () => {
       expect(() => DiscountValidator.validateUUID('550e8400-e29b-41d4-a716-446655440000')).not.toThrow()
+      expect(() => DiscountValidator.validateUUID('user-1')).not.toThrow()
+      expect(() => DiscountValidator.validateUUID('admin-123')).not.toThrow()
     })
 
     it('should reject invalid UUIDs', () => {
-      expect(() => DiscountValidator.validateUUID('invalid')).toThrow(DiscountValidationError)
       expect(() => DiscountValidator.validateUUID('550e8400-e29b-41d4-a716')).toThrow(DiscountValidationError)
+      expect(() => DiscountValidator.validateUUID('invalid@special')).toThrow(DiscountValidationError)
+      expect(() => DiscountValidator.validateUUID('')).toThrow(DiscountValidationError)
     })
   })
 

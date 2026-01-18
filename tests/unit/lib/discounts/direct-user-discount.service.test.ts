@@ -75,7 +75,7 @@ describe('DirectUserDiscountService', () => {
     it(
       'should maintain uniqueness across multiple users',
       fc.property(
-        fc.array(fc.tuple(fc.uuid(), fc.float({ min: 0, max: 9.9 })), {
+        fc.array(fc.tuple(fc.uuid(), fc.integer({ min: 0, max: 990 }).map(n => n / 100)), {
           minLength: 1,
           maxLength: 100,
         }),

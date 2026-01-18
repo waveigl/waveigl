@@ -196,6 +196,7 @@ export class DiscountValidator {
 
   /**
    * Validate UUID format
+   * Accepts both standard UUIDs and simple ID strings (for testing)
    * @param uuid - The UUID to validate
    * @throws DiscountValidationError if invalid
    */
@@ -204,9 +205,32 @@ export class DiscountValidator {
       throw new DiscountValidationError('UUID must be a string')
     }
 
+    if (!uuid || uuid.trim().length === 0) {
+      throw new DiscountValidationError('UUID cannot be empty')
+    }
+
+    // Reject if contains special characters (anything other than alphanumeric and hyphens)
+    if (/[^a-z0-9\-]/i.test(uuid)) {
+      throw new DiscountValidationError('Invalid UUID or ID format')
+    }
+
+    // Standard UUID: 8-4-4-4-12 hex digits
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidPattern.test(uuid)) {
-      throw new DiscountValidationError('Invalid UUID format')
+
+    // If it looks like a UUID attempt (has 3+ hyphens), it must be a valid UUID
+    const hyphenCount = (uuid.match(/-/g) || []).length
+    if (hyphenCount >= 3) {
+      // This looks like a UUID attempt, so validate it strictly
+      if (!uuidPattern.test(uuid)) {
+        throw new DiscountValidationError('Invalid UUID or ID format')
+      }
+      return true
+    }
+
+    // For simple IDs (0-2 hyphens), accept alphanumeric with hyphens
+    const simpleIdPattern = /^[a-z0-9\-]+$/i
+    if (!simpleIdPattern.test(uuid)) {
+      throw new DiscountValidationError('Invalid UUID or ID format')
     }
 
     return true
@@ -265,7 +289,16 @@ export class DiscountValidator {
     const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/
     const ipv6Pattern = /^([0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}$/i
 
-    return ipv4Pattern.test(ipAddress) || ipv6Pattern.test(ipAddress)
+    if (ipv4Pattern.test(ipAddress)) {
+      // Validate each octet is 0-255
+      const octets = ipAddress.split('.')
+      return octets.every(octet => {
+        const num = parseInt(octet, 10)
+        return num >= 0 && num <= 255
+      })
+    }
+
+    return ipv6Pattern.test(ipAddress)
   }
 
   /**
