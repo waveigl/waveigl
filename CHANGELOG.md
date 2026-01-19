@@ -1,5 +1,18 @@
 # Changelog - WaveIGL
 
+## [0.3.2] - 2025-01-19
+
+### 🐛 Bug Fixes
+- Fixed: Discord notifications system - added missing `notifyDiscord()` function that was causing import errors
+- Fixed: Subscription notifications now properly send Discord messages for new subs and gifts
+- Fixed: Twitch whisper system restored - now correctly sends private messages to subscribers
+- Fixed: Discord webhook integration for subscription events (sussuro and server notifications)
+
+### 🔧 Improvements
+- Improved: Added generic Discord notification interface for error handling and alerts
+- Improved: Discord notifications now support multiple severity levels (info, warning, error, critical)
+- Improved: Better error context in Discord notifications with formatted metadata
+
 ## [0.3.1] - 2025-01-18
 
 ### 🐛 Bug Fixes

@@ -152,3 +152,85 @@ export async function sendDiscordMessage(content: string): Promise<boolean> {
   }
 }
 
+/**
+ * Interface para notificações genéricas no Discord
+ */
+export interface DiscordNotification {
+  level: 'info' | 'warning' | 'error' | 'critical'
+  title: string
+  message: string
+  context?: Record<string, unknown>
+}
+
+/**
+ * Cores para diferentes níveis de severidade
+ */
+const LEVEL_COLORS: Record<string, number> = {
+  info: 0x3498DB,      // Azul
+  warning: 0xF39C12,   // Laranja
+  error: 0xE74C3C,     // Vermelho
+  critical: 0xC0392B   // Vermelho escuro
+}
+
+/**
+ * Envia notificação genérica para o Discord
+ * Usada para alertas, erros e eventos importantes
+ */
+export async function notifyDiscord(notification: DiscordNotification): Promise<boolean> {
+  const webhookUrl = process.env.DISCORD_ERROR_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL
+
+  if (!webhookUrl) {
+    console.warn('[Discord] DISCORD_ERROR_WEBHOOK_URL nem DISCORD_WEBHOOK_URL configurados')
+    return false
+  }
+
+  const color = LEVEL_COLORS[notification.level] || LEVEL_COLORS.info
+  const emoji = {
+    info: 'ℹ️',
+    warning: '⚠️',
+    error: '❌',
+    critical: '🚨'
+  }[notification.level] || 'ℹ️'
+
+  // Formata contexto para exibição
+  let contextText = ''
+  if (notification.context && Object.keys(notification.context).length > 0) {
+    contextText = '\n\n**Contexto:**\n' + Object.entries(notification.context)
+      .map(([key, value]) => `• **${key}:** \`${JSON.stringify(value)}\``)
+      .join('\n')
+  }
+
+  const payload = {
+    embeds: [{
+      title: `${emoji} ${notification.title}`,
+      description: notification.message + contextText,
+      color,
+      timestamp: new Date().toISOString(),
+      footer: {
+        text: `WaveIGL • ${notification.level.toUpperCase()}`
+      }
+    }]
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      const error = await res.text()
+      console.error(`[Discord] Erro ao enviar notificação: ${res.status} - ${error}`)
+      return false
+    }
+
+    console.log(`[Discord] Notificação enviada: ${notification.title} (${notification.level})`)
+    return true
+
+  } catch (error) {
+    console.error('[Discord] Erro ao enviar notificação:', error)
+    return false
+  }
+}
+

@@ -76,24 +76,24 @@ This implementation plan breaks down the discount coupons feature into discrete,
   - Delete coupon (soft-delete)
   - _Requirements: 3.3, 3.4, 3.5, 3.7, 3.8, 3.11, 3.12_
 
-- [ ] 6.1 Write property tests for CouponCodeService
+- [x] 6.1 Write property tests for CouponCodeService
   - **Property 5: Coupon Code Format Validation**
   - **Property 6: Coupon Code Redemption Counter Consistency**
   - **Property 15: Redemption Logging Completeness**
   - **Validates: Requirements 3.3, 3.7, 3.12**
 
-- [ ] 7. Implement DiscountAnalyticsService
+- [x] 7. Implement DiscountAnalyticsService
   - Calculate overall analytics (total_discounts, total_redeemed, revenue_impact)
   - Calculate discount-specific stats
   - Generate redemption timeline
   - Export data as CSV
   - _Requirements: 7.1, 7.2, 7.4, 7.5_
 
-- [ ] 7.1 Write property tests for DiscountAnalyticsService
+- [x] 7.1 Write property tests for DiscountAnalyticsService
   - **Property 16: Analytics Aggregation Accuracy**
   - **Validates: Requirements 7.1, 7.5**
 
-- [ ] 8. Create API endpoints for direct user discounts
+- [x] 8. Create API endpoints for direct user discounts
   - POST /api/discounts/direct-user (create)
   - GET /api/discounts/direct-user (list)
   - GET /api/discounts/direct-user/:id (get)
@@ -101,13 +101,13 @@ This implementation plan breaks down the discount coupons feature into discrete,
   - DELETE /api/discounts/direct-user/:id (delete)
   - _Requirements: 1.4, 1.6, 1.7, 1.8_
 
-- [ ] 8.1 Write unit tests for direct user discount endpoints
+- [x] 8.1 Write unit tests for direct user discount endpoints
   - Test CRUD operations
   - Test permission checks
   - Test error handling
   - _Requirements: 1.4, 1.6, 1.7, 1.8_
 
-- [ ] 9. Create API endpoints for discount links
+- [x] 9. Create API endpoints for discount links
   - POST /api/discounts/links (generate)
   - GET /api/discounts/links (list)
   - GET /api/discounts/links/:id (get)
@@ -115,13 +115,13 @@ This implementation plan breaks down the discount coupons feature into discrete,
   - DELETE /api/discounts/links/:id (delete)
   - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.7, 2.10, 2.11_
 
-- [ ] 9.1 Write unit tests for discount link endpoints
+- [x] 9.1 Write unit tests for discount link endpoints
   - Test link generation and validation
   - Test redemption logic
   - Test error handling
   - _Requirements: 2.3, 2.5, 2.6_
 
-- [ ] 10. Create API endpoints for coupon codes
+- [x] 10. Create API endpoints for coupon codes
   - POST /api/discounts/coupons (create)
   - GET /api/discounts/coupons (list)
   - GET /api/discounts/coupons/:id (get)
@@ -130,18 +130,18 @@ This implementation plan breaks down the discount coupons feature into discrete,
   - DELETE /api/discounts/coupons/:id (delete)
   - _Requirements: 3.3, 3.4, 3.5, 3.7, 3.8, 3.11, 3.12_
 
-- [ ] 10.1 Write unit tests for coupon code endpoints
+- [x] 10.1 Write unit tests for coupon code endpoints
   - Test CRUD operations
   - Test validation logic
   - Test error handling
   - _Requirements: 3.3, 3.5, 3.7_
 
-- [ ] 11. Create discount validation and application endpoints
+- [x] 11. Create discount validation and application endpoints
   - POST /api/discounts/validate (validate any discount type)
   - POST /api/discounts/apply (apply discount to subscription)
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 11.1 Write property tests for discount validation
+- [x] 11.1 Write property tests for discount validation
   - **Property 8: PreApproval Custom Price Application**
   - **Property 9: Discount Metadata Persistence**
   - **Property 14: Single Discount Per Subscription**
