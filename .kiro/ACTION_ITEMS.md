@@ -1,410 +1,410 @@
-# ✅ Action Items - Próximos Passos
+# ✅ Action Items - Next Steps
 
-**Data**: 2024-01-13
-**Prioridade**: 🔴 Alta
-**Status**: 📋 Planejamento
-
----
-
-## 🎯 Ações Imediatas (Esta Semana)
-
-### 1. Revisar Documentação
-- [ ] Ler `.kiro/EXECUTIVE_SUMMARY.md`
-- [ ] Ler `.kiro/ARCHITECTURE_AUDIT.md`
-- [ ] Ler `.kiro/SAAS_MIGRATION_ROADMAP.md`
-- [ ] Discutir com o time
-
-### 2. Decidir Estratégia
-- [ ] Confirmar objetivo: SaaS multi-tenant?
-- [ ] Definir timeline: 8-12 semanas?
-- [ ] Alocar recursos: 2 pessoas?
-- [ ] Aprovar orçamento
-
-### 3. Preparar Ambiente
-- [ ] Criar branch `feature/multi-tenancy`
-- [ ] Criar projeto no GitHub/Jira
-- [ ] Configurar CI/CD para testes
-- [ ] Documentar decisões
+**Date**: 2024-01-13
+**Priority**: 🔴 High
+**Status**: 📋 Planning
 
 ---
 
-## 📋 Fase 1: Foundation (Semanas 1-2)
+## 🎯 Immediate Actions (This Week)
 
-### Semana 1
+### 1. Review Documentation
+- [ ] Read `.kiro/EXECUTIVE_SUMMARY.md`
+- [ ] Read `.kiro/ARCHITECTURE_AUDIT.md`
+- [ ] Read `.kiro/SAAS_MIGRATION_ROADMAP.md`
+- [ ] Discuss with the team
 
-#### Tarefa 1.1: Criar Schema Multi-Tenant
-**Responsável**: Backend Lead
-**Tempo**: 8 horas
+### 2. Decide Strategy
+- [ ] Confirm objective: Multi-tenant SaaS?
+- [ ] Define timeline: 8-12 weeks?
+- [ ] Allocate resources: 2 people?
+- [ ] Approve budget
+
+### 3. Prepare Environment
+- [ ] Create branch `feature/multi-tenancy`
+- [ ] Create project on GitHub/Jira
+- [ ] Configure CI/CD for tests
+- [ ] Document decisions
+
+---
+
+## 📋 Phase 1: Foundation (Weeks 1-2)
+
+### Week 1
+
+#### Task 1.1: Create Multi-Tenant Schema
+**Responsible**: Backend Lead
+**Time**: 8 hours
 **Checklist**:
-- [ ] Criar arquivo `supabase/migrations/001_add_multi_tenancy.sql`
-- [ ] Implementar tabelas:
+- [ ] Create file `supabase/migrations/001_add_multi_tenancy.sql`
+- [ ] Implement tables:
   - [ ] organizations
   - [ ] tenant_settings
   - [ ] tenant_members
-- [ ] Adicionar organization_id a todas as tabelas
-- [ ] Criar índices
-- [ ] Testar migração em dev
-- [ ] Documentar schema
+- [ ] Add organization_id to all tables
+- [ ] Create indexes
+- [ ] Test migration in dev
+- [ ] Document schema
 
-**Arquivos**:
+**Files**:
 - `supabase/migrations/001_add_multi_tenancy.sql`
 
-**Testes**:
-- [ ] Migração executa sem erros
-- [ ] Índices criados
-- [ ] Constraints funcionam
+**Tests**:
+- [ ] Migration executes without errors
+- [ ] Indexes created
+- [ ] Constraints work
 
 ---
 
-#### Tarefa 1.2: Criar Tenant Context
-**Responsável**: Backend Lead
-**Tempo**: 6 horas
+#### Task 1.2: Create Tenant Context
+**Responsible**: Backend Lead
+**Time**: 6 hours
 **Checklist**:
-- [ ] Criar `src/lib/tenant/context.ts`
-- [ ] Implementar `getTenantContext()`
-- [ ] Implementar validação de acesso
-- [ ] Adicionar testes
-- [ ] Documentar uso
+- [ ] Create `src/lib/tenant/context.ts`
+- [ ] Implement `getTenantContext()`
+- [ ] Implement access validation
+- [ ] Add tests
+- [ ] Document usage
 
-**Arquivos**:
+**Files**:
 - `src/lib/tenant/context.ts`
 - `tests/unit/lib/tenant/context.test.ts`
 
-**Testes**:
-- [ ] getTenantContext retorna contexto válido
-- [ ] Validação de acesso funciona
-- [ ] Trata erros corretamente
+**Tests**:
+- [ ] getTenantContext returns valid context
+- [ ] Access validation works
+- [ ] Handles errors correctly
 
 ---
 
-#### Tarefa 1.3: Criar Middleware de Tenant
-**Responsável**: Backend Lead
-**Tempo**: 6 horas
+#### Task 1.3: Create Tenant Middleware
+**Responsible**: Backend Lead
+**Time**: 6 hours
 **Checklist**:
-- [ ] Criar `src/lib/middleware/tenant.ts`
-- [ ] Implementar `withTenantContext()`
-- [ ] Adicionar testes
-- [ ] Documentar uso
+- [ ] Create `src/lib/middleware/tenant.ts`
+- [ ] Implement `withTenantContext()`
+- [ ] Add tests
+- [ ] Document usage
 
-**Arquivos**:
+**Files**:
 - `src/lib/middleware/tenant.ts`
 - `tests/unit/lib/middleware/tenant.test.ts`
 
-**Testes**:
-- [ ] Middleware extrai tenant corretamente
-- [ ] Valida acesso
-- [ ] Passa contexto para handler
+**Tests**:
+- [ ] Middleware extracts tenant correctly
+- [ ] Validates access
+- [ ] Passes context to handler
 
 ---
 
-### Semana 2
+### Week 2
 
-#### Tarefa 1.4: Atualizar Session
-**Responsável**: Backend Lead
-**Tempo**: 4 horas
+#### Task 1.4: Update Session
+**Responsible**: Backend Lead
+**Time**: 4 hours
 **Checklist**:
-- [ ] Atualizar `src/lib/auth/session.ts`
-- [ ] Adicionar organizationId ao SessionPayload
-- [ ] Atualizar sign/verify functions
-- [ ] Adicionar testes
-- [ ] Validar compatibilidade
+- [ ] Update `src/lib/auth/session.ts`
+- [ ] Add organizationId to SessionPayload
+- [ ] Update sign/verify functions
+- [ ] Add tests
+- [ ] Validate compatibility
 
-**Arquivos**:
+**Files**:
 - `src/lib/auth/session.ts`
 - `tests/unit/lib/auth/session.test.ts`
 
-**Testes**:
-- [ ] Session contém organizationId
-- [ ] Sign/verify funcionam
-- [ ] Compatibilidade com código existente
+**Tests**:
+- [ ] Session contains organizationId
+- [ ] Sign/verify work
+- [ ] Compatibility with existing code
 
 ---
 
-#### Tarefa 1.5: Criar Testes de Isolamento
-**Responsável**: QA Lead
-**Tempo**: 8 horas
+#### Task 1.5: Create Isolation Tests
+**Responsible**: QA Lead
+**Time**: 8 hours
 **Checklist**:
-- [ ] Criar `tests/integration/tenant-isolation.test.ts`
-- [ ] Implementar testes de isolamento
-- [ ] Implementar testes de segurança
-- [ ] Validar cobertura
-- [ ] Documentar testes
+- [ ] Create `tests/integration/tenant-isolation.test.ts`
+- [ ] Implement isolation tests
+- [ ] Implement security tests
+- [ ] Validate coverage
+- [ ] Document tests
 
-**Arquivos**:
+**Files**:
 - `tests/integration/tenant-isolation.test.ts`
 
-**Testes**:
-- [ ] Tenant A não acessa dados de B
-- [ ] Validação de tenant em queries
-- [ ] RLS policies funcionam
+**Tests**:
+- [ ] Tenant A cannot access data from B
+- [ ] Tenant validation in queries
+- [ ] RLS policies work
 
 ---
 
-#### Tarefa 1.6: Documentação Fase 1
-**Responsável**: Tech Lead
-**Tempo**: 4 horas
+#### Task 1.6: Phase 1 Documentation
+**Responsible**: Tech Lead
+**Time**: 4 hours
 **Checklist**:
-- [ ] Documentar schema
-- [ ] Documentar tenant context
-- [ ] Documentar middleware
-- [ ] Criar guia de uso
-- [ ] Atualizar CHANGELOG.md
+- [ ] Document schema
+- [ ] Document tenant context
+- [ ] Document middleware
+- [ ] Create usage guide
+- [ ] Update CHANGELOG.md
 
-**Arquivos**:
+**Files**:
 - `docs/MULTI_TENANCY.md`
 - `CHANGELOG.md`
 
 ---
 
-### Deliverables Fase 1
-- ✅ Schema multi-tenant no banco
-- ✅ Tenant context implementado
-- ✅ Middleware de tenant
-- ✅ Session com tenant
-- ✅ Testes de isolamento
-- ✅ Documentação
+### Phase 1 Deliverables
+- ✅ Multi-tenant schema in database
+- ✅ Tenant context implemented
+- ✅ Tenant middleware
+- ✅ Session with tenant
+- ✅ Isolation tests
+- ✅ Documentation
 
 ---
 
-## 📋 Fase 2: Isolation (Semanas 3-4)
+## 📋 Phase 2: Isolation (Weeks 3-4)
 
-### Semana 3
+### Week 3
 
-#### Tarefa 2.1: Atualizar Queries (Parte 1)
-**Responsável**: Backend Team
-**Tempo**: 16 horas
+#### Task 2.1: Update Queries (Part 1)
+**Responsible**: Backend Team
+**Time**: 16 hours
 **Checklist**:
-- [ ] Atualizar `src/lib/benefits/index.ts`
-- [ ] Atualizar `src/lib/discord/server.ts`
-- [ ] Atualizar `src/lib/notifications/subscription.ts`
-- [ ] Adicionar filtro organization_id
-- [ ] Testar cada função
-- [ ] Adicionar testes
+- [ ] Update `src/lib/benefits/index.ts`
+- [ ] Update `src/lib/discord/server.ts`
+- [ ] Update `src/lib/notifications/subscription.ts`
+- [ ] Add organization_id filter
+- [ ] Test each function
+- [ ] Add tests
 
-**Arquivos**:
+**Files**:
 - `src/lib/benefits/index.ts`
 - `src/lib/discord/server.ts`
 - `src/lib/notifications/subscription.ts`
 
-**Testes**:
-- [ ] Queries retornam dados corretos
-- [ ] Isolamento funciona
-- [ ] Performance aceitável
+**Tests**:
+- [ ] Queries return correct data
+- [ ] Isolation works
+- [ ] Performance acceptable
 
 ---
 
-#### Tarefa 2.2: Atualizar API Routes (Parte 1)
-**Responsável**: Backend Team
-**Tempo**: 16 horas
+#### Task 2.2: Update API Routes (Part 1)
+**Responsible**: Backend Team
+**Time**: 16 hours
 **Checklist**:
-- [ ] Criar `src/app/api/tenants/[tenantId]/subscription/`
-- [ ] Criar `src/app/api/tenants/[tenantId]/me/`
-- [ ] Criar `src/app/api/tenants/[tenantId]/discord/`
-- [ ] Implementar withTenantContext
-- [ ] Testar cada rota
-- [ ] Adicionar testes
+- [ ] Create `src/app/api/tenants/[tenantId]/subscription/`
+- [ ] Create `src/app/api/tenants/[tenantId]/me/`
+- [ ] Create `src/app/api/tenants/[tenantId]/discord/`
+- [ ] Implement withTenantContext
+- [ ] Test each route
+- [ ] Add tests
 
-**Arquivos**:
+**Files**:
 - `src/app/api/tenants/[tenantId]/subscription/check-eligibility/route.ts`
 - `src/app/api/tenants/[tenantId]/me/profile/route.ts`
 - `src/app/api/tenants/[tenantId]/discord/sync-roles/route.ts`
 
-**Testes**:
-- [ ] Rotas funcionam com tenant
-- [ ] Isolamento funciona
-- [ ] Validação de acesso funciona
+**Tests**:
+- [ ] Routes work with tenant
+- [ ] Isolation works
+- [ ] Access validation works
 
 ---
 
-### Semana 4
+### Week 4
 
-#### Tarefa 2.3: Atualizar RLS Policies
-**Responsável**: Database Lead
-**Tempo**: 8 horas
+#### Task 2.3: Update RLS Policies
+**Responsible**: Database Lead
+**Time**: 8 hours
 **Checklist**:
-- [ ] Atualizar RLS para profiles
-- [ ] Atualizar RLS para linked_accounts
-- [ ] Atualizar RLS para moderation_actions
-- [ ] Atualizar RLS para todas as tabelas
-- [ ] Testar isolamento
-- [ ] Validar performance
+- [ ] Update RLS for profiles
+- [ ] Update RLS for linked_accounts
+- [ ] Update RLS for moderation_actions
+- [ ] Update RLS for all tables
+- [ ] Test isolation
+- [ ] Validate performance
 
-**Arquivos**:
+**Files**:
 - `supabase/migrations/002_update_rls_policies.sql`
 
-**Testes**:
-- [ ] RLS policies funcionam
-- [ ] Isolamento garantido
-- [ ] Performance aceitável
+**Tests**:
+- [ ] RLS policies work
+- [ ] Isolation guaranteed
+- [ ] Performance acceptable
 
 ---
 
-#### Tarefa 2.4: Criar Tenant Management API
-**Responsável**: Backend Lead
-**Tempo**: 12 horas
+#### Task 2.4: Create Tenant Management API
+**Responsible**: Backend Lead
+**Time**: 12 hours
 **Checklist**:
-- [ ] Criar GET /api/tenants
-- [ ] Criar POST /api/tenants
-- [ ] Criar GET /api/tenants/:id
-- [ ] Criar PUT /api/tenants/:id
-- [ ] Criar DELETE /api/tenants/:id
-- [ ] Adicionar validações
-- [ ] Adicionar testes
+- [ ] Create GET /api/tenants
+- [ ] Create POST /api/tenants
+- [ ] Create GET /api/tenants/:id
+- [ ] Create PUT /api/tenants/:id
+- [ ] Create DELETE /api/tenants/:id
+- [ ] Add validations
+- [ ] Add tests
 
-**Arquivos**:
+**Files**:
 - `src/app/api/tenants/route.ts`
 - `src/app/api/tenants/[id]/route.ts`
 
-**Testes**:
-- [ ] CRUD funciona
-- [ ] Validações funcionam
-- [ ] Isolamento funciona
+**Tests**:
+- [ ] CRUD works
+- [ ] Validations work
+- [ ] Isolation works
 
 ---
 
-### Deliverables Fase 2
-- ✅ Todas as queries com organization_id
-- ✅ Tenant routing implementado
-- ✅ RLS policies atualizadas
+### Phase 2 Deliverables
+- ✅ All queries with organization_id
+- ✅ Tenant routing implemented
+- ✅ RLS policies updated
 - ✅ Tenant management API
-- ✅ Testes de isolamento passando
+- ✅ Isolation tests passing
 
 ---
 
-## 📋 Fase 3: Configuration (Semanas 5-6)
+## 📋 Phase 3: Configuration (Weeks 5-6)
 
-### Semana 5
+### Week 5
 
-#### Tarefa 3.1: Implementar Tenant Settings
-**Responsável**: Backend Lead
-**Tempo**: 8 horas
+#### Task 3.1: Implement Tenant Settings
+**Responsible**: Backend Lead
+**Time**: 8 hours
 **Checklist**:
-- [ ] Criar `src/lib/tenant/config.ts`
-- [ ] Implementar getTenantConfig()
-- [ ] Implementar updateTenantConfig()
-- [ ] Adicionar caching
-- [ ] Adicionar testes
+- [ ] Create `src/lib/tenant/config.ts`
+- [ ] Implement getTenantConfig()
+- [ ] Implement updateTenantConfig()
+- [ ] Add caching
+- [ ] Add tests
 
-**Arquivos**:
+**Files**:
 - `src/lib/tenant/config.ts`
 - `tests/unit/lib/tenant/config.test.ts`
 
-**Testes**:
-- [ ] Config é recuperado corretamente
-- [ ] Config é atualizado corretamente
-- [ ] Caching funciona
+**Tests**:
+- [ ] Config retrieved correctly
+- [ ] Config updated correctly
+- [ ] Caching works
 
 ---
 
-#### Tarefa 3.2: Implementar Credential Encryption
-**Responsável**: Security Lead
-**Tempo**: 8 horas
+#### Task 3.2: Implement Credential Encryption
+**Responsible**: Security Lead
+**Time**: 8 hours
 **Checklist**:
-- [ ] Criar `src/lib/crypto/credentials.ts`
-- [ ] Implementar encryptCredential()
-- [ ] Implementar decryptCredential()
-- [ ] Gerenciar chaves
-- [ ] Adicionar testes
+- [ ] Create `src/lib/crypto/credentials.ts`
+- [ ] Implement encryptCredential()
+- [ ] Implement decryptCredential()
+- [ ] Manage keys
+- [ ] Add tests
 
-**Arquivos**:
+**Files**:
 - `src/lib/crypto/credentials.ts`
 - `tests/unit/lib/crypto/credentials.test.ts`
 
-**Testes**:
-- [ ] Criptografia funciona
-- [ ] Descriptografia funciona
-- [ ] Chaves são gerenciadas corretamente
+**Tests**:
+- [ ] Encryption works
+- [ ] Decryption works
+- [ ] Keys managed correctly
 
 ---
 
-### Semana 6
+### Week 6
 
-#### Tarefa 3.3: Criar Admin Panel
-**Responsável**: Frontend Lead
-**Tempo**: 16 horas
+#### Task 3.3: Create Admin Panel
+**Responsible**: Frontend Lead
+**Time**: 16 hours
 **Checklist**:
-- [ ] Criar `src/components/admin/TenantList.tsx`
-- [ ] Criar `src/components/admin/TenantForm.tsx`
-- [ ] Criar `src/components/admin/TenantSettings.tsx`
-- [ ] Criar `src/components/admin/MemberManagement.tsx`
-- [ ] Implementar funcionalidades
-- [ ] Adicionar validações
-- [ ] Testar UX
+- [ ] Create `src/components/admin/TenantList.tsx`
+- [ ] Create `src/components/admin/TenantForm.tsx`
+- [ ] Create `src/components/admin/TenantSettings.tsx`
+- [ ] Create `src/components/admin/MemberManagement.tsx`
+- [ ] Implement features
+- [ ] Add validations
+- [ ] Test UX
 
-**Arquivos**:
+**Files**:
 - `src/components/admin/TenantList.tsx`
 - `src/components/admin/TenantForm.tsx`
 - `src/components/admin/TenantSettings.tsx`
 - `src/components/admin/MemberManagement.tsx`
 
-**Testes**:
-- [ ] Componentes renderizam
-- [ ] Funcionalidades funcionam
-- [ ] UX é intuitiva
+**Tests**:
+- [ ] Components render
+- [ ] Features work
+- [ ] UX is intuitive
 
 ---
 
-### Deliverables Fase 3
-- ✅ Tenant settings implementado
+### Phase 3 Deliverables
+- ✅ Tenant settings implemented
 - ✅ Credential encryption
-- ✅ Admin panel funcional
+- ✅ Functional admin panel
 
 ---
 
-## 📋 Fase 4: Integration (Semanas 7-8)
+## 📋 Phase 4: Integration (Weeks 7-8)
 
-### Semana 7-8
+### Week 7-8
 
-#### Tarefa 4.1: Múltiplos Discord Bots
-**Responsável**: Backend Lead
-**Tempo**: 16 horas
+#### Task 4.1: Multiple Discord Bots
+**Responsible**: Backend Lead
+**Time**: 16 hours
 **Checklist**:
-- [ ] Armazenar Discord bot token por tenant
-- [ ] Usar token correto em cada operação
-- [ ] Suportar múltiplos guild IDs
-- [ ] Testar com múltiplos bots
-- [ ] Adicionar testes
+- [ ] Store Discord bot token per tenant
+- [ ] Use correct token in each operation
+- [ ] Support multiple guild IDs
+- [ ] Test with multiple bots
+- [ ] Add tests
 
 ---
 
-#### Tarefa 4.2: Múltiplos Mercado Pago
-**Responsável**: Backend Lead
-**Tempo**: 16 horas
+#### Task 4.2: Multiple Mercado Pago
+**Responsible**: Backend Lead
+**Time**: 16 hours
 **Checklist**:
-- [ ] Armazenar MP token por tenant
-- [ ] Usar token correto em cada operação
-- [ ] Suportar múltiplas contas
-- [ ] Testar com múltiplas contas
-- [ ] Adicionar testes
+- [ ] Store MP token per tenant
+- [ ] Use correct token in each operation
+- [ ] Support multiple accounts
+- [ ] Test with multiple accounts
+- [ ] Add tests
 
 ---
 
-#### Tarefa 4.3: Múltiplos OAuth
-**Responsável**: Backend Lead
-**Tempo**: 12 horas
+#### Task 4.3: Multiple OAuth
+**Responsible**: Backend Lead
+**Time**: 12 hours
 **Checklist**:
-- [ ] Armazenar OAuth credentials por tenant
-- [ ] Usar credentials corretos em cada operação
-- [ ] Suportar múltiplas aplicações
-- [ ] Testar com múltiplas aplicações
-- [ ] Adicionar testes
+- [ ] Store OAuth credentials per tenant
+- [ ] Use correct credentials in each operation
+- [ ] Support multiple applications
+- [ ] Test with multiple applications
+- [ ] Add tests
 
 ---
 
-### Deliverables Fase 4
-- ✅ Múltiplos Discord bots funcionando
-- ✅ Múltiplos Mercado Pago funcionando
-- ✅ Múltiplos OAuth funcionando
+### Phase 4 Deliverables
+- ✅ Multiple Discord bots working
+- ✅ Multiple Mercado Pago working
+- ✅ Multiple OAuth working
 
 ---
 
-## 📋 Fase 5: Testing & Hardening (Semanas 9-12)
+## 📋 Phase 5: Testing & Hardening (Weeks 9-12)
 
-### Semana 9-10
+### Week 9-10
 
-#### Tarefa 5.1: Testes de Segurança
-**Responsável**: Security Lead + QA
-**Tempo**: 24 horas
+#### Task 5.1: Security Tests
+**Responsible**: Security Lead + QA
+**Time**: 24 hours
 **Checklist**:
 - [ ] Cross-tenant access prevention
 - [ ] Credential isolation
@@ -414,11 +414,11 @@
 
 ---
 
-#### Tarefa 5.2: Testes de Performance
-**Responsável**: DevOps Lead
-**Tempo**: 16 horas
+#### Task 5.2: Performance Tests
+**Responsible**: DevOps Lead
+**Time**: 16 hours
 **Checklist**:
-- [ ] Múltiplos tenants simultâneos
+- [ ] Multiple tenants simultaneously
 - [ ] Query optimization
 - [ ] Caching strategy
 - [ ] Load testing
@@ -426,23 +426,23 @@
 
 ---
 
-### Semana 11-12
+### Week 11-12
 
-#### Tarefa 5.3: Documentação
-**Responsável**: Tech Writer
-**Tempo**: 16 horas
+#### Task 5.3: Documentation
+**Responsible**: Tech Writer
+**Time**: 16 hours
 **Checklist**:
-- [ ] Arquitetura multi-tenant
-- [ ] Guia de deployment
-- [ ] Guia de operações
-- [ ] Guia de segurança
+- [ ] Multi-tenant architecture
+- [ ] Deployment guide
+- [ ] Operations guide
+- [ ] Security guide
 - [ ] Troubleshooting guide
 
 ---
 
-#### Tarefa 5.4: Deploy
-**Responsável**: DevOps Lead
-**Tempo**: 16 horas
+#### Task 5.4: Deploy
+**Responsible**: DevOps Lead
+**Time**: 16 hours
 **Checklist**:
 - [ ] Staging deployment
 - [ ] Production deployment
@@ -452,90 +452,90 @@
 
 ---
 
-### Deliverables Fase 5
-- ✅ Testes de segurança passando
-- ✅ Performance validada
-- ✅ Documentação completa
-- ✅ Deploy em produção
+### Phase 5 Deliverables
+- ✅ Security tests passing
+- ✅ Performance validated
+- ✅ Complete documentation
+- ✅ Production deployment
 
 ---
 
-## 📊 Resumo de Esforço
+## 📊 Effort Summary
 
-| Fase | Semanas | Horas | Pessoas |
-|------|---------|-------|---------|
-| 1    | 2       | 80    | 2       |
-| 2    | 2       | 80    | 2       |
-| 3    | 2       | 80    | 2       |
-| 4    | 2       | 80    | 2       |
-| 5    | 4       | 160   | 2       |
+| Phase | Weeks | Hours | People |
+|-------|-------|-------|--------|
+| 1     | 2     | 80    | 2      |
+| 2     | 2     | 80    | 2      |
+| 3     | 2     | 80    | 2      |
+| 4     | 2     | 80    | 2      |
+| 5     | 4     | 160   | 2      |
 | **Total** | **12** | **480** | **2** |
 
 ---
 
-## 🎯 Métricas de Sucesso
+## 🎯 Success Metrics
 
-### Fase 1
-- ✅ Schema criado e testado
-- ✅ Tenant context funcionando
-- ✅ Testes de isolamento passando
+### Phase 1
+- ✅ Schema created and tested
+- ✅ Tenant context working
+- ✅ Isolation tests passing
 
-### Fase 2
-- ✅ Todas as APIs com isolamento
-- ✅ Tenant routing funcionando
-- ✅ RLS policies validadas
+### Phase 2
+- ✅ All APIs with isolation
+- ✅ Tenant routing working
+- ✅ RLS policies validated
 
-### Fase 3
-- ✅ Configuração por tenant
-- ✅ Credentials criptografados
-- ✅ Admin panel funcional
+### Phase 3
+- ✅ Per-tenant configuration
+- ✅ Credentials encrypted
+- ✅ Admin panel functional
 
-### Fase 4
-- ✅ Múltiplas integrações
-- ✅ Testes de integração passando
-- ✅ Documentação atualizada
+### Phase 4
+- ✅ Multiple integrations
+- ✅ Integration tests passing
+- ✅ Documentation updated
 
-### Fase 5
-- ✅ Testes de segurança passando
-- ✅ Performance validada
-- ✅ Deploy em produção
+### Phase 5
+- ✅ Security tests passing
+- ✅ Performance validated
+- ✅ Production deployment
 
 ---
 
-## 📞 Responsáveis
+## 📞 Responsible Parties
 
-- **Tech Lead**: Coordenação geral
-- **Backend Lead**: Implementação backend
-- **Frontend Lead**: Implementação frontend
-- **Database Lead**: Schema e RLS
-- **Security Lead**: Segurança e criptografia
-- **QA Lead**: Testes
-- **DevOps Lead**: Deploy e monitoring
-- **Tech Writer**: Documentação
+- **Tech Lead**: Overall coordination
+- **Backend Lead**: Backend implementation
+- **Frontend Lead**: Frontend implementation
+- **Database Lead**: Schema and RLS
+- **Security Lead**: Security and encryption
+- **QA Lead**: Testing
+- **DevOps Lead**: Deployment and monitoring
+- **Tech Writer**: Documentation
 
 ---
 
 ## 📅 Timeline
 
 ```
-Semana 1-2:   Fase 1 (Foundation)
-Semana 3-4:   Fase 2 (Isolation)
-Semana 5-6:   Fase 3 (Configuration)
-Semana 7-8:   Fase 4 (Integration)
-Semana 9-12:  Fase 5 (Testing & Hardening)
+Week 1-2:   Phase 1 (Foundation)
+Week 3-4:   Phase 2 (Isolation)
+Week 5-6:   Phase 3 (Configuration)
+Week 7-8:   Phase 4 (Integration)
+Week 9-12:  Phase 5 (Testing & Hardening)
 ```
 
 ---
 
-## ✅ Próximas Ações
+## ✅ Next Actions
 
-1. **Hoje**: Revisar este documento
-2. **Amanhã**: Discutir com o time
-3. **Esta semana**: Decidir timeline
-4. **Próxima semana**: Começar Fase 1
+1. **Today**: Review this document
+2. **Tomorrow**: Discuss with the team
+3. **This week**: Decide timeline
+4. **Next week**: Start Phase 1
 
 ---
 
-**Versão**: 1.0.0
-**Data**: 2024-01-13
-**Status**: 📋 Pronto para Execução
+**Version**: 1.0.0
+**Date**: 2024-01-13
+**Status**: 📋 Ready for Execution

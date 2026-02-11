@@ -1,56 +1,56 @@
 # 🗺️ SaaS Migration Roadmap
 
-**Status**: 📋 Planejamento
-**Duração Estimada**: 8-12 semanas
-**Complexidade**: Alta
-**Risco**: Médio (com planejamento adequado)
+**Status**: 📋 Planning
+**Estimated Duration**: 8-12 weeks
+**Complexity**: High
+**Risk**: Medium (with proper planning)
 
-## 🎯 Visão Geral
+## 🎯 Overview
 
-Transformar WaveIGL de uma **plataforma single-tenant** para uma **plataforma SaaS multi-tenant** que suporte múltiplos streamers/organizações.
+Transform WaveIGL from a **single-tenant platform** to a **multi-tenant SaaS platform** that supports multiple streamers/organizations.
 
-## 📊 Timeline Visual
+## 📊 Visual Timeline
 
 ```
-Semana 1-2: Foundation
-├── Criar schema multi-tenant
-├── Adicionar tenant context
-└── Implementar middleware
+Week 1-2: Foundation
+├── Create multi-tenant schema
+├── Add tenant context
+└── Implement middleware
 
-Semana 3-4: Isolation
-├── Atualizar todas as queries
-├── Implementar tenant routing
-└── Validar isolamento
+Week 3-4: Isolation
+├── Update all queries
+├── Implement tenant routing
+└── Validate isolation
 
-Semana 5-6: Configuration
-├── Criar tenant settings
-├── Implementar credential management
-└── Criar admin panel
+Week 5-6: Configuration
+├── Create tenant settings
+├── Implement credential management
+└── Create admin panel
 
-Semana 7-8: Integration
-├── Múltiplos Discord bots
-├── Múltiplos Mercado Pago
-└── Múltiplos OAuth
+Week 7-8: Integration
+├── Multiple Discord bots
+├── Multiple Mercado Pago
+└── Multiple OAuth
 
-Semana 9-12: Testing & Hardening
-├── Testes de segurança
-├── Testes de performance
-├── Documentação
-└── Deploy
+Week 9-12: Testing & Hardening
+├── Security tests
+├── Performance tests
+├── Documentation
+└── Deployment
 ```
 
-## 📋 Fase 1: Foundation (Semanas 1-2)
+## 📋 Phase 1: Foundation (Weeks 1-2)
 
-### Objetivo
-Preparar a base do banco de dados e contexto para multi-tenancy.
+### Objective
+Prepare the database base and context for multi-tenancy.
 
-### Tarefas
+### Tasks
 
-#### 1.1 Criar Schema Multi-Tenant
-**Arquivo**: `supabase/migrations/001_add_multi_tenancy.sql`
+#### 1.1 Create Multi-Tenant Schema
+**File**: `supabase/migrations/001_add_multi_tenancy.sql`
 
 ```sql
--- Criar tabela organizations
+-- Create organizations table
 CREATE TABLE organizations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE organizations (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Criar tabela tenant_settings
+-- Create tenant_settings table
 CREATE TABLE tenant_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -73,7 +73,7 @@ CREATE TABLE tenant_settings (
   CONSTRAINT unique_org_key UNIQUE(organization_id, key)
 );
 
--- Criar tabela tenant_members
+-- Create tenant_members table
 CREATE TABLE tenant_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -84,11 +84,11 @@ CREATE TABLE tenant_members (
   CONSTRAINT unique_org_user UNIQUE(organization_id, user_id)
 );
 
--- Adicionar organization_id a profiles
+-- Add organization_id to profiles
 ALTER TABLE profiles ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE profiles ADD CONSTRAINT unique_org_email UNIQUE(organization_id, email);
 
--- Adicionar organization_id a outras tabelas
+-- Add organization_id to other tables
 ALTER TABLE linked_accounts ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE moderation_actions ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE active_timeouts ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
@@ -96,7 +96,7 @@ ALTER TABLE chat_messages ADD COLUMN organization_id UUID REFERENCES organizatio
 ALTER TABLE subscriber_benefits ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE discord_connections ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 
--- Criar índices
+-- Create indexes
 CREATE INDEX idx_organizations_owner ON organizations(owner_id);
 CREATE INDEX idx_organizations_slug ON organizations(slug);
 CREATE INDEX idx_tenant_settings_org ON tenant_settings(organization_id);

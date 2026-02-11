@@ -1,103 +1,103 @@
 # 🚀 Setup Instructions - WaveIGL AI Guidelines
 
-## ✅ O que foi criado
+## ✅ What Was Created
 
-Um sistema completo de regras e padrões para o projeto WaveIGL, compatível com múltiplas IAs:
+A complete system of rules and standards for the WaveIGL project, compatible with multiple AIs:
 
-### 📁 Arquivos Criados
+### 📁 Files Created
 
 ```
 .kiro/steering/
-├── README.md                    # 📚 Índice e guia rápido
-├── AI_GUIDELINES.md            # 🤖 Diretrizes para IAs
-├── PROJECT_STANDARDS.md        # 📋 Padrões técnicos
-├── NAMING_CONVENTIONS.md       # 📝 Convenções de nome
-├── ERROR_HANDLING.md           # 🚨 Tratamento de erros
-├── ARCHITECTURE.md             # 🏗️ Arquitetura do sistema
-└── AUTOMATION.md               # ⚙️ Automação e CI/CD
+├── README.md                    # 📚 Index and quick start
+├── AI_GUIDELINES.md            # 🤖 Guidelines for AIs
+├── PROJECT_STANDARDS.md        # 📋 Technical standards
+├── NAMING_CONVENTIONS.md       # 📝 Naming conventions
+├── ERROR_HANDLING.md           # 🚨 Error handling
+├── ARCHITECTURE.md             # 🏗️ System architecture
+└── AUTOMATION.md               # ⚙️ Automation and CI/CD
 ```
 
-## 🎯 Funcionalidades Principais
+## 🎯 Main Features
 
-### 1. ✅ Testes Automáticos
-- Testes unitários obrigatórios
-- Testes E2E para fluxos críticos
-- Cobertura mínima de 80%
-- Estrutura em `tests/` com exemplos
+### 1. ✅ Automatic Testing
+- Mandatory unit tests
+- E2E tests for critical flows
+- Minimum 80% coverage
+- Structure in `tests/` with examples
 
-### 2. 🔔 Notificações Discord
-- Erros críticos notificam Discord
-- Diferentes níveis (INFO, WARNING, ERROR, CRITICAL)
-- Contexto completo (userId, timestamp, stack trace)
-- Webhooks configuráveis via `.env`
+### 2. 🔔 Discord Notifications
+- Critical errors notify Discord
+- Different levels (INFO, WARNING, ERROR, CRITICAL)
+- Complete context (userId, timestamp, stack trace)
+- Configurable webhooks via `.env`
 
-### 3. 📝 Nomenclaturas Padronizadas
-- Componentes: `PascalCase.tsx`
+### 3. 📝 Standardized Naming
+- Components: `PascalCase.tsx`
 - Hooks: `useNomeDoHook.ts`
-- Funções: `camelCase()`
-- Constantes: `UPPER_SNAKE_CASE`
-- Branches: `feat/descricao`, `fix/descricao`
+- Functions: `camelCase()`
+- Constants: `UPPER_SNAKE_CASE`
+- Branches: `feat/description`, `fix/description`
 - Commits: `feat(scope): message`
 
-### 4. 🏗️ Arquitetura Documentada
-- Estrutura clara de pastas
-- Fluxos principais explicados
-- Integrações mapeadas
-- Banco de dados documentado
+### 4. 🏗️ Documented Architecture
+- Clear folder structure
+- Main flows explained
+- Integrations mapped
+- Database documented
 
-### 5. ⚙️ Automação Completa
-- Execução automática sem aprovação
-- Testes em cada commit
-- Linting e type checking
-- Build e deploy automáticos
-- Rollback se falhar
+### 5. ⚙️ Complete Automation
+- Automatic execution without approval
+- Tests on each commit
+- Linting and type checking
+- Automatic build and deployment
+- Automatic rollback if fails
 
-### 6. 🚨 Tratamento de Erros Robusto
-- Padrões de try-catch
-- Retry com backoff exponencial
-- Logs estruturados
-- Notificações Discord
+### 6. 🚨 Robust Error Handling
+- Try-catch patterns
+- Retry with exponential backoff
+- Structured logging
+- Discord notifications
 
-## 🚀 Como Usar
+## 🚀 How to Use
 
-### Para IAs (Claude, Gemini, Grok, etc.)
+### For AIs (Claude, Gemini, Grok, etc.)
 
-1. **Primeira vez?**
-   - Leia `.kiro/steering/README.md`
-   - Leia `.kiro/steering/AI_GUIDELINES.md`
-   - Consulte outros arquivos conforme necessário
+1. **First time?**
+   - Read `.kiro/steering/README.md`
+   - Read `.kiro/steering/AI_GUIDELINES.md`
+   - Consult other files as needed
 
-2. **Antes de fazer mudanças:**
+2. **Before making changes:**
    ```
-   ✓ Ler AI_GUIDELINES.md (fluxo de desenvolvimento)
-   ✓ Consultar NAMING_CONVENTIONS.md
-   ✓ Revisar ARCHITECTURE.md se for nova feature
-   ```
-
-3. **Durante desenvolvimento:**
-   ```
-   ✓ Seguir PROJECT_STANDARDS.md
-   ✓ Implementar testes
-   ✓ Tratar erros conforme ERROR_HANDLING.md
-   ✓ Usar nomenclaturas corretas
+   ✓ Read AI_GUIDELINES.md (development flow)
+   ✓ Consult NAMING_CONVENTIONS.md
+   ✓ Review ARCHITECTURE.md if new feature
    ```
 
-4. **Após implementação:**
+3. **During development:**
+   ```
+   ✓ Follow PROJECT_STANDARDS.md
+   ✓ Implement tests
+   ✓ Handle errors per ERROR_HANDLING.md
+   ✓ Use correct naming conventions
+   ```
+
+4. **After implementation:**
    ```
    ✓ npm run test
    ✓ npm run lint
    ✓ npm run type-check
-   ✓ Atualizar CHANGELOG.md
-   ✓ Fazer commit com mensagem padrão
+   ✓ Update CHANGELOG.md
+   ✓ Commit with standard message
    ```
 
-### Para Desenvolvedores
+### For Developers
 
-1. **Ler documentação:**
-   - Comece com `.kiro/steering/README.md`
-   - Consulte arquivos específicos conforme necessário
+1. **Read documentation:**
+   - Start with `.kiro/steering/README.md`
+   - Consult specific files as needed
 
-2. **Configurar ambiente:**
+2. **Configure environment:**
    ```bash
    # Instalar dependências
    npm install
