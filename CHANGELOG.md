@@ -1,5 +1,29 @@
 # Changelog - WaveIGL
 
+## [0.3.3] - 2025-02-11
+
+### 🔧 Improvements - Dependency Updates
+- Updated: `next` from ^16.1.1 to ^16.1.4 - fixes 3 high severity vulnerabilities
+  - Fixed: Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns
+  - Fixed: Next.js HTTP request deserialization can lead to DoS with insecure React Server Components
+  - Fixed: Next.js Unbounded Memory Consumption via PPR Resume Endpoint
+- Updated: `axios` added at ^1.7.7 - fixes high severity DoS vulnerability
+  - Fixed: Axios Vulnerable to Denial of Service via __proto__ Key in mergeConfig
+- Updated: `supabase` from ^2.72.7 to ^2.73.0 - fixes transitive tar vulnerabilities
+  - Fixed: node-tar Vulnerable to Arbitrary File Overwrite and Symlink Poisoning
+  - Fixed: Race Condition in node-tar Path Reservations via Unicode Ligature Collisions
+  - Fixed: node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal
+- Updated: `eslint-config-next` from ^16.1.1 to ^16.1.4 - aligns with next.js version
+
+### 🔐 Security
+- Security: All 5 high severity vulnerabilities resolved
+- Security: Transitive dependencies (tar, @mapbox/node-pre-gyp) now use secure versions
+- Security: No breaking changes - all updates are patch/minor version compatible
+
+### 📝 Documentation
+- Updated: CHANGELOG.md with dependency update details
+- Note: All tests passing after dependency updates
+
 ## [0.4.0] - 2025-02-11
 
 ### ✨ Features - Subscription System Reliability & Error Recovery
