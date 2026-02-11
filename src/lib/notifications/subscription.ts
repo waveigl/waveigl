@@ -6,6 +6,7 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { chatHub } from '@/lib/chat/hub'
 import { sendDiscordSubNotification } from './discord'
+import { logWebhookEvent } from '@/lib/logging/subscription-logger'
 
 export type Platform = 'twitch' | 'youtube' | 'kick'
 
@@ -15,6 +16,30 @@ const PLATFORM_NAMES: Record<Platform, { diminutivo: string; cor: string }> = {
   youtube: { diminutivo: 'vermelhinha', cor: '#FF0000' },
   kick: { diminutivo: 'verdinha', cor: '#53FC18' }
 }
+
+// Verificar configuração de notificação ao iniciar
+function checkNotificationConfiguration() {
+  const notifyUnregistered = process.env.NOTIFY_UNREGISTERED_SUBS !== 'false'
+  
+  if (!notifyUnregistered) {
+    logWebhookEvent('warn', 'NOTIFY_UNREGISTERED_SUBS está desabilitado', {
+      source: 'subscription_system',
+      eventType: 'configuration_check',
+      setting: 'NOTIFY_UNREGISTERED_SUBS',
+      value: process.env.NOTIFY_UNREGISTERED_SUBS
+    })
+  } else {
+    logWebhookEvent('info', 'Notificações de subs não cadastrados habilitadas', {
+      source: 'subscription_system',
+      eventType: 'configuration_check',
+      setting: 'NOTIFY_UNREGISTERED_SUBS',
+      value: 'true'
+    })
+  }
+}
+
+// Executar verificação ao carregar o módulo
+checkNotificationConfiguration()
 
 export interface SubEvent {
   platform: Platform
@@ -60,7 +85,13 @@ export async function handleSubscriptionEvent(event: SubEvent) {
   }
 
   // Tenta enviar mensagem privada na plataforma
-  await sendPrivateMessage(event.platform, event.recipientPlatformUserId, recipientMessage)
+  try {
+    await sendPrivateMessage(event.platform, event.recipientPlatformUserId, recipientMessage)
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.error(`[SUB] Erro ao enviar mensagem privada para ${event.recipientUsername}:`, err.message)
+    // Continuar mesmo se whisper falhar - notificação Discord ainda será enviada
+  }
 
   // Envia notificação no Discord
   await sendDiscordSubNotification({
@@ -80,6 +111,8 @@ export async function handleSubscriptionEvent(event: SubEvent) {
 
 /**
  * Envia mensagem privada/whisper na plataforma especificada
+ * 
+ * @throws Error se o whisper falhar
  */
 async function sendPrivateMessage(platform: Platform, userId: string, message: string) {
   try {
@@ -97,7 +130,14 @@ async function sendPrivateMessage(platform: Platform, userId: string, message: s
         break
     }
   } catch (error) {
-    console.error(`Erro ao enviar mensagem privada (${platform}):`, error)
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.error(`Erro ao enviar mensagem privada (${platform}):`, {
+      platform,
+      userId,
+      error: err.message
+    })
+    // Re-throw para permitir tratamento upstream
+    throw err
   }
 }
 
@@ -105,27 +145,31 @@ async function sendPrivateMessage(platform: Platform, userId: string, message: s
  * Envia whisper na Twitch usando a API
  * IMPORTANTE: Usa a conta do streamer (não do bot) para enviar whispers
  * Requer scope 'user:manage:whispers' na autenticação do streamer
+ * 
+ * @throws Error se o whisper falhar
  */
 async function sendTwitchWhisper(toUserId: string, message: string) {
+  const clientId = process.env.TWITCH_CLIENT_ID
+  const accessToken = process.env.TWITCH_BOT_ACCESS_TOKEN
+  const fromUserId = process.env.TWITCH_BOT_USER_ID
+
+  if (!clientId || !accessToken || !fromUserId) {
+    const error = new Error('[Twitch Whisper] Credenciais de whisper não configuradas')
+    console.error(error.message)
+    console.error('[Twitch Whisper] Necessário: TWITCH_CLIENT_ID, TWITCH_BOT_ACCESS_TOKEN, TWITCH_BOT_USER_ID')
+    throw error
+  }
+
+  // Validar que toUserId é um número válido
+  if (!toUserId || isNaN(Number(toUserId))) {
+    const error = new Error(`[Twitch Whisper] toUserId inválido: ${toUserId}`)
+    console.error(error.message)
+    throw error
+  }
+
+  console.log(`[Twitch Whisper] Enviando whisper para ${toUserId}...`)
+
   try {
-    const clientId = process.env.TWITCH_CLIENT_ID
-    const accessToken = process.env.TWITCH_BOT_ACCESS_TOKEN
-    const fromUserId = process.env.TWITCH_BOT_USER_ID
-
-    if (!clientId || !accessToken || !fromUserId) {
-      console.warn('[Twitch Whisper] ⚠️ Credenciais de whisper não configuradas')
-      console.warn('[Twitch Whisper] Necessário: TWITCH_CLIENT_ID, TWITCH_BOT_ACCESS_TOKEN, TWITCH_BOT_USER_ID')
-      return
-    }
-
-    // Validar que toUserId é um número válido
-    if (!toUserId || isNaN(Number(toUserId))) {
-      console.warn(`[Twitch Whisper] ⚠️ toUserId inválido: ${toUserId}`)
-      return
-    }
-
-    console.log(`[Twitch Whisper] Enviando whisper para ${toUserId}...`)
-
     const res = await fetch(
       `https://api.twitch.tv/helix/whispers?from_user_id=${fromUserId}&to_user_id=${toUserId}`,
       {
@@ -153,7 +197,8 @@ async function sendTwitchWhisper(toUserId: string, message: string) {
         // Ignorar erro de parse
       }
 
-      console.error(`[Twitch Whisper] ❌ Erro ${res.status}:`, errorData.message || errorText)
+      const errorMessage = errorData.message || errorText
+      console.error(`[Twitch Whisper] ❌ Erro ${res.status}:`, errorMessage)
 
       // Diagnosticar problemas comuns
       if (res.status === 400) {
@@ -168,11 +213,36 @@ async function sendTwitchWhisper(toUserId: string, message: string) {
         console.error('[Twitch Whisper] Acesso negado - verificar scopes e permissões')
       }
 
-      throw new Error(`Twitch whisper failed: ${res.status} - ${errorData.message || errorText}`)
+      const error = new Error(`Twitch whisper failed: ${res.status} - ${errorMessage}`)
+      throw error
     }
   } catch (error) {
-    console.error('[Twitch Whisper] Erro ao enviar whisper:', error)
-    // Não relançar erro para não quebrar o fluxo de notificação
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.error('[Twitch Whisper] Erro ao enviar whisper:', {
+      recipientId: toUserId,
+      messageLength: message.length,
+      error: err.message
+    })
+    
+    // Enviar notificação Discord sobre falha
+    try {
+      const { notifyDiscord } = await import('./discord')
+      await notifyDiscord({
+        level: 'warning',
+        title: 'Twitch Whisper Failed',
+        message: `Failed to send whisper to user ${toUserId}`,
+        context: {
+          recipientId: toUserId,
+          error: err.message,
+          timestamp: new Date().toISOString()
+        }
+      })
+    } catch (discordError) {
+      console.error('[Twitch Whisper] Erro ao notificar Discord:', discordError)
+    }
+    
+    // Re-throw para permitir tratamento upstream
+    throw err
   }
 }
 

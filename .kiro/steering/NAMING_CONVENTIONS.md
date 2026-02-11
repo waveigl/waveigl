@@ -4,22 +4,22 @@ inclusion: always
 
 # 📝 Naming Conventions
 
-Convenções de nomenclatura para o projeto WaveIGL.
+Naming conventions for the WaveIGL project.
 
-## 📁 Arquivos e Pastas
+## 📁 Files and Folders
 
-### Componentes React
+### React Components
 
 ```
 PascalCase.tsx
 
-✅ BOM:
+✅ GOOD:
 - UserProfile.tsx
 - ClubSubscriptionWidget.tsx
 - BenefitsPanel.tsx
 - SubscriberBenefitsPopup.tsx
 
-❌ RUIM:
+❌ BAD:
 - userProfile.tsx
 - club-subscription-widget.tsx
 - benefits_panel.tsx
@@ -28,93 +28,93 @@ PascalCase.tsx
 ### Hooks
 
 ```
-useNomeDoHook.ts
+useHookName.ts
 
-✅ BOM:
+✅ GOOD:
 - useClubSubscription.ts
 - useSessionProvider.ts
 - useDiscordConnection.ts
 - useUserProfile.ts
 
-❌ RUIM:
+❌ BAD:
 - clubSubscription.ts
 - sessionProvider.ts
 - discord-connection.ts
 ```
 
-### Utilitários e Funções
+### Utilities and Functions
 
 ```
 camelCase.ts
 
-✅ BOM:
+✅ GOOD:
 - formatDate.ts
 - validateEmail.ts
 - calculateAge.ts
 - normalizePhone.ts
 
-❌ RUIM:
+❌ BAD:
 - FormatDate.ts
 - validate_email.ts
 - CalculateAge.ts
 ```
 
-### Tipos e Interfaces
+### Types and Interfaces
 
 ```
-types.ts ou [nome].types.ts
+types.ts or [name].types.ts
 
-✅ BOM:
-- types.ts (tipos gerais)
+✅ GOOD:
+- types.ts (general types)
 - user.types.ts
 - subscription.types.ts
 - discord.types.ts
 
-❌ RUIM:
+❌ BAD:
 - Types.ts
 - user_types.ts
 - subscriptionTypes.ts
 ```
 
-### Testes
+### Tests
 
 ```
-[arquivo].test.ts ou [arquivo].spec.ts
+[file].test.ts or [file].spec.ts
 
-✅ BOM:
+✅ GOOD:
 - getUserData.test.ts
 - ClubSubscriptionWidget.spec.ts
 - validateEmail.test.ts
 
-❌ RUIM:
+❌ BAD:
 - test-getUserData.ts
 - club_subscription_widget_test.ts
 - validate-email.spec.ts
 ```
 
-### Configurações
+### Configurations
 
 ```
-[nome].config.ts ou [nome].config.js
+[name].config.ts or [name].config.js
 
-✅ BOM:
+✅ GOOD:
 - tailwind.config.ts
 - next.config.js
 - vitest.config.ts
 - eslint.config.js
 
-❌ RUIM:
+❌ BAD:
 - tailwindConfig.ts
 - nextConfig.js
 - vitest_config.ts
 ```
 
-### Pastas
+### Folders
 
 ```
-lowercase ou kebab-case
+lowercase or kebab-case
 
-✅ BOM:
+✅ GOOD:
 - src/components/
 - src/lib/
 - src/hooks/
@@ -122,7 +122,7 @@ lowercase ou kebab-case
 - src/lib/discord/
 - src/lib/notifications/
 
-❌ RUIM:
+❌ BAD:
 - src/Components/
 - src/Lib/
 - src/Hooks/
@@ -130,49 +130,49 @@ lowercase ou kebab-case
 - src/lib/Notifications/
 ```
 
-## 🔤 Variáveis e Constantes
+## 🔤 Variables and Constants
 
-### Constantes
+### Constants
 
 ```
 UPPER_SNAKE_CASE
 
-✅ BOM:
+✅ GOOD:
 - MAX_RETRIES = 3
 - API_TIMEOUT = 5000
 - DISCORD_GUILD_ID = 'xxx'
 - SUBSCRIPTION_PRICE = 9.90
 - DEFAULT_PAGE_SIZE = 20
 
-❌ RUIM:
+❌ BAD:
 - maxRetries = 3
 - api_timeout = 5000
 - discordGuildId = 'xxx'
 ```
 
-### Variáveis
+### Variables
 
 ```
 camelCase
 
-✅ BOM:
+✅ GOOD:
 - const userName = 'Gabriel'
 - let isLoading = false
 - const userData = { ... }
 - const subscriptionStatus = 'active'
 
-❌ RUIM:
+❌ BAD:
 - const user_name = 'Gabriel'
 - let IsLoading = false
 - const UserData = { ... }
 ```
 
-### Booleanos
+### Booleans
 
 ```
 isX, hasX, canX, shouldX, needsX
 
-✅ BOM:
+✅ GOOD:
 - const isLoading = true
 - const hasError = false
 - const canSubscribe = true
@@ -181,7 +181,7 @@ isX, hasX, canX, shouldX, needsX
 - const isClubMember = true
 - const hasDiscordConnection = false
 
-❌ RUIM:
+❌ BAD:
 - const loading = true
 - const error = false
 - const subscribe = true
@@ -191,27 +191,27 @@ isX, hasX, canX, shouldX, needsX
 ### Arrays
 
 ```
-Plural ou com sufixo 'List'
+Plural or with 'List' suffix
 
-✅ BOM:
+✅ GOOD:
 - const users = [...]
 - const linkedAccounts = [...]
 - const userList = [...]
 - const messages = [...]
 - const benefits = [...]
 
-❌ RUIM:
+❌ BAD:
 - const user = [...]
 - const linkedAccount = [...]
 - const userarray = [...]
 ```
 
-### Funções e Métodos
+### Functions and Methods
 
 ```
-camelCase, começando com verbo
+camelCase, starting with verb
 
-✅ BOM:
+✅ GOOD:
 - function getUserData() { ... }
 - function validateEmail() { ... }
 - function calculateAge() { ... }
@@ -219,7 +219,7 @@ camelCase, começando com verbo
 - function fetchUserProfile() { ... }
 - async function createSubscription() { ... }
 
-❌ RUIM:
+❌ BAD:
 - function get_user_data() { ... }
 - function email_validation() { ... }
 - function age() { ... }
@@ -229,9 +229,9 @@ camelCase, começando com verbo
 ### Callbacks
 
 ```
-onX ou handleX
+onX or handleX
 
-✅ BOM:
+✅ GOOD:
 - const onClick = () => { ... }
 - const onSubmit = (data) => { ... }
 - const onError = (error) => { ... }
@@ -239,7 +239,7 @@ onX ou handleX
 - const handleChange = (value) => { ... }
 - const handleSuccess = (result) => { ... }
 
-❌ RUIM:
+❌ BAD:
 - const click = () => { ... }
 - const submit = (data) => { ... }
 - const error = (error) => { ... }
@@ -248,26 +248,26 @@ onX ou handleX
 ### Getters/Setters
 
 ```
-get/set + NomeDoValor
+get/set + ValueName
 
-✅ BOM:
+✅ GOOD:
 - function getDisplayName() { ... }
 - function setUserData(data) { ... }
 - function getUserRole() { ... }
 - function setSubscriptionStatus(status) { ... }
 
-❌ RUIM:
+❌ BAD:
 - function displayName() { ... }
 - function userData(data) { ... }
 - function role() { ... }
 ```
 
-## 🏷️ Props de Componentes
+## 🏷️ Component Props
 
 ```
 camelCase
 
-✅ BOM:
+✅ GOOD:
 interface ButtonProps {
   children: React.ReactNode
   onClick?: () => void
@@ -276,7 +276,7 @@ interface ButtonProps {
   onHover?: () => void
 }
 
-❌ RUIM:
+❌ BAD:
 interface ButtonProps {
   children: React.ReactNode
   on_click?: () => void
@@ -290,16 +290,16 @@ interface ButtonProps {
 ```
 <type>/<scope>-<description>
 
-Tipos:
-- feat/     (nova feature)
+Types:
+- feat/     (new feature)
 - fix/      (bug fix)
-- refactor/ (refatoração)
-- docs/     (documentação)
-- test/     (testes)
-- chore/    (tarefas)
+- refactor/ (refactoring)
+- docs/     (documentation)
+- test/     (tests)
+- chore/    (tasks)
 - perf/     (performance)
 
-✅ BOM:
+✅ GOOD:
 - feat/club-subscription
 - fix/discord-sync-error
 - refactor/payment-logic
@@ -308,7 +308,7 @@ Tipos:
 - chore/update-dependencies
 - perf/optimize-queries
 
-❌ RUIM:
+❌ BAD:
 - feature/club
 - bugfix/discord
 - refactoring/payment
@@ -323,17 +323,17 @@ Tipos:
 ```
 <type>(<scope>): <subject>
 
-Tipos:
-- feat:     Nova feature
+Types:
+- feat:     New feature
 - fix:      Bug fix
-- docs:     Documentação
-- style:    Formatação
-- refactor: Refatoração
+- docs:     Documentation
+- style:    Formatting
+- refactor: Refactoring
 - perf:     Performance
-- test:     Testes
-- chore:    Tarefas
+- test:     Tests
+- chore:    Tasks
 
-✅ BOM:
+✅ GOOD:
 - feat(club): add subscription eligibility check
 - fix(discord): resolve sync error on webhook
 - docs(api): add endpoint documentation
@@ -341,7 +341,7 @@ Tipos:
 - test(auth): add login flow tests
 - perf(queries): add database indexes
 
-❌ RUIM:
+❌ BAD:
 - added club feature
 - fixed discord
 - updated docs
@@ -350,9 +350,9 @@ Tipos:
 - optimized
 ```
 
-## 🗂️ Estrutura de Pastas
+## 🗂️ Folder Structure
 
-### Componentes
+### Components
 
 ```
 src/components/
@@ -409,10 +409,10 @@ src/app/api/
     └── check-moderator/route.ts
 ```
 
-## 🎯 Tipos e Interfaces
+## 🎯 Types and Interfaces
 
 ```typescript
-// ✅ BOM: Nomes descritivos
+// ✅ GOOD: Descriptive names
 interface UserProfile {
   id: string
   email: string
@@ -430,7 +430,7 @@ interface ClubSubscriptionData {
   isSubscriber: boolean
 }
 
-// ❌ RUIM: Nomes genéricos
+// ❌ BAD: Generic names
 interface User {
   id: string
   data: any
@@ -443,7 +443,7 @@ type Status = string
 ## 📊 Enums
 
 ```typescript
-// ✅ BOM: PascalCase para enum, UPPER_SNAKE_CASE para valores
+// ✅ GOOD: PascalCase for enum, UPPER_SNAKE_CASE for values
 enum SubscriptionStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
@@ -457,19 +457,19 @@ enum UserRole {
   USER = 'user'
 }
 
-// ❌ RUIM
+// ❌ BAD
 enum subscription_status {
   active = 'active',
   inactive = 'inactive'
 }
 ```
 
-## 🔐 Variáveis de Ambiente
+## 🔐 Environment Variables
 
 ```
-UPPER_SNAKE_CASE com prefixo
+UPPER_SNAKE_CASE with prefix
 
-✅ BOM:
+✅ GOOD:
 - NEXT_PUBLIC_APP_URL
 - DISCORD_BOT_TOKEN
 - DISCORD_GUILD_ID
@@ -478,7 +478,7 @@ UPPER_SNAKE_CASE com prefixo
 - SUPABASE_ANON_KEY
 - DATABASE_URL
 
-❌ RUIM:
+❌ BAD:
 - appUrl
 - discord_token
 - guildId
@@ -486,21 +486,21 @@ UPPER_SNAKE_CASE com prefixo
 - supabaseUrl
 ```
 
-## 📌 Resumo Rápido
+## 📌 Quick Reference
 
-| Tipo | Padrão | Exemplo |
-|------|--------|---------|
-| Componentes | PascalCase | `UserProfile.tsx` |
-| Hooks | useNome | `useClubSubscription.ts` |
-| Funções | camelCase | `getUserData()` |
-| Constantes | UPPER_SNAKE_CASE | `MAX_RETRIES` |
-| Variáveis | camelCase | `userName` |
-| Booleanos | isX, hasX | `isLoading`, `hasError` |
+| Type | Pattern | Example |
+|------|---------|---------|
+| Components | PascalCase | `UserProfile.tsx` |
+| Hooks | useName | `useClubSubscription.ts` |
+| Functions | camelCase | `getUserData()` |
+| Constants | UPPER_SNAKE_CASE | `MAX_RETRIES` |
+| Variables | camelCase | `userName` |
+| Booleans | isX, hasX | `isLoading`, `hasError` |
 | Arrays | plural | `users`, `messages` |
 | Callbacks | onX, handleX | `onClick`, `handleSubmit` |
 | Branches | type/scope | `feat/club-subscription` |
 | Commits | type(scope): msg | `feat(club): add eligibility` |
-| Pastas | lowercase | `src/components/` |
-| Tipos | PascalCase | `interface UserProfile` |
+| Folders | lowercase | `src/components/` |
+| Types | PascalCase | `interface UserProfile` |
 | Enums | PascalCase | `enum SubscriptionStatus` |
 | Env Vars | UPPER_SNAKE_CASE | `DISCORD_BOT_TOKEN` |

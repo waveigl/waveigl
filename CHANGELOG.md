@@ -1,5 +1,107 @@
 # Changelog - WaveIGL
 
+## [0.4.0] - 2025-02-11
+
+### ✨ Features - Subscription System Reliability & Error Recovery
+- Added: Comprehensive UUID validation module (`src/lib/validation/uuid.ts`) with v4 format validation
+- Added: Retry handler with exponential backoff (1s, 2s, 4s, 8s) in `src/lib/retry/backoff.ts`
+- Added: Structured logging module (`src/lib/logging/subscription-logger.ts`) with context-aware logging
+- Added: Event storage for failed operations (`src/lib/storage/event-store.ts`) with Supabase persistence
+- Added: Health check endpoint (`/api/health/webhooks`) for webhook connectivity verification
+- Added: Background job for retrying failed events (`src/lib/jobs/retry-failed-events.ts`)
+- Added: Enhanced Discord notification handler with retry logic and error context
+- Added: Subscription event validation module (`src/lib/validation/subscription-event.ts`)
+- Added: Configuration check for `NOTIFY_UNREGISTERED_SUBS` environment variable
+
+### 🔧 Improvements - Webhook Processing
+- Improved: Mercado Pago webhook handler (`/api/subscription/webhook`) with:
+  - Rigorous UUID validation before processing
+  - Subscription event validation with detailed error messages
+  - Retry logic with exponential backoff for transient failures
+  - Structured logging at each step
+  - Discord error notifications on validation/creation failure
+  - Graceful error handling for Discord notification failures
+  - Proper HTTP status codes (400 for validation, 500 for operation errors)
+
+- Improved: Twitch EventSub webhook handler (`/api/webhooks/twitch/eventsub`) with:
+  - UUID validation for user IDs
+  - Subscription event validation
+  - Retry logic with exponential backoff
+  - Structured logging at each step
+  - Discord error notifications on failure
+  - Try-catch blocks around subscription event handling
+  - Graceful error handling for whisper failures
+
+- Improved: Twitch whisper handler with:
+  - Full error context capture (recipient, message, error)
+  - Error re-throwing for upstream handling
+  - Discord warning notifications on failure
+  - Success logging with recipient and timestamp
+
+### 🧪 Tests - Comprehensive Test Coverage
+- Added: 11 property-based tests for UUID validation (Property 1)
+- Added: 12 property-based tests for exponential backoff retry (Properties 3, 4, 5)
+- Added: 8 property-based tests for structured logging (Property 9)
+- Added: 6 property-based tests for event storage round trip (Property 11)
+- Added: 8 property-based tests for Discord error notifications (Properties 2, 7)
+- Added: 6 property-based tests for Twitch whisper error handling (Property 6)
+- Added: 6 property-based tests for notification configuration (Property 8)
+- Added: 8 property-based tests for health check (Property 10)
+- Added: 25+ integration tests covering:
+  - Full subscription flow from webhook to notifications
+  - Validation failure scenarios with Discord alerts
+  - Retry logic with exponential backoff
+  - Max retry exhaustion with critical notifications
+  - Notification configuration respect (enabled/disabled)
+  - Event storage and retrieval
+- Added: 15+ end-to-end tests covering:
+  - Successful subscription creation through webhook
+  - Discord and Twitch notification delivery
+  - Error recovery and retry scenarios
+  - Health check endpoint functionality
+  - Concurrent webhook request handling
+  - Duplicate webhook idempotency
+
+### 🔐 Security
+- Security: Rigorous UUID v4 validation prevents invalid data from corrupting system
+- Security: Subscription event validation ensures only valid events are processed
+- Security: Discord notification failures don't interrupt subscription processing
+- Security: Graceful error handling prevents cascading failures
+- Security: Structured logging with full context for audit trails
+
+### 📝 Documentation
+- Added: Comprehensive design document with correctness properties (14 properties)
+- Added: Requirements document with 10 user stories and acceptance criteria
+- Added: Implementation plan with 17 tasks and property-based testing strategy
+- Added: JSDoc documentation for all new modules and functions
+- Added: Inline comments explaining retry logic and validation steps
+
+### 🔄 Correctness Properties Validated
+- **Property 1**: UUID Validation Consistency - All UUIDs validated before processing
+- **Property 2**: Error Notification on Validation Failure - Discord alerts on validation errors
+- **Property 3**: Exponential Backoff Retry Pattern - Correct delays (1s, 2s, 4s, 8s)
+- **Property 4**: Successful Retry Completion - No additional retries after success
+- **Property 5**: Maximum Retry Exhaustion - Critical alerts after max retries
+- **Property 6**: Twitch Whisper Error Propagation - Errors captured and re-thrown
+- **Property 7**: Graceful Discord Notification Failure - Processing continues on Discord failure
+- **Property 8**: Notification Configuration Respect - Respects NOTIFY_UNREGISTERED_SUBS setting
+- **Property 9**: Comprehensive Structured Logging - Logs at all critical points
+- **Property 10**: Health Check Connectivity Verification - Verifies all webhook connectivity
+- **Property 11**: Event Storage Round Trip - Failed events stored and retried identically
+- **Property 12**: Notification Delivery Retry - Notifications retry with backoff
+- **Property 13**: Successful Subscription Confirmation - Discord notifications on success
+- **Property 14**: No Retry on First Success - No retries on immediate success
+
+### 🐛 Bug Fixes
+- Fixed: Subscription detection system that stopped working on 02/02/26
+- Fixed: Discord notifications not being sent for new subscriptions
+- Fixed: Twitch whispers not being delivered to subscribers
+- Fixed: Missing error handling for webhook failures
+- Fixed: No retry logic for transient failures
+- Fixed: Lack of structured logging for debugging
+- Fixed: No event storage for failed operations
+- Fixed: No health check endpoint for monitoring
+
 ## [0.3.2] - 2025-01-19
 
 ### 🐛 Bug Fixes

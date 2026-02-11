@@ -1,12 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
+import { validateUUID } from '@/lib/validation/uuid'
+import { validateSubscriptionEvent } from '@/lib/validation/subscription-event'
+import { retryWithBackoff } from '@/lib/retry/backoff'
+import { logWebhookEvent, logValidationError, logSubscriptionCreated, logSubscriptionCreationFailed } from '@/lib/logging/subscription-logger'
+import { notifyDiscordOnError } from '@/lib/notifications/discord'
 
 export async function POST(request: NextRequest) {
   try {
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     if (!accessToken) {
-      console.error('[Webhook] MERCADOPAGO_ACCESS_TOKEN não configurado')
+      logWebhookEvent('error', 'MERCADOPAGO_ACCESS_TOKEN não configurado', {
+        source: 'mercadopago_webhook',
+        eventType: 'configuration_error'
+      })
+      
+      await notifyDiscordOnError({
+        level: 'critical',
+        title: 'Mercado Pago Webhook Configuration Error',
+        message: 'MERCADOPAGO_ACCESS_TOKEN is not configured',
+        context: { timestamp: new Date().toISOString() }
+      })
+
       return NextResponse.json({ error: 'Configuração inválida' }, { status: 500 })
     }
 
@@ -15,7 +31,12 @@ export async function POST(request: NextRequest) {
     // O corpo pode vir de diferentes formas dependendo da versão da API do MP
     // Geralmente { type: "...", data: { id: "..." } } ou { topic: "...", resource: "..." }
     const body = await request.json()
-    console.log('[Webhook] Recebido:', JSON.stringify(body))
+    
+    logWebhookEvent('info', 'Webhook recebido', {
+      source: 'mercadopago_webhook',
+      eventType: body.type || body.topic,
+      timestamp: new Date().toISOString()
+    })
 
     const type = body.type || body.topic
     let id = body.data?.id || body.resource
@@ -27,7 +48,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (!id) {
-      return NextResponse.json({ header: "OK" }) // Responder OK para não travar o MP
+      logWebhookEvent('warn', 'Webhook sem ID', {
+        source: 'mercadopago_webhook',
+        eventType: type
+      })
+      return NextResponse.json({ header: "OK" })
     }
 
     let userId: string | null = null
@@ -44,9 +69,29 @@ export async function POST(request: NextRequest) {
         status = subscription.status as string // authorized, paused, cancelled
         subscriptionId = id
 
-        console.log(`[Webhook] Assinatura ${id} status: ${status} para user ${userId}`)
+        logWebhookEvent('info', 'Assinatura recebida', {
+          source: 'mercadopago_webhook',
+          eventType: 'subscription_preapproval',
+          subscriptionId: id,
+          userId,
+          status
+        })
       } catch (error) {
-        console.error('[Webhook] Erro ao buscar assinatura:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        logWebhookEvent('error', 'Erro ao buscar assinatura do MP', {
+          source: 'mercadopago_webhook',
+          eventType: 'subscription_preapproval',
+          error: errorMessage,
+          subscriptionId: id
+        })
+
+        await notifyDiscordOnError({
+          level: 'error',
+          title: 'Mercado Pago Subscription Fetch Error',
+          message: `Failed to fetch subscription ${id}`,
+          context: { error: errorMessage, subscriptionId: id }
+        })
+
         return NextResponse.json({ error: 'Erro ao buscar dados' }, { status: 500 })
       }
     }
@@ -57,77 +102,162 @@ export async function POST(request: NextRequest) {
         const payment = await paymentClient.get({ id })
 
         userId = payment.external_reference as string
-        // Se for pagamento de assinatura, o status do pagamento importa para ativar/desativar?
-        // Geralmente confiamos no status da subscription_preapproval.
-        // Mas se for o primeiro pagamento, ajuda a confirmar.
         const paymentStatus = payment.status
 
-        // Se o pagamento tem external_reference, podemos usar.
-        // Mas payments de assinatura as vezes não trazem external_reference se não foi passado no checkout de forma específica,
-        // mas o create/route.ts passa external_reference na preapproval, que DEVE propagar.
+        logWebhookEvent('info', 'Pagamento recebido', {
+          source: 'mercadopago_webhook',
+          eventType: 'payment',
+          paymentId: id,
+          userId,
+          paymentStatus
+        })
 
-        console.log(`[Webhook] Pagamento ${id} status: ${paymentStatus} para user ${userId}`)
-
-        // Para assinaturas, melhor focar no evento subscription_preapproval para gerenciar o status 'active'
-        // Mas se aprovado, podemos garantir que está ativo.
         if (paymentStatus === 'approved') {
-          status = 'authorized' // Mapear para status de assinatura
-          // Tentar descobrir o ID da assinatura se possível (metadata?)
+          status = 'authorized'
         }
       } catch (error) {
-        console.error('[Webhook] Erro ao buscar pagamento:', error)
-        // Não retornamos erro 500 aqui para não reprocessar infinitamente se for um pagamento irrelevante
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        logWebhookEvent('warn', 'Erro ao buscar pagamento do MP', {
+          source: 'mercadopago_webhook',
+          eventType: 'payment',
+          error: errorMessage,
+          paymentId: id
+        })
       }
     }
 
     // Se conseguimos identificar o usuário e o status
     if (userId && status) {
-      // Mapear status do MP para nosso status no banco
-      // MP: authorized, paused, cancelled
-      // DB: active, inactive (ou null/outros)
+      // Validar UUID
+      const uuidValidation = validateUUID(userId)
+      if (!uuidValidation.valid) {
+        logValidationError('userId', uuidValidation.error || 'Invalid UUID', {
+          source: 'mercadopago_webhook',
+          userId,
+          eventType: type
+        })
 
-      // Verifica se é um UUID válido (segurança básica)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-      if (!uuidRegex.test(userId)) {
-        console.warn('[Webhook] External reference não é um UUID válido:', userId)
-        return NextResponse.json({ success: true })
+        await notifyDiscordOnError({
+          level: 'error',
+          title: 'Mercado Pago Webhook Validation Error',
+          message: `Invalid UUID: ${userId}`,
+          context: { userId, error: uuidValidation.error }
+        })
+
+        return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
       }
 
-      const supabase = getSupabaseAdmin()
+      // Validar evento de subscrição
+      const eventValidation = validateSubscriptionEvent({
+        userId,
+        subscriptionId: subscriptionId || id,
+        status,
+        amount: 0 // Não temos amount no webhook
+      })
 
+      if (!eventValidation.valid) {
+        logValidationError('subscription_event', eventValidation.errors.join(', '), {
+          source: 'mercadopago_webhook',
+          userId,
+          subscriptionId: subscriptionId || id,
+          status
+        })
+
+        await notifyDiscordOnError({
+          level: 'error',
+          title: 'Mercado Pago Webhook Validation Error',
+          message: `Invalid subscription event: ${eventValidation.errors.join(', ')}`,
+          context: { userId, errors: eventValidation.errors }
+        })
+
+        return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 })
+      }
+
+      // Mapear status do MP para nosso status no banco
       let dbStatus = 'inactive'
       if (status === 'authorized') {
         dbStatus = 'active'
       }
 
-      // Atualizar perfil
-      const updateData: any = {
-        subscription_status: dbStatus,
-        updated_at: new Date().toISOString()
-      }
+      // Atualizar perfil com retry
+      const result = await retryWithBackoff(
+        async () => {
+          const supabase = getSupabaseAdmin()
 
-      // Só atualiza o ID se estivermos lidando com a assinatura direta
-      if (subscriptionId) {
-        updateData.subscription_id = subscriptionId
-      }
+          const updateData: any = {
+            subscription_status: dbStatus,
+            updated_at: new Date().toISOString()
+          }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId)
+          if (subscriptionId) {
+            updateData.subscription_id = subscriptionId
+          }
 
-      if (error) {
-        console.error('[Webhook] Falha ao atualizar Supabase:', error)
+          const { error } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', userId)
+
+          if (error) {
+            throw new Error(`Database error: ${error.message}`)
+          }
+
+          return { success: true }
+        },
+        { maxRetries: 3, baseDelay: 1000 }
+      )
+
+      if (result.success) {
+        logSubscriptionCreated(userId, subscriptionId || id, {
+          source: 'mercadopago_webhook',
+          status: dbStatus,
+          attempts: result.attempts
+        })
+
+        await notifyDiscordOnError({
+          level: 'info',
+          title: 'Subscription Updated',
+          message: `User ${userId} subscription status updated to ${dbStatus}`,
+          context: { userId, subscriptionId: subscriptionId || id, status: dbStatus }
+        })
+      } else {
+        logSubscriptionCreationFailed(userId, result.error?.message || 'Unknown error', {
+          source: 'mercadopago_webhook',
+          subscriptionId: subscriptionId || id,
+          attempts: result.attempts
+        })
+
+        await notifyDiscordOnError({
+          level: 'critical',
+          title: 'Subscription Update Failed',
+          message: `Failed to update subscription for user ${userId} after ${result.attempts} attempts`,
+          context: { userId, subscriptionId: subscriptionId || id, error: result.error?.message }
+        })
+
         return NextResponse.json({ error: 'Falha no banco de dados' }, { status: 500 })
       }
-
-      console.log(`[Webhook] Usuário ${userId} atualizado para ${dbStatus}`)
     }
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('[Webhook] Erro geral:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const stackTrace = error instanceof Error ? error.stack : undefined
+
+    logWebhookEvent('error', 'Erro geral no webhook', {
+      source: 'mercadopago_webhook',
+      error: errorMessage,
+      stackTrace
+    })
+
+    await notifyDiscordOnError({
+      level: 'error',
+      title: 'Mercado Pago Webhook Error',
+      message: `Webhook processing failed: ${errorMessage}`,
+      context: { error: errorMessage, timestamp: new Date().toISOString() },
+      stackTrace
+    })
+
     return NextResponse.json(
       { error: 'Falha interna' },
       { status: 500 }

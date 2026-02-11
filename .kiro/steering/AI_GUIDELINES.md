@@ -4,90 +4,89 @@ inclusion: always
 
 # 🤖 AI Development Guidelines
 
-Diretrizes para IAs (Claude, Gemini, Grok, Cursor Composer, ChatGPT, modelos locais) ao trabalhar neste projeto.
+Guidelines for AIs (Claude, Gemini, Grok, Cursor Composer, ChatGPT, local models) working on this project.
 
-## 📋 Princípios Fundamentais
+## 📋 Fundamental Principles
 
-1. **Sempre executar testes** após qualquer mudança de código
-2. **Notificar Discord** em caso de erros em produção
-3. **Seguir nomenclaturas** padronizadas do projeto
-4. **Manter compatibilidade** com todas as plataformas suportadas
-5. **Documentar mudanças** em CHANGELOG.md
-6. **Executar automaticamente** sem aguardar aprovação
-7. **NÃO criar arquivos .md de documentação** automaticamente (ver seção abaixo)
+1. **Always run tests** after any code changes
+2. **Notify Discord** in case of production errors
+3. **Follow naming conventions** standardized in the project
+4. **Maintain compatibility** with all supported platforms
+5. **Document changes** in CHANGELOG.md
+6. **Execute automatically** without waiting for approval
+7. **DO NOT create .md documentation files** automatically (see section below)
 
-## 🚫 Arquivos de Documentação (.md)
+## 🚫 Documentation Files (.md)
 
-**REGRA IMPORTANTE**: NÃO criar arquivos `.md` automaticamente ao fazer fixes ou implementações.
+**IMPORTANT RULE**: DO NOT create `.md` files automatically when making fixes or implementations.
 
-### ❌ NÃO FAZER:
-- Criar arquivos como `FIX_NOME.md`, `IMPLEMENTATION.md`, `ANALYSIS.md`
-- Criar documentação de fix em `.kiro/` ou qualquer outra pasta
-- Criar resumos ou relatórios em markdown
+### ❌ DO NOT:
+- Create files like `FIX_NAME.md`, `IMPLEMENTATION.md`, `ANALYSIS.md`
+- Create fix documentation in `.kiro/` or any other folder
+- Create summaries or reports in markdown
 
-### ✅ FAZER:
-- Atualizar apenas o `CHANGELOG.md` com as mudanças
-- Criar arquivos `.md` **SOMENTE** quando:
-  - O usuário pedir explicitamente
-  - Houver instruções específicas para criar documentação
-  - For um arquivo de steering (em `.kiro/steering/`)
+### ✅ DO:
+- Update only `CHANGELOG.md` with changes
+- Create `.md` files **ONLY** when:
+  - The user explicitly asks for it
+  - There are specific instructions to create documentation
+  - It's a steering file (in `.kiro/steering/`)
 
-### Exemplo:
+### Example:
 ```
-# ❌ ERRADO - Criar automaticamente
-Criando arquivo .kiro/TWITCH_FIX.md para documentar...
+# ❌ WRONG - Create automatically
+Creating file .kiro/TWITCH_FIX.md to document...
 
-# ✅ CORRETO - Apenas atualizar CHANGELOG
-Atualizando CHANGELOG.md com as mudanças...
+# ✅ CORRECT - Only update CHANGELOG
+Updating CHANGELOG.md with changes...
 ```
-7. **NÃO criar arquivos .md** para documentar fixes ou mudanças
 
-## 🚫 Regras Importantes
+## 🚫 Important Rules
 
-### NÃO CRIAR arquivos de documentação para fixes
+### DO NOT CREATE documentation files for fixes
 
-Ao implementar correções ou melhorias:
+When implementing fixes or improvements:
 
-- ❌ **NÃO** criar arquivos como `FIX_NOME.md`, `CORREÇÃO_X.md`, `SOLUÇÃO_Y.md`
-- ❌ **NÃO** criar arquivos na pasta `.kiro/` para documentar fixes
-- ❌ **NÃO** criar READMEs específicos para cada correção
-- ✅ **SIM** documentar no `CHANGELOG.md` (obrigatório)
-- ✅ **SIM** adicionar comentários no código quando necessário
-- ✅ **SIM** usar logs estruturados para debug
+- ❌ **DO NOT** create files like `FIX_NAME.md`, `CORRECTION_X.md`, `SOLUTION_Y.md`
+- ❌ **DO NOT** create files in `.kiro/` folder to document fixes
+- ❌ **DO NOT** create specific READMEs for each fix
+- ✅ **YES** document in `CHANGELOG.md` (mandatory)
+- ✅ **YES** add comments in code when necessary
+- ✅ **YES** use structured logs for debugging
 
-A documentação de fixes deve ser feita **apenas** no `CHANGELOG.md` seguindo o formato padrão.
+Fix documentation should be done **only** in `CHANGELOG.md` following the standard format.
 
-## 🔄 Fluxo de Desenvolvimento
+## 🔄 Development Workflow
 
-### 1. Antes de Fazer Mudanças
-- [ ] Ler o arquivo `PROJECT_STANDARDS.md`
-- [ ] Verificar `NAMING_CONVENTIONS.md`
-- [ ] Consultar `ARCHITECTURE.md` para entender a estrutura
-- [ ] Revisar `ERROR_HANDLING.md` para tratamento de erros
+### 1. Before Making Changes
+- [ ] Read `PROJECT_STANDARDS.md`
+- [ ] Check `NAMING_CONVENTIONS.md`
+- [ ] Consult `ARCHITECTURE.md` to understand structure
+- [ ] Review `ERROR_HANDLING.md` for error handling
 
-### 2. Durante o Desenvolvimento
-- [ ] Seguir o padrão de nomenclatura
-- [ ] Adicionar tipos TypeScript completos
-- [ ] Implementar tratamento de erros
-- [ ] Adicionar logs estruturados
-- [ ] Criar testes unitários
+### 2. During Development
+- [ ] Follow naming standards
+- [ ] Add complete TypeScript types
+- [ ] Implement error handling
+- [ ] Add structured logs
+- [ ] Create unit tests
 
-### 3. Após Implementação
-- [ ] Executar `npm run test` (testes unitários)
-- [ ] Executar `npm run test:e2e` (testes E2E)
-- [ ] Executar `npm run lint` (verificar código)
-- [ ] Executar `npm run type-check` (verificar tipos)
-- [ ] Atualizar `CHANGELOG.md`
-- [ ] Notificar Discord se houver erros
+### 3. After Implementation
+- [ ] Run `npm run test` (unit tests)
+- [ ] Run `npm run test:e2e` (E2E tests)
+- [ ] Run `npm run lint` (check code)
+- [ ] Run `npm run type-check` (check types)
+- [ ] Update `CHANGELOG.md`
+- [ ] Notify Discord if there are errors
 
-## 🧪 Testes Obrigatórios
+## 🧪 Mandatory Tests
 
-Toda mudança deve incluir testes:
+Every change must include tests:
 
 ```typescript
-// ✅ BOM: Teste completo
+// ✅ GOOD: Complete test
 describe('Feature X', () => {
-  it('deve fazer Y quando Z', () => {
+  it('should do Y when Z', () => {
     // Arrange
     const input = { ... }
     
@@ -98,42 +97,42 @@ describe('Feature X', () => {
     expect(result).toEqual(expected)
   })
   
-  it('deve lançar erro quando dados inválidos', () => {
+  it('should throw error when invalid data', () => {
     expect(() => functionX(invalid)).toThrow()
   })
 })
 
-// ❌ RUIM: Sem testes
+// ❌ BAD: Without tests
 function functionX() { ... }
 ```
 
-## 📝 Nomenclatura
+## 📝 Naming
 
-### Arquivos
-- **Componentes React**: `PascalCase.tsx` (ex: `UserProfile.tsx`)
-- **Hooks**: `useNomeDoHook.ts` (ex: `useClubSubscription.ts`)
-- **Utilitários**: `camelCase.ts` (ex: `formatDate.ts`)
-- **Tipos**: `types.ts` ou `[nome].types.ts`
-- **Testes**: `[arquivo].test.ts` ou `[arquivo].spec.ts`
+### Files
+- **React Components**: `PascalCase.tsx` (ex: `UserProfile.tsx`)
+- **Hooks**: `useHookName.ts` (ex: `useClubSubscription.ts`)
+- **Utilities**: `camelCase.ts` (ex: `formatDate.ts`)
+- **Types**: `types.ts` or `[name].types.ts`
+- **Tests**: `[file].test.ts` or `[file].spec.ts`
 
-### Variáveis e Funções
-- **Constantes**: `UPPER_SNAKE_CASE` (ex: `MAX_RETRIES`)
-- **Funções**: `camelCase` (ex: `getUserData()`)
-- **Booleanos**: `isX`, `hasX`, `canX` (ex: `isLoading`, `hasError`)
+### Variables and Functions
+- **Constants**: `UPPER_SNAKE_CASE` (ex: `MAX_RETRIES`)
+- **Functions**: `camelCase` (ex: `getUserData()`)
+- **Booleans**: `isX`, `hasX`, `canX` (ex: `isLoading`, `hasError`)
 - **Callbacks**: `onX`, `handleX` (ex: `onClick`, `handleSubmit`)
 
-### Branches Git
-- **Feature**: `feat/descricao-curta` (ex: `feat/club-subscription`)
-- **Bug**: `fix/descricao-curta` (ex: `fix/discord-sync-error`)
-- **Refactor**: `refactor/descricao-curta`
-- **Docs**: `docs/descricao-curta`
+### Git Branches
+- **Feature**: `feat/short-description` (ex: `feat/club-subscription`)
+- **Bug**: `fix/short-description` (ex: `fix/discord-sync-error`)
+- **Refactor**: `refactor/short-description`
+- **Docs**: `docs/short-description`
 
-## 🚨 Tratamento de Erros
+## 🚨 Error Handling
 
-Sempre implementar tratamento de erros:
+Always implement error handling:
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 try {
   const result = await riskyOperation()
   return { success: true, data: result }
@@ -148,27 +147,27 @@ try {
   return { success: false, error: message }
 }
 
-// ❌ RUIM
-const result = await riskyOperation() // Sem try-catch
+// ❌ BAD
+const result = await riskyOperation() // Without try-catch
 ```
 
-## 📊 Logs Estruturados
+## 📊 Structured Logs
 
-Use logs com contexto:
+Use logs with context:
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 console.log('[FeatureName] User subscribed:', { userId, planId, timestamp })
 console.error('[FeatureName] Payment failed:', { error, userId, amount })
 
-// ❌ RUIM
+// ❌ BAD
 console.log('done')
 console.error('error')
 ```
 
-## 🔔 Notificações Discord
+## 🔔 Discord Notifications
 
-Erros críticos devem notificar Discord:
+Critical errors should notify Discord:
 
 ```typescript
 import { notifyDiscord } from '@/lib/notifications/discord'
@@ -185,40 +184,40 @@ await notifyDiscord({
 })
 ```
 
-## 📦 Versionamento
+## 📦 Versioning
 
-Seguir Semantic Versioning (MAJOR.MINOR.PATCH):
+Follow Semantic Versioning (MAJOR.MINOR.PATCH):
 
-- **MAJOR**: Mudanças incompatíveis (ex: `1.0.0` → `2.0.0`)
-- **MINOR**: Novas features compatíveis (ex: `1.0.0` → `1.1.0`)
+- **MAJOR**: Incompatible changes (ex: `1.0.0` → `2.0.0`)
+- **MINOR**: Compatible new features (ex: `1.0.0` → `1.1.0`)
 - **PATCH**: Bug fixes (ex: `1.0.0` → `1.0.1`)
 
-Atualizar em:
+Update in:
 - `package.json` (version)
-- `CHANGELOG.md` (com data e descrição)
+- `CHANGELOG.md` (with date and description)
 
-## 🔐 Segurança
+## 🔐 Security
 
-- Nunca commitar `.env` ou secrets
-- Usar variáveis de ambiente para dados sensíveis
-- Validar entrada do usuário sempre
-- Sanitizar dados antes de usar em queries
-- Usar HTTPS em produção
+- Never commit `.env` or secrets
+- Use environment variables for sensitive data
+- Always validate user input
+- Sanitize data before using in queries
+- Use HTTPS in production
 
-## 📚 Documentação
+## 📚 Documentation
 
-Documentar:
-- Funções públicas com JSDoc
-- Componentes com props documentation
-- APIs com exemplos de uso
-- Mudanças significativas em CHANGELOG.md
+Document:
+- Public functions with JSDoc
+- Components with props documentation
+- APIs with usage examples
+- Significant changes in CHANGELOG.md
 
 ```typescript
 /**
- * Busca dados do usuário
- * @param userId - ID do usuário
- * @returns Dados do usuário ou null se não encontrado
- * @throws Error se houver problema na conexão
+ * Fetches user data
+ * @param userId - User ID
+ * @returns User data or null if not found
+ * @throws Error if connection fails
  */
 export async function getUserData(userId: string): Promise<User | null> {
   // ...
@@ -227,26 +226,26 @@ export async function getUserData(userId: string): Promise<User | null> {
 
 ## ⚡ Performance
 
-- Usar `useMemo` para cálculos pesados
-- Usar `useCallback` para callbacks em listas
-- Lazy load componentes quando possível
-- Otimizar queries do banco de dados
-- Usar índices em campos frequentemente consultados
+- Use `useMemo` for heavy calculations
+- Use `useCallback` for callbacks in lists
+- Lazy load components when possible
+- Optimize database queries
+- Use indexes on frequently queried fields
 
 ## 🔄 CI/CD
 
-O projeto roda automaticamente:
-- Testes em cada commit
-- Linting e type checking
-- Build em staging
-- Deploy em produção se tudo passar
+The project runs automatically:
+- Tests on each commit
+- Linting and type checking
+- Build on staging
+- Deploy to production if everything passes
 
-Não aguarda aprovação manual.
+No manual approval needed.
 
-## 📞 Suporte
+## 📞 Support
 
-Dúvidas sobre padrões? Consulte:
-- `PROJECT_STANDARDS.md` - Padrões gerais
-- `ARCHITECTURE.md` - Estrutura do projeto
-- `ERROR_HANDLING.md` - Tratamento de erros
-- `NAMING_CONVENTIONS.md` - Nomenclaturas
+Questions about standards? Consult:
+- `PROJECT_STANDARDS.md` - General standards
+- `ARCHITECTURE.md` - Project structure
+- `ERROR_HANDLING.md` - Error handling
+- `NAMING_CONVENTIONS.md` - Naming conventions

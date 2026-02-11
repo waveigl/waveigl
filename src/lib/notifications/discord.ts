@@ -160,6 +160,7 @@ export interface DiscordNotification {
   title: string
   message: string
   context?: Record<string, unknown>
+  stackTrace?: string
 }
 
 /**
@@ -200,10 +201,16 @@ export async function notifyDiscord(notification: DiscordNotification): Promise<
       .join('\n')
   }
 
+  // Formata stack trace se fornecido
+  let stackTraceText = ''
+  if (notification.stackTrace) {
+    stackTraceText = '\n\n**Stack Trace:**\n```\n' + notification.stackTrace.slice(0, 500) + '\n```'
+  }
+
   const payload = {
     embeds: [{
       title: `${emoji} ${notification.title}`,
-      description: notification.message + contextText,
+      description: notification.message + contextText + stackTraceText,
       color,
       timestamp: new Date().toISOString(),
       footer: {
@@ -232,5 +239,48 @@ export async function notifyDiscord(notification: DiscordNotification): Promise<
     console.error('[Discord] Erro ao enviar notificação:', error)
     return false
   }
+}
+
+/**
+ * Envia notificação de erro para o Discord com retry
+ * Implementa retry logic para falhas de API do Discord
+ */
+export async function notifyDiscordOnError(
+  notification: DiscordNotification,
+  maxRetries: number = 2
+): Promise<boolean> {
+  let lastError: Error | undefined
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const success = await notifyDiscord(notification)
+      
+      if (success) {
+        return true
+      }
+
+      // Se falhou, tentar novamente
+      if (attempt < maxRetries) {
+        const delay = 1000 * Math.pow(2, attempt)
+        console.warn(`[Discord] Retry attempt ${attempt + 1}/${maxRetries + 1}, retrying in ${delay}ms`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      
+      if (attempt < maxRetries) {
+        const delay = 1000 * Math.pow(2, attempt)
+        console.warn(`[Discord] Retry attempt ${attempt + 1}/${maxRetries + 1}, retrying in ${delay}ms`, {
+          error: lastError.message
+        })
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+
+  console.error('[Discord] Failed to send notification after retries', {
+    error: lastError?.message
+  })
+  return false
 }
 

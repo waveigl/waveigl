@@ -4,9 +4,9 @@ inclusion: always
 
 # 📋 Project Standards
 
-Padrões técnicos e organizacionais do projeto WaveIGL.
+Technical and organizational standards for the WaveIGL project.
 
-## 🏗️ Estrutura do Projeto
+## 🏗️ Project Structure
 
 ```
 src/
@@ -35,7 +35,7 @@ tests/
 └── e2e/                 # End-to-end tests
 ```
 
-## 🔧 Stack Tecnológico
+## 🔧 Technology Stack
 
 - **Framework**: Next.js 14+ (App Router)
 - **Language**: TypeScript
@@ -47,7 +47,7 @@ tests/
 - **Linting**: ESLint
 - **Formatting**: Prettier
 
-## 📦 Dependências Principais
+## 📦 Main Dependencies
 
 ```json
 {
@@ -63,17 +63,17 @@ tests/
 }
 ```
 
-## 🎯 Padrões de Código
+## 🎯 Code Standards
 
 ### TypeScript
 
-- Sempre usar tipos explícitos
-- Evitar `any` - usar `unknown` se necessário
-- Usar interfaces para objetos públicos
-- Usar types para tipos utilitários
+- Always use explicit types
+- Avoid `any` - use `unknown` if necessary
+- Use interfaces for public objects
+- Use types for utility types
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 interface User {
   id: string
   email: string
@@ -82,19 +82,19 @@ interface User {
 
 type UserRole = 'admin' | 'user' | 'moderator'
 
-// ❌ RUIM
+// ❌ BAD
 const user: any = { ... }
 ```
 
 ### React Components
 
-- Usar functional components
-- Usar hooks para state management
-- Memoizar componentes pesados com `React.memo`
-- Usar `'use client'` para client components
+- Use functional components
+- Use hooks for state management
+- Memoize heavy components with `React.memo`
+- Use `'use client'` for client components
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 'use client'
 
 import { FC, useState, useCallback } from 'react'
@@ -119,20 +119,20 @@ export default UserCard
 
 ### API Routes
 
-- Usar métodos HTTP corretos (GET, POST, PUT, DELETE)
-- Validar entrada sempre
-- Retornar status codes apropriados
-- Implementar rate limiting
+- Use correct HTTP methods (GET, POST, PUT, DELETE)
+- Always validate input
+- Return appropriate status codes
+- Implement rate limiting
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validar
+    // Validate
     if (!body.email) {
       return NextResponse.json(
         { error: 'Email is required' },
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Processar
+    // Process
     const result = await processData(body)
 
     return NextResponse.json({ success: true, data: result })
@@ -156,13 +156,13 @@ export async function POST(request: NextRequest) {
 
 ### Database Queries
 
-- Usar Supabase client
-- Sempre tratar erros
-- Usar tipos para resultados
-- Adicionar índices em campos consultados frequentemente
+- Use Supabase client
+- Always handle errors
+- Use types for results
+- Add indexes on frequently queried fields
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 const { data, error } = await supabase
   .from('users')
   .select('id, email, name')
@@ -177,14 +177,14 @@ if (error) {
 return data as User
 ```
 
-## 🧪 Testes
+## 🧪 Testing
 
-### Estrutura de Testes
+### Test Structure
 
 ```typescript
 describe('Feature Name', () => {
   describe('Happy Path', () => {
-    it('deve fazer X quando Y', () => {
+    it('should do X when Y', () => {
       // Arrange
       const input = { ... }
       
@@ -197,13 +197,13 @@ describe('Feature Name', () => {
   })
 
   describe('Error Cases', () => {
-    it('deve lançar erro quando dados inválidos', () => {
+    it('should throw error when invalid data', () => {
       expect(() => functionX(invalid)).toThrow()
     })
   })
 
   describe('Edge Cases', () => {
-    it('deve lidar com valores nulos', () => {
+    it('should handle null values', () => {
       const result = functionX(null)
       expect(result).toBeNull()
     })
@@ -211,51 +211,51 @@ describe('Feature Name', () => {
 })
 ```
 
-### Cobertura de Testes
+### Test Coverage
 
-- Mínimo 80% de cobertura
-- 100% para funções críticas (auth, payments)
-- Testar happy path, error cases e edge cases
+- Minimum 80% coverage
+- 100% for critical functions (auth, payments)
+- Test happy path, error cases, and edge cases
 
-## 🔐 Segurança
+## 🔐 Security
 
-### Autenticação
+### Authentication
 
-- Usar JWT tokens com expiração
-- Validar tokens em cada request
-- Implementar refresh tokens
-- Usar HTTPS em produção
+- Use JWT tokens with expiration
+- Validate tokens on each request
+- Implement refresh tokens
+- Use HTTPS in production
 
-### Dados Sensíveis
+### Sensitive Data
 
-- Nunca logar senhas ou tokens
-- Usar variáveis de ambiente
-- Sanitizar entrada do usuário
-- Usar prepared statements para queries
+- Never log passwords or tokens
+- Use environment variables
+- Sanitize user input
+- Use prepared statements for queries
 
 ### CORS
 
-- Configurar CORS apenas para domínios permitidos
-- Usar credenciais apenas quando necessário
+- Configure CORS only for allowed domains
+- Use credentials only when necessary
 
 ## 📊 Logging
 
-### Níveis de Log
+### Log Levels
 
-- **DEBUG**: Informações detalhadas para debugging
-- **INFO**: Eventos importantes (login, pagamento)
-- **WARN**: Situações anormais mas recuperáveis
-- **ERROR**: Erros que precisam atenção
-- **CRITICAL**: Erros que afetam sistema inteiro
+- **DEBUG**: Detailed information for debugging
+- **INFO**: Important events (login, payment)
+- **WARN**: Abnormal but recoverable situations
+- **ERROR**: Errors that need attention
+- **CRITICAL**: Errors affecting the entire system
 
-### Formato
+### Format
 
 ```typescript
-// ✅ BOM
+// ✅ GOOD
 console.log('[FeatureName] User logged in:', { userId, timestamp, ip })
 console.error('[FeatureName] Payment failed:', { error, userId, amount })
 
-// ❌ RUIM
+// ❌ BAD
 console.log('ok')
 console.error('error')
 ```
@@ -264,27 +264,27 @@ console.error('error')
 
 ### Frontend
 
-- Code splitting automático do Next.js
-- Lazy load componentes pesados
-- Usar `Image` component do Next.js
-- Memoizar callbacks e valores
+- Automatic code splitting with Next.js
+- Lazy load heavy components
+- Use Next.js `Image` component
+- Memoize callbacks and values
 
 ### Backend
 
-- Usar índices no banco de dados
-- Implementar caching quando apropriado
-- Otimizar queries (evitar N+1)
-- Usar connection pooling
+- Use database indexes
+- Implement caching when appropriate
+- Optimize queries (avoid N+1)
+- Use connection pooling
 
-### Monitoramento
+### Monitoring
 
-- Rastrear Core Web Vitals
-- Monitorar tempo de resposta das APIs
-- Alertar sobre erros em produção
+- Track Core Web Vitals
+- Monitor API response times
+- Alert on production errors
 
 ## 📝 Commits
 
-### Formato de Commit
+### Commit Format
 
 ```
 <type>(<scope>): <subject>
@@ -294,7 +294,7 @@ console.error('error')
 <footer>
 ```
 
-Exemplo:
+Example:
 ```
 feat(club): add subscription eligibility check
 
@@ -305,47 +305,47 @@ feat(club): add subscription eligibility check
 Closes #123
 ```
 
-### Tipos de Commit
+### Commit Types
 
-- `feat`: Nova feature
+- `feat`: New feature
 - `fix`: Bug fix
-- `docs`: Documentação
-- `style`: Formatação (sem mudança de lógica)
-- `refactor`: Refatoração
-- `perf`: Melhoria de performance
-- `test`: Testes
-- `chore`: Tarefas (deps, config)
+- `docs`: Documentation
+- `style`: Formatting (no logic change)
+- `refactor`: Refactoring
+- `perf`: Performance improvement
+- `test`: Tests
+- `chore`: Tasks (deps, config)
 
-## 🔄 Versionamento
+## 🔄 Versioning
 
-Seguir Semantic Versioning:
+Follow Semantic Versioning:
 
-- **MAJOR**: Mudanças incompatíveis
-- **MINOR**: Novas features compatíveis
+- **MAJOR**: Incompatible changes
+- **MINOR**: Compatible new features
 - **PATCH**: Bug fixes
 
-Atualizar:
+Update:
 - `package.json` (version)
-- `CHANGELOG.md` (com data e descrição)
+- `CHANGELOG.md` (with date and description)
 - Git tag: `v1.2.3`
 
-## 📚 Documentação
+## 📚 Documentation
 
 ### README
 
-- Instruções de setup
-- Como rodar testes
-- Como fazer deploy
-- Variáveis de ambiente necessárias
+- Setup instructions
+- How to run tests
+- How to deploy
+- Required environment variables
 
 ### JSDoc
 
 ```typescript
 /**
- * Busca dados do usuário
- * @param userId - ID do usuário
- * @returns Dados do usuário ou null
- * @throws Error se houver problema na conexão
+ * Fetches user data
+ * @param userId - User ID
+ * @returns User data or null
+ * @throws Error if connection fails
  * @example
  * const user = await getUserData('user-123')
  */
@@ -354,47 +354,47 @@ export async function getUserData(userId: string): Promise<User | null> {
 }
 ```
 
-### Componentes
+### Components
 
 ```typescript
 interface ButtonProps {
-  /** Texto do botão */
+  /** Button text */
   children: React.ReactNode
-  /** Variante visual */
+  /** Visual variant */
   variant?: 'primary' | 'secondary'
-  /** Callback ao clicar */
+  /** Click callback */
   onClick?: () => void
-  /** Desabilitar botão */
+  /** Disable button */
   disabled?: boolean
 }
 
 /**
- * Componente de botão reutilizável
+ * Reusable button component
  */
 export const Button: FC<ButtonProps> = ({ ... }) => {
   // ...
 }
 ```
 
-## 🎨 Estilo de Código
+## 🎨 Code Style
 
-### Formatação
+### Formatting
 
-- Usar Prettier (configurado em `.prettierrc`)
-- Linha máxima: 100 caracteres
-- Indentação: 2 espaços
-- Usar single quotes em strings
+- Use Prettier (configured in `.prettierrc`)
+- Maximum line length: 100 characters
+- Indentation: 2 spaces
+- Use single quotes in strings
 
 ### Imports
 
 ```typescript
-// ✅ BOM: Organizado
+// ✅ GOOD: Organized
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { getUserData } from '@/lib/users'
 import type { User } from '@/types'
 
-// ❌ RUIM: Desorganizado
+// ❌ BAD: Disorganized
 import type { User } from '@/types'
 import { getUserData } from '@/lib/users'
 import { useState } from 'react'
@@ -403,13 +403,13 @@ import { Button } from '@/components/ui/button'
 
 ## 🔍 Code Review
 
-Checklist para code review:
+Code review checklist:
 
-- [ ] Código segue padrões do projeto
-- [ ] Testes inclusos e passando
-- [ ] Sem console.log ou debug code
-- [ ] Tipos TypeScript corretos
-- [ ] Tratamento de erros implementado
-- [ ] Documentação atualizada
-- [ ] Performance considerada
-- [ ] Sem secrets ou dados sensíveis
+- [ ] Code follows project standards
+- [ ] Tests included and passing
+- [ ] No console.log or debug code
+- [ ] Correct TypeScript types
+- [ ] Error handling implemented
+- [ ] Documentation updated
+- [ ] Performance considered
+- [ ] No secrets or sensitive data

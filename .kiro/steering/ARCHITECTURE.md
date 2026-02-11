@@ -4,7 +4,403 @@ inclusion: always
 
 # 🏗️ Architecture & System Design
 
-Arquitetura e design do sistema WaveIGL.
+Architecture and design of the WaveIGL system.
+
+## 🎯 Overview
+
+WaveIGL is a streaming platform with subscription system (Club), integration with Discord, Twitch, YouTube, Kick and Mercado Pago.
+
+### Technology Stack
+
+```
+Frontend:
+├── Next.js 14 (App Router)
+├── React 18
+├── TypeScript
+├── Tailwind CSS
+└── shadcn/ui
+
+Backend:
+├── Next.js API Routes
+├── Supabase (PostgreSQL)
+├── Node.js runtime
+└── Webhooks (Mercado Pago, Discord)
+
+Integrations:
+├── Discord (OAuth + Bot)
+├── Twitch (OAuth)
+├── YouTube (OAuth)
+├── Kick (OAuth)
+└── Mercado Pago (Payments)
+```
+
+## 📊 Data Flow
+
+### Authentication
+
+```
+User → OAuth Provider → Callback → Session → Protected Routes
+                                      ↓
+                              Supabase Auth
+```
+
+### Club Subscription
+
+```
+User → Check Eligibility → Onboarding → Mercado Pago → Webhook → Discord Role
+         (Discord + Data)   (Complete)   (Payment)     (Update)   (Assign)
+```
+
+### Notifications
+
+```
+Event → Handler → Discord Webhook → User Notification
+         (Error)   (Embed)          (Alert)
+```
+
+## 🗂️ Folder Structure
+
+### src/app
+
+```
+app/
+├── api/                          # API Routes
+│   ├── auth/
+│   │   ├── discord/route.ts      # Discord OAuth
+│   │   ├── twitch/route.ts       # Twitch OAuth
+│   │   ├── youtube/route.ts      # YouTube OAuth
+│   │   ├── kick/route.ts         # Kick OAuth
+│   │   └── logout/route.ts       # Logout
+│   ├── subscription/
+│   │   ├── check-eligibility/    # Check requirements
+│   │   ├── create/               # Create subscription
+│   │   ├── sync/                 # Sync with MP
+│   │   └── webhook/              # MP Webhook
+│   ├── user/
+│   │   └── profile/              # User profile
+│   ├── me/
+│   │   ├── profile/              # My profile
+│   │   └── check-moderator/      # Check mod
+│   ├── benefits/                 # Benefits
+│   ├── discord/
+│   │   └── sync-roles/           # Sync roles
+│   └── chat/
+│       └── stream/               # Chat SSE
+├── dashboard/                    # Dashboard page
+├── checkout/
+│   └── club/                     # Checkout page
+├── auth/                         # Auth pages
+└── (landing)/                    # Landing pages
+```
+
+### src/components
+
+```
+components/
+├── ui/                           # shadcn/ui components
+│   ├── button.tsx
+│   ├── dialog.tsx
+│   ├── badge.tsx
+│   └── ...
+├── ClubSubscriptionWidget.tsx    # Club subscription
+├── ClubOnboardingPopup.tsx       # Onboarding flow
+├── ProfileEditor.tsx            # Profile editing
+├── BenefitsPanel.tsx            # Benefits display
+├── SubscriberBenefitsPopup.tsx  # Benefits popup
+├── BenefitsIndicator.tsx        # Benefits indicator
+├── VideoPlayer.tsx              # Video player
+├── UnifiedChat.tsx              # Chat component
+├── ModerationPanel.tsx          # Moderation
+└── ...
+```
+
+### src/lib
+
+```
+lib/
+├── auth/
+│   ├── session.ts               # Session management
+│   └── oauth.ts                 # OAuth helpers
+├── supabase/
+│   ├── server.ts                # Server client
+│   └── client.ts                # Client client
+├── discord/
+│   ├── server.ts                # Discord API
+│   └── lazy-check.ts            # Lazy cleanup
+├── notifications/
+│   ├── discord.ts               # Discord webhooks
+│   ├── subscription.ts          # Sub notifications
+│   ├── error-handler.ts         # Error handling
+│   └── index.ts                 # Exports
+├── benefits/
+│   ├── index.ts                 # Benefits logic
+│   └── constants.ts             # Constants
+├── chat/
+│   ├── hub.ts                   # Chat hub
+│   ├── twitch.ts                # Twitch chat
+│   ├── youtube.ts               # YouTube chat
+│   └── kick.ts                  # Kick chat
+├── permissions.ts               # Permission checks
+└── utils/
+    ├── formatDate.ts
+    ├── validateEmail.ts
+    └── ...
+```
+
+### src/hooks
+
+```
+hooks/
+├── useClubSubscription.ts        # Club subscription state
+├── useSessionProvider.ts         # Session provider
+├── useDiscordConnection.ts       # Discord connection
+├── useUserProfile.ts            # User profile
+└── ...
+```
+
+### src/types
+
+```
+types/
+├── index.ts                      # Main types
+├── user.types.ts                # User types
+├── subscription.types.ts        # Subscription types
+├── discord.types.ts             # Discord types
+└── ...
+```
+
+## 🔄 Main Flows
+
+### 1. OAuth Login
+
+```
+1. User clicks "Login with Discord"
+2. Redirects to /api/auth/discord
+3. Discord OAuth callback
+4. Creates/updates user in Supabase
+5. Creates session cookie
+6. Redirects to /dashboard
+```
+
+### 2. Club Subscription
+
+```
+1. User clicks "Subscribe to Club"
+2. Check eligibility (/api/subscription/check-eligibility)
+   - Discord linked?
+   - Birth date filled?
+   - Over 18 years old?
+3. If not eligible → Show onboarding
+4. If eligible → Redirect to /checkout/club
+5. Create subscription in Mercado Pago
+6. Redirect to MP checkout
+7. User completes payment
+8. MP sends webhook
+9. Update status in database
+10. Add role on Discord
+```
+
+### 3. Discord Synchronization
+
+```
+1. User subscribes
+2. Check if Discord linked
+3. If yes → Add to server
+4. Assign subscriber role
+5. Lazy check: Every 6h check expired
+6. Remove from server if expired
+```
+
+### 4. Error Notification
+
+```
+1. Error occurs in production
+2. Capture context (userId, timestamp, etc)
+3. Log structured to console
+4. If ERROR or CRITICAL → Send to Discord
+5. Discord webhook receives embed
+6. Notify dev on Discord
+```
+
+## 🔐 Security
+
+### Authentication
+
+- JWT tokens with expiration
+- Refresh tokens for renewal
+- HTTP-only session cookies
+- CSRF protection
+
+### Authorization
+
+- Check permissions on each API route
+- Validate resource ownership
+- Rate limiting on critical endpoints
+
+### Sensitive Data
+
+- Never log passwords/tokens
+- Use environment variables
+- Sanitize user input
+- Prepared statements in database
+
+## 📊 Database
+
+### Main Tables
+
+```sql
+-- Users
+profiles (
+  id UUID PRIMARY KEY,
+  email VARCHAR,
+  full_name VARCHAR,
+  phone_number VARCHAR,
+  birth_date DATE,
+  subscription_status VARCHAR,
+  subscription_id VARCHAR,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+)
+
+-- Linked accounts
+linked_accounts (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  platform VARCHAR,
+  platform_user_id VARCHAR,
+  platform_username VARCHAR,
+  access_token VARCHAR,
+  refresh_token VARCHAR,
+  is_moderator BOOLEAN,
+  created_at TIMESTAMP
+)
+
+-- Subscriber benefits
+subscriber_benefits (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  platform VARCHAR,
+  tier VARCHAR,
+  subscribed_at TIMESTAMP,
+  expires_at TIMESTAMP,
+  discord_linked BOOLEAN,
+  onboarding_step INT,
+  created_at TIMESTAMP
+)
+
+-- Discord connections
+discord_connections (
+  id UUID PRIMARY KEY,
+  user_id UUID,
+  discord_id VARCHAR,
+  discord_username VARCHAR,
+  connected_at TIMESTAMP
+)
+```
+
+## 🔌 Integrations
+
+### Discord
+
+- OAuth for authentication
+- Bot to manage roles
+- Webhooks for notifications
+- SSE for real-time events
+
+### Mercado Pago
+
+- PreApproval for recurring subscriptions
+- Webhooks for payment notifications
+- Status synchronization
+
+### Twitch/YouTube/Kick
+
+- OAuth for authentication
+- Chat integration via APIs
+- Chat moderation
+
+## 🚀 Performance
+
+### Frontend
+
+- Automatic code splitting
+- Lazy loading of components
+- Heavy component memoization
+- Image optimization
+
+### Backend
+
+- Database indexes
+- Frequent query caching
+- Connection pooling
+- Lazy cleanup of expired data
+
+### Monitoring
+
+- Structured logs
+- Discord alerts
+- Performance metrics
+- Error tracking
+
+## 🧪 Testing
+
+### Structure
+
+```
+tests/
+├── unit/
+│   ├── lib/
+│   ├── utils/
+│   └── hooks/
+├── integration/
+│   ├── api/
+│   └── database/
+└── e2e/
+    ├── auth.spec.ts
+    ├── subscription.spec.ts
+    └── discord.spec.ts
+```
+
+### Coverage
+
+- Minimum 80% overall
+- 100% for critical functions
+- Happy path + error cases + edge cases
+
+## 📈 Scalability
+
+### Horizontal
+
+- Stateless API routes
+- Session storage in cookies
+- Database connection pooling
+
+### Vertical
+
+- Query optimization
+- Strategic caching
+- Lazy data loading
+
+## 🔄 CI/CD
+
+```
+Commit → Tests → Lint → Type Check → Build → Deploy
+         ↓
+      Fails? → Notify Discord
+```
+
+### Environments
+
+- **Development**: Local
+- **Staging**: Preview deployment
+- **Production**: Live
+
+## 📞 Support
+
+Questions about architecture?
+- Check `PROJECT_STANDARDS.md`
+- Review examples in `src/`
+- See tests in `tests/`
 
 ## 🎯 Visão Geral
 
