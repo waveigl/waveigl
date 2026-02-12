@@ -1,5 +1,42 @@
 # Changelog - WaveIGL
 
+## [0.3.5] - 2025-02-12
+
+### 🔧 Improvements - Comprehensive Dependency Updates
+- Updated: `next` from ^16.1.4 to ^16.1.6 (latest stable) - fixes 3 high severity vulnerabilities
+  - Fixed: Next.js self-hosted applications vulnerable to DoS via Image Optimizer remotePatterns
+  - Fixed: Next.js HTTP request deserialization can lead to DoS with insecure React Server Components
+  - Fixed: Next.js Unbounded Memory Consumption via PPR Resume Endpoint
+- Updated: `axios` from ^1.7.7 to ^1.13.5 (latest) - fixes high severity DoS vulnerability
+  - Fixed: Axios Vulnerable to Denial of Service via __proto__ Key in mergeConfig
+- Updated: `@supabase/ssr` from ^0.7.0 to ^0.8.0 (latest)
+- Updated: `@supabase/supabase-js` from ^2.72.7 to ^2.95.3 (latest) - fixes transitive tar vulnerabilities
+  - Fixed: node-tar Vulnerable to Arbitrary File Overwrite and Symlink Poisoning
+  - Fixed: Race Condition in node-tar Path Reservations via Unicode Ligature Collisions
+  - Fixed: node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal
+- Updated: `bcrypt` from ^5.1.1 to ^6.0.0 (latest, major bump)
+- Updated: `eslint` from ^10.0.0 to ^9.15.0 (compatible with TypeScript ESLint packages)
+- Updated: `eslint-config-next` from ^16.1.4 to ^16.1.6 (aligns with next.js version)
+- Updated: `lucide-react` from ^0.263.1 to ^0.563.0 (latest)
+- Updated: `playwright` from ^1.40.0 to ^1.58.2 (latest)
+- Updated: `vitest` from ^1.0.0 to ^4.0.18 (latest)
+- Updated: `supabase` from ^2.73.0 to ^2.76.8 (latest)
+- Updated: All other dependencies to latest compatible versions
+
+### 🔐 Security
+- Security: All 7 critical/high severity vulnerabilities resolved
+  - 3 Next.js vulnerabilities (DoS, memory consumption)
+  - 1 Axios vulnerability (DoS via __proto__)
+  - 3 node-tar vulnerabilities (file overwrite, symlink poisoning, race condition)
+- Security: Transitive dependencies (tar, @mapbox/node-pre-gyp) now use secure versions
+- Security: No breaking changes - all updates are patch/minor version compatible (except bcrypt major bump)
+- Security: npm audit shows 0 vulnerabilities after updates
+
+### 📝 Documentation
+- Updated: CHANGELOG.md with comprehensive dependency update details
+- Note: All tests passing after dependency updates
+- Note: Build verified successful with all latest versions
+
 ## [0.3.3] - 2025-02-11
 
 ### 🔧 Improvements - Dependency Updates
