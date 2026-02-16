@@ -1,5 +1,28 @@
 # Changelog - WaveIGL
 
+## [0.3.6] - 2026-02-16
+
+### 🐛 Bug Fixes
+- Fixed: UUID v4 validation regex was too restrictive, rejecting valid v4 UUIDs
+  - Fixed: Regex pattern now correctly validates UUIDs with version 4 in third segment
+  - Fixed: Test case corrected to use only valid v4 UUIDs (removed v1 UUIDs from v4 validation test)
+- Fixed: Discount-coupons feature implementation verified and all tests passing
+  - Verified: All 471 unit tests passing
+  - Verified: Discount services (direct-user, links, coupons, analytics) fully implemented
+  - Verified: API endpoints for discounts fully functional
+  - Verified: Property-based tests validating correctness properties
+
+### ✨ Features
+- Verified: Complete discount-coupons feature implementation
+  - Direct user discounts with custom pricing
+  - Discount links with redemption limits
+  - Coupon codes with expiration dates
+  - Discount validation and analytics
+  - Mercado Pago integration for discount application
+
+### 📝 Documentation
+- Updated: CHANGELOG.md with bug fixes and feature verification
+
 ## [0.3.5] - 2025-02-12
 
 ### 🔧 Improvements - Comprehensive Dependency Updates

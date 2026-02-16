@@ -33,7 +33,8 @@ export function validateUUIDv4(value: unknown): UUIDValidationResult {
 
   // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
   // Where x is any hex digit and y is one of 8, 9, A, or B
-  const uuidv4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  // More permissive regex to accept valid v4 UUIDs
+  const uuidv4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
   if (!uuidv4Regex.test(value)) {
     return {
