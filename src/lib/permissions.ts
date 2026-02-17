@@ -28,39 +28,25 @@ export const ADMIN_ACCOUNTS = {
 }
 
 export function getUserRole(linkedAccounts: LinkedAccount[]): UserRole {
-  // Verificar owner por ID primeiro (mais seguro)
-  if (linkedAccounts.some(a => 
+  // 1. OWNER (WaveIgl) - Strict check by Platform ID
+  // WaveIgl is the ONLY owner of this platform.
+  const isWaveIgl = linkedAccounts.some(a =>
     OWNER_ACCOUNT_IDS[a.platform] === a.platform_user_id
-  )) {
-    return 'owner'
-  }
-  
-  // Fallback: verificar owner por username
-  if (linkedAccounts.some(a => 
-    OWNER_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase()
-  )) {
-    return 'owner'
-  }
-  
-  // Verificar admin por ID primeiro (mais seguro)
-  if (linkedAccounts.some(a => 
+  )
+  if (isWaveIgl) return 'owner'
+
+  // 2. ADMIN (OGabrielToth) - Strict check by Platform ID
+  // OGabrielToth is the ONLY admin of this platform.
+  const isGabrielAdmin = linkedAccounts.some(a =>
     ADMIN_ACCOUNT_IDS[a.platform] === a.platform_user_id
-  )) {
-    return 'admin'
-  }
-  
-  // Fallback: verificar admin por username
-  if (linkedAccounts.some(a => 
-    ADMIN_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase()
-  )) {
-    return 'admin'
-  }
-  
-  // Verificar moderador
+  )
+  if (isGabrielAdmin) return 'admin'
+
+  // 3. MODERATOR - Check if designated by owner/admin
   if (linkedAccounts.some(a => a.is_moderator)) {
     return 'moderator'
   }
-  
+
   return 'user'
 }
 
@@ -89,25 +75,18 @@ export function isModerator(role: UserRole): boolean {
 }
 
 export function isProtectedLinkedAccounts(linkedAccounts: LinkedAccount[]): boolean {
-  // Usuários protegidos: owner e admin (verificar por ID primeiro, depois username)
-  
-  // Verificar owner por ID
+  // Usuários protegidos: owner (WaveIgl) e admin (OGabrielToth)
+  // Verificar estritamente por Platform ID
+
+  // 1. Verificar se é WaveIgl (Owner)
   if (linkedAccounts.some(a => OWNER_ACCOUNT_IDS[a.platform] === a.platform_user_id)) {
     return true
   }
-  // Verificar owner por username
-  if (linkedAccounts.some(a => OWNER_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase())) {
-    return true
-  }
-  
-  // Verificar admin por ID
+
+  // 2. Verificar se é OGabrielToth (Admin)
   if (linkedAccounts.some(a => ADMIN_ACCOUNT_IDS[a.platform] === a.platform_user_id)) {
     return true
   }
-  // Verificar admin por username
-  if (linkedAccounts.some(a => ADMIN_ACCOUNTS[a.platform]?.toLowerCase() === a.platform_username.toLowerCase())) {
-    return true
-  }
-  
+
   return false
 }
