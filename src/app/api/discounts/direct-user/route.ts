@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const discount = await DirectUserDiscountService.updateDiscount(id, {
       discountPrice,
-    })
+    }, updatedBy)
 
     console.log('[DirectUserDiscount] Updated:', { id, discountPrice })
 

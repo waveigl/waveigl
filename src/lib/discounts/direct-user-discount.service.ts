@@ -3,7 +3,7 @@
  * Manages direct user discounts - assigning specific discount prices to individual users
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import type { DirectUserDiscount, DiscountFilters } from '@/types/discount.types'
 import {
@@ -22,26 +22,6 @@ import {
  * Provides methods for managing direct user discounts
  */
 export class DirectUserDiscountService {
-  private static supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookies().getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookies().set(name, value, options)
-            )
-          } catch {
-            // Handle cookie setting errors
-          }
-        },
-      },
-    }
-  )
 
   /**
    * Create a direct user discount
@@ -68,7 +48,8 @@ export class DirectUserDiscountService {
     }
 
     // Create new discount
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('direct_user_discounts')
       .insert({
         user_id: userId,
@@ -101,7 +82,8 @@ export class DirectUserDiscountService {
   static async getDiscount(id: string): Promise<DirectUserDiscount | null> {
     DiscountValidator.validateUUID(id)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('direct_user_discounts')
       .select('*')
       .eq('id', id)
@@ -127,7 +109,8 @@ export class DirectUserDiscountService {
   static async getDiscountForUser(userId: string): Promise<DirectUserDiscount | null> {
     DiscountValidator.validateUUID(userId)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('direct_user_discounts')
       .select('*')
       .eq('user_id', userId)
@@ -152,7 +135,8 @@ export class DirectUserDiscountService {
    * @returns Array of discounts
    */
   static async listDiscounts(filters?: DiscountFilters): Promise<DirectUserDiscount[]> {
-    let query = this.supabase
+    const supabase = await createServerClient()
+    let query = supabase
       .from('direct_user_discounts')
       .select('*')
       .is('deleted_at', null)
@@ -221,7 +205,8 @@ export class DirectUserDiscountService {
     }
 
     // Update discount
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('direct_user_discounts')
       .update(updateData)
       .eq('id', id)
@@ -257,7 +242,8 @@ export class DirectUserDiscountService {
     }
 
     // Soft delete
-    const { error } = await this.supabase
+    const supabase = await createServerClient()
+    const { error } = await supabase
       .from('direct_user_discounts')
       .update({
         deleted_at: new Date().toISOString(),
@@ -291,7 +277,8 @@ export class DirectUserDiscountService {
     changes: Record<string, unknown>
   ): Promise<void> {
     try {
-      await this.supabase.from('discount_audit_logs').insert({
+      const supabase = await createServerClient()
+      await supabase.from('discount_audit_logs').insert({
         action,
         discount_type: 'direct_user',
         discount_id: discountId,

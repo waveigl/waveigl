@@ -1,0 +1,30 @@
+﻿
+> waveigl@0.4.2 build
+> next build
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 2.4s
+  Running TypeScript ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\nvm4w\nodejs/node.exe" "C:\nvm4w\nodejs/node_modules/npm/bin/np ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./src/lib/discounts/analytics.service.ts:102:55
+Type error: Property 'supabase' does not exist on type 'typeof DiscountAnalyticsService'.
+
+[0m [90m 100 |[39m     [36mtry[39m {
+ [90m 101 |[39m       [90m// Get redemptions for this discount[39m
+[31m[1m>[22m[39m[90m 102 |[39m       [36mconst[39m { data[33m:[39m redemptions[33m,[39m error } [33m=[39m 
+[36mawait[39m [36mthis[39m[33m.[39msupabase
+ [90m     |[39m                                                       [31m[1m^[22m[39m
+ [90m 103 |[39m         [33m.[39m[36mfrom[39m([32m'discount_redemptions'[39m)
+ [90m 104 |[39m         [33m.[39mselect([32m'*'[39m)
+ [90m 105 |[39m         [33m.[39meq([32m'discount_id'[39m[33m,[39m discountId)[0m
+Next.js build worker exited with code: 1 and signal: null

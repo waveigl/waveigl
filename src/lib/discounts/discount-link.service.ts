@@ -3,7 +3,7 @@
  * Manages discount links - unique URLs with limited redemptions
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import type { DiscountLink, DiscountFilters, DiscountRedemption } from '@/types/discount.types'
 import { DiscountValidator, calculateDiscountedPrice } from '@/lib/discounts/validator'
@@ -20,43 +20,23 @@ import { randomBytes } from 'crypto'
  * Provides methods for managing discount links
  */
 export class DiscountLinkService {
-  private static supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookies().getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookies().set(name, value, options)
-            )
-          } catch {
-            // Handle cookie setting errors
-          }
-        },
-      },
-    }
-  )
 
   /**
    * Generate a unique discount link
-   * @param discountPrice - The discount price
-   * @param maxRedemptions - Maximum number of redemptions
-   * @param expirationDate - When the link expires
+   * @param config - The link configuration
    * @param createdBy - The admin ID creating the link
-   * @param description - Optional description
    * @returns The created discount link
    */
   static async generateLink(
-    discountPrice: number,
-    maxRedemptions: number,
-    expirationDate: string,
-    createdBy: string,
-    description?: string
+    config: {
+      discountPrice: number
+      maxRedemptions: number
+      expirationDate: string
+      description?: string
+    },
+    createdBy: string
   ): Promise<DiscountLink> {
+    const { discountPrice, maxRedemptions, expirationDate, description } = config
     // Validate inputs
     DiscountValidator.validatePrice(discountPrice)
     DiscountValidator.validateMaxRedemptions(maxRedemptions)
@@ -70,7 +50,8 @@ export class DiscountLinkService {
     const token = this.generateToken()
 
     // Create link
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('discount_links')
       .insert({
         token,
@@ -108,7 +89,8 @@ export class DiscountLinkService {
   static async getLink(id: string): Promise<DiscountLink | null> {
     DiscountValidator.validateUUID(id)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('discount_links')
       .select('*')
       .eq('id', id)
@@ -134,7 +116,8 @@ export class DiscountLinkService {
   static async validateToken(token: string): Promise<DiscountLink> {
     DiscountValidator.validateToken(token)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('discount_links')
       .select('*')
       .eq('token', token)
@@ -171,7 +154,8 @@ export class DiscountLinkService {
    * @returns Array of links
    */
   static async listLinks(filters?: DiscountFilters): Promise<DiscountLink[]> {
-    let query = this.supabase
+    const supabase = await createServerClient()
+    let query = supabase
       .from('discount_links')
       .select('*')
       .is('deleted_at', null)
@@ -233,7 +217,8 @@ export class DiscountLinkService {
     const { discountAmount, finalPrice } = calculateDiscountedPrice(link.discountPrice)
 
     // Increment redemption counter
-    const { error: updateError } = await this.supabase
+    const supabase = await createServerClient()
+    const { error: updateError } = await supabase
       .from('discount_links')
       .update({
         current_redemptions: link.currentRedemptions + 1,
@@ -246,7 +231,7 @@ export class DiscountLinkService {
     }
 
     // Log redemption
-    const { data: redemption, error: redemptionError } = await this.supabase
+    const { data: redemption, error: redemptionError } = await supabase
       .from('discount_redemptions')
       .insert({
         discount_type: 'link',
@@ -292,7 +277,8 @@ export class DiscountLinkService {
     }
 
     // Soft delete
-    const { error } = await this.supabase
+    const supabase = await createServerClient()
+    const { error } = await supabase
       .from('discount_links')
       .update({
         deleted_at: new Date().toISOString(),
@@ -334,7 +320,8 @@ export class DiscountLinkService {
     changes: Record<string, unknown>
   ): Promise<void> {
     try {
-      await this.supabase.from('discount_audit_logs').insert({
+      const supabase = await createServerClient()
+      await supabase.from('discount_audit_logs').insert({
         action,
         discount_type: 'link',
         discount_id: linkId,

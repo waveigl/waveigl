@@ -133,7 +133,7 @@ export interface CouponCodeResponse {
 export interface DiscountValidationResult {
   isValid: boolean
   error?: string
-  discount?: DirectUserDiscount | DiscountLink | CouponCode
+  discount?: DirectUserDiscount | DiscountLink | CouponCode | null
   discountAmount?: number
   finalPrice?: number
   discountType?: 'direct_user' | 'link' | 'coupon'

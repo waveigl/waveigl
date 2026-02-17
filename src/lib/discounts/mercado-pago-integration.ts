@@ -3,7 +3,7 @@
  * Handles PreApproval creation with custom pricing
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { DiscountValidator } from '@/lib/discounts/validator'
 import type { DirectUserDiscount, DiscountLink, CouponCode } from '@/types/discount.types'
@@ -36,26 +36,6 @@ interface DiscountMetadata {
  * Mercado Pago Integration Service
  */
 export class MercadoPagoDiscountIntegration {
-  private static supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookies().getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookies().set(name, value, options)
-            )
-          } catch {
-            // Handle cookie setting errors
-          }
-        },
-      },
-    }
-  )
 
   /**
    * Create PreApproval with custom discount price
@@ -129,7 +109,8 @@ export class MercadoPagoDiscountIntegration {
       DiscountValidator.validateUUID(userId)
 
       // Store in database
-      const { error } = await this.supabase.from('subscription_discounts').insert({
+      const supabase = await createServerClient()
+      const { error } = await supabase.from('subscription_discounts').insert({
         subscription_id: subscriptionId,
         user_id: userId,
         discount_type: discountMetadata.discountType,
@@ -165,7 +146,8 @@ export class MercadoPagoDiscountIntegration {
     try {
       DiscountValidator.validateSubscriptionId(subscriptionId)
 
-      const { data, error } = await this.supabase
+      const supabase = await createServerClient()
+      const { data, error } = await supabase
         .from('subscription_discounts')
         .select('*')
         .eq('subscription_id', subscriptionId)
@@ -204,7 +186,8 @@ export class MercadoPagoDiscountIntegration {
         return true
       } else if (discountMetadata.discountType === 'link') {
         // Check if link is still active and not expired
-        const { data, error } = await this.supabase
+        const supabase = await createServerClient()
+        const { data, error } = await supabase
           .from('discount_links')
           .select('is_active, expiration_date, current_redemptions, max_redemptions')
           .eq('id', discountMetadata.discountId)
@@ -218,7 +201,8 @@ export class MercadoPagoDiscountIntegration {
         return data.is_active && !isExpired && !isExhausted
       } else if (discountMetadata.discountType === 'coupon') {
         // Check if coupon is still active and not expired
-        const { data, error } = await this.supabase
+        const supabase = await createServerClient()
+        const { data, error } = await supabase
           .from('coupon_codes')
           .select('is_active, expiration_date, current_redemptions, max_redemptions')
           .eq('id', discountMetadata.discountId)

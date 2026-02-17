@@ -1,0 +1,30 @@
+﻿
+> waveigl@0.4.2 build
+> next build
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 2.4s
+  Running TypeScript ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\nvm4w\nodejs/node.exe" "C:\nvm4w\nodejs/node_modules/npm/bin/np ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./src/lib/discounts/analytics.service.ts:31:73
+Type error: Cannot find name 'DiscountAnalytics'.
+
+[0m [90m 29 |[39m [90m   * @returns Overall analytics data[39m
+ [90m 30 |[39m [90m   */[39m
+[31m[1m>[22m[39m[90m 31 |[39m   [36mstatic[39m [36masync[39m getOverallAnalytics(filters[33m?[39m[33m:[39m 
+[33mAnalyticsFilters[39m)[33m:[39m [33mPromise[39m[33m<[39m[33mDiscountAnalytics[39m[33m>[39m {
+ [90m    |[39m                                                                         [31m[1m^[22m[39m
+ [90m 32 |[39m     [36mtry[39m {
+ [90m 33 |[39m       [90m// Get all redemptions[39m
+ [90m 34 |[39m       [36mconst[39m redemptions [33m=[39m [36mawait[39m [36mthis[39m[33m.[39mgetRedemptions(filters)[0m
+Next.js build worker exited with code: 1 and signal: null

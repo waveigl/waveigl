@@ -23,8 +23,11 @@ export async function applyCouponCodeAtCheckout(
     DiscountValidator.validateCouponCode(code)
     DiscountValidator.validateUUID(userId)
 
-    const result = await CouponCodeService.validateCode(code)
-    return result
+    const coupon = await CouponCodeService.validateCode(code)
+    return {
+      isValid: true,
+      discount: coupon,
+    }
   } catch (error) {
     console.error('[CheckoutIntegration] Error applying coupon code:', error)
     return null
@@ -45,8 +48,11 @@ export async function applyDiscountLinkAtCheckout(
     DiscountValidator.validateToken(token)
     DiscountValidator.validateUUID(userId)
 
-    const result = await DiscountLinkService.validateToken(token)
-    return result
+    const link = await DiscountLinkService.validateToken(token)
+    return {
+      isValid: true,
+      discount: link,
+    }
   } catch (error) {
     console.error('[CheckoutIntegration] Error applying discount link:', error)
     return null

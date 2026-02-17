@@ -6,7 +6,7 @@
  */
 
 import { FC, useState, useEffect, useCallback } from 'react'
-import { SubscriberStats } from '@/types/twitch.types'
+import { SubscriberStats, ContactStatus } from '@/types/twitch.types'
 import SubscriberList from './SubscriberList'
 import SubscriberFilter from './SubscriberFilter'
 import SyncButton from './SyncButton'
@@ -23,7 +23,7 @@ const SubscriberManagementPanel: FC<SubscriberManagementPanelProps> = ({
   const [stats, setStats] = useState<SubscriberStats | null>(null)
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [selectedFilter, setSelectedFilter] = useState<ContactStatus | 'all'>('all')
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 

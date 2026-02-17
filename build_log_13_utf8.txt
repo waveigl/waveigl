@@ -1,0 +1,30 @@
+﻿
+> waveigl@0.4.2 build
+> next build
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 2.4s
+  Running TypeScript ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\nvm4w\nodejs/node.exe" "C:\nvm4w\nodejs/node_modules/npm/bin/np ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Failed to compile.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+./tests/mocks/server.ts:8:3
+Type error: Cannot find name 'beforeAll'.
+
+[0m [90m  6 |[39m [90m// Typical lifecycle helpers (opt-in per test file)[39m
+ [90m  7 |[39m [36mexport[39m [36mfunction[39m setupMswServer()[33m:[39m [36mvoid[39m {
+[31m[1m>[22m[39m[90m  8 |[39m   beforeAll(() [33m=>[39m server[33m.[39mlisten({ onUnhandledRequest[33m:[39m 
+[32m'warn'[39m }))
+ [90m    |[39m   [31m[1m^[22m[39m
+ [90m  9 |[39m   afterEach(() [33m=>[39m server[33m.[39mresetHandlers())
+ [90m 10 |[39m   afterAll(() [33m=>[39m server[33m.[39mclose())
+ [90m 11 |[39m }[0m
+Next.js build worker exited with code: 1 and signal: null

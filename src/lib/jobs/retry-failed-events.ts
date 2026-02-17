@@ -185,7 +185,7 @@ export function startRetryProcessor(intervalMs: number = 5 * 60 * 1000): NodeJS.
 /**
  * Para o retry processor
  */
-export function stopRetryProcessor(timer: NodeJS.Timer): void {
+export function stopRetryProcessor(timer: any): void {
   clearInterval(timer)
   logWebhookEvent('info', 'Retry processor parado', {
     source: 'retry_processor'

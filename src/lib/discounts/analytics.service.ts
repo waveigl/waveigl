@@ -3,7 +3,7 @@
  * Provides analytics and reporting for discount operations
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import type {
   DiscountStats,
@@ -39,26 +39,6 @@ interface DiscountAnalytics {
  * Provides methods for analytics and reporting
  */
 export class DiscountAnalyticsService {
-  private static supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookies().getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookies().set(name, value, options)
-            )
-          } catch {
-            // Handle cookie setting errors
-          }
-        },
-      },
-    }
-  )
 
   /**
    * Get overall discount analytics
@@ -119,7 +99,8 @@ export class DiscountAnalyticsService {
 
     try {
       // Get redemptions for this discount
-      const { data: redemptions, error } = await this.supabase
+      const supabase = await createServerClient()
+      const { data: redemptions, error } = await supabase
         .from('discount_redemptions')
         .select('*')
         .eq('discount_id', discountId)
@@ -166,7 +147,8 @@ export class DiscountAnalyticsService {
     DiscountValidator.validateUUID(discountId)
 
     try {
-      const { data: redemptions, error } = await this.supabase
+      const supabase = await createServerClient()
+      const { data: redemptions, error } = await supabase
         .from('discount_redemptions')
         .select('redeemed_at, discount_amount')
         .eq('discount_id', discountId)
@@ -181,14 +163,14 @@ export class DiscountAnalyticsService {
       // Group by date
       const timeline = new Map<string, { count: number; revenue: number }>()
 
-      ;(redemptions || []).forEach((r) => {
-        const date = new Date(r.redeemed_at).toISOString().split('T')[0]
-        const existing = timeline.get(date) || { count: 0, revenue: 0 }
-        timeline.set(date, {
-          count: existing.count + 1,
-          revenue: existing.revenue + (r.discount_amount || 0),
+        ; (redemptions || []).forEach((r) => {
+          const date = new Date(r.redeemed_at).toISOString().split('T')[0]
+          const existing = timeline.get(date) || { count: 0, revenue: 0 }
+          timeline.set(date, {
+            count: existing.count + 1,
+            revenue: existing.revenue + (r.discount_amount || 0),
+          })
         })
-      })
 
       // Convert to array
       return Array.from(timeline.entries()).map(([date, data]) => ({
@@ -254,7 +236,8 @@ export class DiscountAnalyticsService {
    * @returns Array of redemptions
    */
   private static async getRedemptions(filters?: AnalyticsFilters): Promise<DiscountRedemption[]> {
-    let query = this.supabase.from('discount_redemptions').select('*')
+    const supabase = await createServerClient()
+    let query = supabase.from('discount_redemptions').select('*')
 
     // Apply discount type filter
     if (filters?.discountType) {
@@ -297,7 +280,8 @@ export class DiscountAnalyticsService {
     filters?: AnalyticsFilters
   ): Promise<number> {
     try {
-      let query = this.supabase.from('discount_redemptions').select('*', { count: 'exact', head: true })
+      const supabase = await createServerClient()
+      let query = supabase.from('discount_redemptions').select('*', { count: 'exact', head: true })
 
       query = query.eq('discount_type', discountType)
 
@@ -333,7 +317,8 @@ export class DiscountAnalyticsService {
     filters?: AnalyticsFilters
   ): Promise<DiscountStats> {
     try {
-      const { data: redemptions, error } = await this.supabase
+      const supabase = await createServerClient()
+      const { data: redemptions, error } = await supabase
         .from('discount_redemptions')
         .select('*')
         .eq('discount_type', discountType)

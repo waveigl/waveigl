@@ -3,7 +3,7 @@
  * Manages coupon codes - reusable codes with usage limits
  */
 
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import type { CouponCode, DiscountFilters, DiscountRedemption } from '@/types/discount.types'
 import { DiscountValidator, calculateDiscountedPrice, normalizeCouponCode } from '@/lib/discounts/validator'
@@ -19,26 +19,6 @@ import {
  * Provides methods for managing coupon codes
  */
 export class CouponCodeService {
-  private static supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookies().getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookies().set(name, value, options)
-            )
-          } catch {
-            // Handle cookie setting errors
-          }
-        },
-      },
-    }
-  )
 
   /**
    * Create a coupon code
@@ -78,7 +58,8 @@ export class CouponCodeService {
     }
 
     // Create coupon
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('coupon_codes')
       .insert({
         code: normalizedCode,
@@ -117,7 +98,8 @@ export class CouponCodeService {
   static async getCoupon(id: string): Promise<CouponCode | null> {
     DiscountValidator.validateUUID(id)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('coupon_codes')
       .select('*')
       .eq('id', id)
@@ -143,7 +125,8 @@ export class CouponCodeService {
   static async getCouponByCode(code: string): Promise<CouponCode | null> {
     const normalizedCode = normalizeCouponCode(code)
 
-    const { data, error } = await this.supabase
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('coupon_codes')
       .select('*')
       .eq('code', normalizedCode)
@@ -196,7 +179,8 @@ export class CouponCodeService {
    * @returns Array of coupons
    */
   static async listCoupons(filters?: DiscountFilters): Promise<CouponCode[]> {
-    let query = this.supabase
+    const supabase = await createServerClient()
+    let query = supabase
       .from('coupon_codes')
       .select('*')
       .is('deleted_at', null)
@@ -258,7 +242,8 @@ export class CouponCodeService {
     const { discountAmount, finalPrice } = calculateDiscountedPrice(coupon.discountPrice)
 
     // Increment redemption counter
-    const { error: updateError } = await this.supabase
+    const supabase = await createServerClient()
+    const { error: updateError } = await supabase
       .from('coupon_codes')
       .update({
         current_redemptions: coupon.currentRedemptions + 1,
@@ -271,7 +256,7 @@ export class CouponCodeService {
     }
 
     // Log redemption
-    const { data: redemption, error: redemptionError } = await this.supabase
+    const { data: redemption, error: redemptionError } = await supabase
       .from('discount_redemptions')
       .insert({
         discount_type: 'coupon',
@@ -303,38 +288,76 @@ export class CouponCodeService {
   }
 
   /**
-   * Deactivate a coupon code
+   * Update a coupon code
    * @param id - The coupon ID
-   * @param deactivatedBy - The admin ID performing the deactivation
+   * @param updates - The updates to apply
+   * @returns The updated coupon
    */
-  static async deactivateCoupon(id: string, deactivatedBy: string): Promise<void> {
+  static async updateCoupon(id: string, updates: Partial<CouponCode>): Promise<CouponCode> {
     DiscountValidator.validateUUID(id)
-    DiscountValidator.validateUUID(deactivatedBy)
 
-    // Get existing coupon
+    // Get existing coupon to verify existence and for logging
     const existing = await this.getCoupon(id)
     if (!existing) {
       throw new DiscountNotFoundError('coupon', id)
     }
 
-    // Deactivate
-    const { error } = await this.supabase
+    // Map Partial<CouponCode> to database fields
+    const dbUpdates: Record<string, unknown> = {}
+    if (updates.discountPrice !== undefined) {
+      DiscountValidator.validatePrice(updates.discountPrice)
+      dbUpdates.discount_price = updates.discountPrice
+    }
+    if (updates.maxRedemptions !== undefined) {
+      DiscountValidator.validateMaxRedemptions(updates.maxRedemptions)
+      dbUpdates.max_redemptions = updates.maxRedemptions
+    }
+    if (updates.expirationDate !== undefined) {
+      DiscountValidator.validateExpirationDate(updates.expirationDate)
+      dbUpdates.expiration_date = updates.expirationDate
+    }
+    if (updates.description !== undefined) {
+      if (updates.description) DiscountValidator.validateDescription(updates.description)
+      dbUpdates.description = updates.description || null
+    }
+    if (updates.isActive !== undefined) {
+      dbUpdates.is_active = updates.isActive
+    }
+
+    if (Object.keys(dbUpdates).length === 0) {
+      return existing
+    }
+
+    // Update coupon
+    const supabase = await createServerClient()
+    const { data, error } = await supabase
       .from('coupon_codes')
-      .update({
-        is_active: false,
-      })
+      .update(dbUpdates)
       .eq('id', id)
+      .select()
+      .single()
 
     if (error) {
-      console.error('[CouponCodeService] Error deactivating coupon:', error)
-      throw new Error(`Failed to deactivate coupon: ${error.message}`)
+      console.error('[CouponCodeService] Error updating coupon:', error)
+      throw new Error(`Failed to update coupon: ${error.message}`)
     }
 
     // Log audit
-    await this.logAudit('update', id, deactivatedBy, {
-      code: existing.code,
-      isActive: false,
+    await this.logAudit('update', id, 'system', {
+      before: existing,
+      after: dbUpdates,
     })
+
+    return this.mapToCoupon(data)
+  }
+
+  /**
+   * Deactivate a coupon code
+   * @param id - The coupon ID
+   * @param deactivatedBy - The admin ID performing the deactivation
+   */
+  static async deactivateCoupon(id: string, deactivatedBy: string): Promise<void> {
+    await this.updateCoupon(id, { isActive: false })
   }
 
   /**
@@ -353,7 +376,8 @@ export class CouponCodeService {
     }
 
     // Soft delete
-    const { error } = await this.supabase
+    const supabase = await createServerClient()
+    const { error } = await supabase
       .from('coupon_codes')
       .update({
         deleted_at: new Date().toISOString(),
@@ -387,7 +411,8 @@ export class CouponCodeService {
     changes: Record<string, unknown>
   ): Promise<void> {
     try {
-      await this.supabase.from('discount_audit_logs').insert({
+      const supabase = await createServerClient()
+      await supabase.from('discount_audit_logs').insert({
         action,
         discount_type: 'coupon',
         discount_id: couponId,

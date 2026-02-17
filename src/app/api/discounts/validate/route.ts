@@ -50,8 +50,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           { status: 400 }
         )
       }
-      DiscountValidator.validateToken(token)
-      result = await DiscountLinkService.validateToken(token)
+      const link = await DiscountLinkService.validateToken(token)
+      result = {
+        isValid: true,
+        discount: link,
+      }
     } else if (discountType === 'coupon') {
       if (!code) {
         return NextResponse.json(
@@ -60,7 +63,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         )
       }
       DiscountValidator.validateCouponCode(code)
-      result = await CouponCodeService.validateCode(code)
+      const coupon = await CouponCodeService.validateCode(code)
+      result = {
+        isValid: true,
+        discount: coupon,
+      }
     } else {
       return NextResponse.json(
         { error: 'Invalid discountType. Must be: direct_user, link, or coupon' },
