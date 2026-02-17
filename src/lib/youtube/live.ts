@@ -33,31 +33,31 @@ async function refreshYouTubeTokenInternal(userId: string, refreshToken: string)
         grant_type: 'refresh_token'
       })
     })
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
       console.error('[YouTube Live] Erro ao renovar token:', response.status, errorData)
       return null
     }
-    
+
     const tokenData = await response.json()
-    
+
     if (tokenData.access_token) {
       // Atualizar no banco de dados
       const db = getSupabaseAdmin()
       await db
         .from('linked_accounts')
-        .update({ 
+        .update({
           access_token: tokenData.access_token,
           ...(tokenData.refresh_token ? { refresh_token: tokenData.refresh_token } : {})
         })
         .eq('user_id', userId)
         .eq('platform', 'youtube')
-      
+
       console.log('[YouTube Live] ✅ Token renovado com sucesso')
       return tokenData.access_token
     }
-    
+
     return null
   } catch (error) {
     console.error('[YouTube Live] Erro ao renovar token:', error)
@@ -74,14 +74,14 @@ let liveTokenCache: { token: string; userId: string; refreshToken: string; expir
  */
 async function getYouTubeToken(): Promise<string | null> {
   const now = Date.now()
-  
+
   // Usar cache se ainda válido
   if (liveTokenCache && liveTokenCache.expiresAt > now) {
     return liveTokenCache.token
   }
-  
+
   const db = getSupabaseAdmin()
-  
+
   const { data: account } = await db
     .from('linked_accounts')
     .select('user_id, access_token, refresh_token')
@@ -89,11 +89,11 @@ async function getYouTubeToken(): Promise<string | null> {
     .not('access_token', 'is', null)
     .limit(1)
     .maybeSingle()
-  
+
   if (!account?.access_token) {
     return null
   }
-  
+
   // Cache por 1 hora
   liveTokenCache = {
     token: account.access_token,
@@ -101,7 +101,7 @@ async function getYouTubeToken(): Promise<string | null> {
     refreshToken: account.refresh_token || '',
     expiresAt: now + 60 * 60 * 1000
   }
-  
+
   return account.access_token
 }
 
@@ -111,9 +111,9 @@ async function getYouTubeToken(): Promise<string | null> {
 async function forceTokenRenewalLive(): Promise<string | null> {
   // Invalidar cache
   liveTokenCache = null
-  
+
   const db = getSupabaseAdmin()
-  
+
   const { data: account } = await db
     .from('linked_accounts')
     .select('user_id, refresh_token')
@@ -121,15 +121,15 @@ async function forceTokenRenewalLive(): Promise<string | null> {
     .not('refresh_token', 'is', null)
     .limit(1)
     .maybeSingle()
-  
+
   if (!account?.refresh_token) {
     console.log('[YouTube Live] Sem refresh_token disponível')
     return null
   }
-  
+
   console.log('[YouTube Live] Forçando renovação do token...')
   const newToken = await refreshYouTubeTokenInternal(account.user_id, account.refresh_token)
-  
+
   if (newToken) {
     liveTokenCache = {
       token: newToken,
@@ -138,7 +138,7 @@ async function forceTokenRenewalLive(): Promise<string | null> {
       expiresAt: Date.now() + 60 * 60 * 1000
     }
   }
-  
+
   return newToken
 }
 
@@ -156,14 +156,14 @@ async function fetchLiveBroadcastFromAPI(accessToken: string, retryCount: number
     viewerCount: null,
     liveChatId: null
   }
-  
+
   try {
     // Verificar se API está bloqueada por quota
     if (isApiBlocked()) {
       console.log('[YouTube] API bloqueada por quota')
       return result
     }
-    
+
     // Primeiro, buscar o channelId do @waveigl
     const channelResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${YOUTUBE_CHANNEL_HANDLE.replace('@', '')}`,
@@ -174,10 +174,10 @@ async function fetchLiveBroadcastFromAPI(accessToken: string, retryCount: number
         }
       }
     )
-    
+
     if (!channelResponse.ok) {
       const errorData = await channelResponse.json().catch(() => ({}))
-      
+
       if (channelResponse.status === 401 && retryCount === 0) {
         console.log('[YouTube] Token expirado (401), forçando renovação...')
         const newToken = await forceTokenRenewalLive()
@@ -186,21 +186,21 @@ async function fetchLiveBroadcastFromAPI(accessToken: string, retryCount: number
         }
         return result
       }
-      
+
       console.error('[YouTube] Erro ao buscar channelId:', channelResponse.status, errorData)
       return result
     }
-    
+
     const channelData = await channelResponse.json()
     const channelId = channelData.items?.[0]?.id
-    
+
     if (!channelId) {
       console.log('[YouTube] ❌ Não foi possível obter channelId do @waveigl')
       return result
     }
-    
+
     console.log('[YouTube] Channel ID do WaveIGL:', channelId)
-    
+
     // Buscar lives ativas do canal WaveIGL usando search.list
     const searchResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&maxResults=1`,
@@ -211,52 +211,54 @@ async function fetchLiveBroadcastFromAPI(accessToken: string, retryCount: number
         }
       }
     )
-    
+
     if (!searchResponse.ok) {
       const errorData = await searchResponse.json().catch(() => ({}))
       console.error('[YouTube] Erro ao buscar lives:', searchResponse.status, errorData)
-      
+
       if (searchResponse.status === 403 && errorData?.error?.message?.includes('quota')) {
         blockApiDueToQuota()
       }
       return result
     }
-    
+
     const searchData = await searchResponse.json()
     const liveVideo = searchData.items?.[0]
-    
+
     if (!liveVideo) {
       console.log('[YouTube] Nenhuma live ativa encontrada no canal WaveIGL')
       return result
     }
-    
+
     const videoId = liveVideo.id?.videoId
     const snippet = liveVideo.snippet || {}
-    
+
     console.log('[YouTube] Live encontrada:', {
       videoId,
       title: snippet.title,
       channelTitle: snippet.channelTitle
     })
-    
+
     result.isLive = true
     result.videoId = videoId
     result.title = snippet.title
     result.thumbnailUrl = snippet.thumbnails?.high?.url || snippet.thumbnails?.default?.url
-    
-    // Buscar liveChatId via videos.list
+
+    // Buscar liveChatId e viewerCount via videos.list
     if (videoId) {
-      result.liveChatId = await fetchLiveChatIdFromVideo(accessToken, videoId)
+      const details = await fetchLiveVideoDetails(accessToken, videoId)
+      result.liveChatId = details.liveChatId
+      result.viewerCount = details.viewerCount
     }
-    
+
     if (result.liveChatId) {
-      console.log('[YouTube] ✅ Live do WaveIGL detectada:', result.videoId, 'liveChatId:', result.liveChatId)
+      console.log('[YouTube] ✅ Live do WaveIGL detectada:', result.videoId, 'liveChatId:', result.liveChatId, 'viewers:', result.viewerCount)
     } else {
       console.log('[YouTube] ⚠️ Live do WaveIGL detectada mas sem liveChatId:', result.videoId)
     }
-    
+
     return result
-    
+
   } catch (error) {
     console.error('[YouTube] Erro ao buscar live:', error)
     return result
@@ -264,10 +266,9 @@ async function fetchLiveBroadcastFromAPI(accessToken: string, retryCount: number
 }
 
 /**
- * Busca o liveChatId de um vídeo específico via API videos.list
- * Fallback quando liveBroadcasts não retorna o liveChatId
+ * Busca detalhes do vídeo (liveChatId e viewerCount) via API videos.list
  */
-async function fetchLiveChatIdFromVideo(accessToken: string, videoId: string): Promise<string | null> {
+async function fetchLiveVideoDetails(accessToken: string, videoId: string): Promise<{ liveChatId: string | null; viewerCount: number | null }> {
   try {
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}`,
@@ -278,25 +279,28 @@ async function fetchLiveChatIdFromVideo(accessToken: string, videoId: string): P
         }
       }
     )
-    
+
     if (!response.ok) {
       console.error('[YouTube] Erro ao buscar video:', response.status)
-      return null
+      return { liveChatId: null, viewerCount: null }
     }
-    
+
     const data = await response.json()
     const video = data.items?.[0]
-    const liveChatId = video?.liveStreamingDetails?.activeLiveChatId
-    
+    const details = video?.liveStreamingDetails
+
+    const liveChatId = details?.activeLiveChatId || null
+    const viewerCount = details?.concurrentViewers ? parseInt(details.concurrentViewers, 10) : null
+
     if (liveChatId) {
-      console.log('[YouTube] ✅ liveChatId obtido via videos.list:', liveChatId)
+      console.log('[YouTube] ✅ Detalhes obtidos via videos.list. chat:', liveChatId, 'viewers:', viewerCount)
     }
-    
-    return liveChatId || null
-    
+
+    return { liveChatId, viewerCount }
+
   } catch (error) {
-    console.error('[YouTube] Erro ao buscar liveChatId do vídeo:', error)
-    return null
+    console.error('[YouTube] Erro ao buscar detalhes do vídeo:', error)
+    return { liveChatId: null, viewerCount: null }
   }
 }
 
@@ -308,34 +312,35 @@ async function fetchLiveChatIdFromVideo(accessToken: string, videoId: string): P
 export async function getCurrentYouTubeLive(): Promise<LiveStreamInfo> {
   // Primeiro, tentar via API oficial (mais confiável)
   const token = await getYouTubeToken()
-  
+
   if (token) {
     console.log('[YouTube] Buscando live do canal WaveIGL via API...')
     const apiResult = await fetchLiveBroadcastFromAPI(token)
-    
+
     if (apiResult.isLive) {
       console.log('[YouTube] ✅ Live do WaveIGL detectada via API')
       return apiResult
     }
-    
+
     console.log('[YouTube] API não encontrou live ativa no canal WaveIGL')
   } else {
     console.log('[YouTube] ⚠️ Nenhum token disponível, usando scraping...')
   }
-  
+
   // Fallback: tentar scraping da página pública do canal
   const scrapeResult = await scrapeLiveDetection()
-  
+
   // Se scraping encontrou videoId mas não tem liveChatId, buscar via API
   if (scrapeResult.videoId && !scrapeResult.liveChatId && token) {
-    console.log('[YouTube] Scraping encontrou videoId, buscando liveChatId via API...')
-    const liveChatId = await fetchLiveChatIdFromVideo(token, scrapeResult.videoId)
-    if (liveChatId) {
-      scrapeResult.liveChatId = liveChatId
+    console.log('[YouTube] Scraping encontrou videoId, buscando detalhes via API...')
+    const details = await fetchLiveVideoDetails(token, scrapeResult.videoId)
+    if (details.liveChatId) {
+      scrapeResult.liveChatId = details.liveChatId
+      scrapeResult.viewerCount = details.viewerCount
       scrapeResult.isLive = true
     }
   }
-  
+
   return scrapeResult
 }
 
@@ -356,9 +361,9 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
   try {
     // Buscar a página de lives do canal
     const channelLiveUrl = `https://www.youtube.com/${YOUTUBE_CHANNEL_HANDLE}/live`
-    
+
     console.log(`[YouTube] Scraping: ${channelLiveUrl}`)
-    
+
     const res = await fetch(channelLiveUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -381,24 +386,24 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
       console.log('[YouTube] ❌ Não foi possível extrair videoId via scraping')
       return result
     }
-    
+
     const videoId = videoIdMatch[1]
     console.log('[YouTube] VideoId extraído via scraping:', videoId)
 
     // Verificar se há indicador de live ao vivo
-    const hasLiveIndicator = html.includes('"isLive":true') || 
-                             html.includes('"isLiveContent":true') ||
-                             html.includes('"isLiveNow":true') ||
-                             html.includes('"liveBroadcastDetails"')
-    
+    const hasLiveIndicator = html.includes('"isLive":true') ||
+      html.includes('"isLiveContent":true') ||
+      html.includes('"isLiveNow":true') ||
+      html.includes('"liveBroadcastDetails"')
+
     // Verificar se NÃO é um vídeo encerrado
     const hasEndTime = html.includes('"actualEndTime"')
-    
+
     if (hasEndTime) {
       console.log('[YouTube] ❌ Live já encerrada (scraping)')
       return result
     }
-    
+
     result.videoId = videoId
     result.isLive = hasLiveIndicator
 
@@ -407,20 +412,31 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
     if (titleMatch) {
       result.title = titleMatch[1]
     }
-    
+
     // Tentar extrair liveChatId do HTML
     const liveChatIdMatch = html.match(/"liveChatId":"([^"]+)"/) ||
-                            html.match(/"activeLiveChatId":"([^"]+)"/)
+      html.match(/"activeLiveChatId":"([^"]+)"/)
     if (liveChatIdMatch) {
       result.liveChatId = liveChatIdMatch[1]
       result.isLive = true
       console.log('[YouTube] ✅ liveChatId obtido via scraping:', result.liveChatId)
     }
 
+    // Tentar extrair viewerCount do HTML
+    // Formato comum no ytInitialData: "viewCountText":{"runs":[{"text":"170"},{"text":" assistindo agora"}]}
+    const viewerCountMatch = html.match(/"viewCountText":\{"runs":\[\{"text":"([\d.,]+)"\}/) ||
+      html.match(/viewCountText":\{"simpleText":"([\d.,]+)\s/)
+
+    if (viewerCountMatch) {
+      const countStr = viewerCountMatch[1].replace(/[.,\s]/g, '')
+      result.viewerCount = parseInt(countStr, 10)
+      console.log('[YouTube] ✅ viewerCount obtido via scraping:', result.viewerCount)
+    }
+
     if (result.isLive) {
       console.log('[YouTube] ✅ Live detectada via scraping:', result.videoId)
     }
-    
+
     return result
 
   } catch (error) {
@@ -458,17 +474,17 @@ const API_BLOCK_DURATION = 30 * 60 * 1000 // Bloquear API por 30 minutos após e
 export async function getCachedYouTubeLive(): Promise<LiveStreamInfo> {
   const now = Date.now()
   const cache = globalThis.__youtubeLiveCache!
-  
+
   // Usar TTL maior se já temos liveChatId (evita chamadas à API)
   const ttl = cache.info?.liveChatId ? CACHE_TTL_WITH_CHAT : CACHE_TTL_SCRAPE
-  
+
   if (cache.info && (now - cache.timestamp) < ttl) {
     return cache.info
   }
 
   cache.info = await getCurrentYouTubeLive()
   cache.timestamp = now
-  
+
   return cache.info
 }
 

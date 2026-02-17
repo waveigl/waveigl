@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { ViewerStatsService } from '@/lib/streaming/viewer-stats.service'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
@@ -32,27 +33,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     )
 
-    // Get current view count from your streaming table
-    // Adjust the query based on your actual table structure
+    // 1. Attempt dynamic update if needed (Lazy Update)
+    const statsService = new ViewerStatsService()
+    await statsService.updateAllStats() // This now internally checks shouldUpdate and handles locking
+
+    // 2. Get current real view count (excluding potential -1 lock)
     const { data, error } = await supabase
       .from('streaming_sessions')
       .select('view_count')
+      .neq('view_count', -1)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (error || !data) {
-      // Return 0 if no data found
-      return new NextResponse('0', {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/plain',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-        },
-      })
-    }
-
-    const viewCount = data.view_count || 0
+    const viewCount = data?.view_count || 0
 
     return new NextResponse(viewCount.toString(), {
       status: 200,

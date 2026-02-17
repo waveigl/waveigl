@@ -1,0 +1,15 @@
+name: Update Live View Stats
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # Every 10 minutes (Baseline)
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Update API
+        run: |
+          curl -X POST "https://www.waveigl.com/api/streaming/update-stats" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
