@@ -1,5 +1,20 @@
 # Changelog - WaveIGL
 
+## [0.4.2] - 2026-02-17
+
+### 🐛 Bug Fixes
+- Fixed: Missing `@radix-ui/react-tabs` component
+  - Created `src/components/ui/tabs.tsx` with Tabs, TabsList, TabsTrigger, TabsContent exports
+  - Installed `@radix-ui/react-tabs` dependency
+  - Resolves build error in DiscountManagementPanel component
+  - Fixes TypeScript error: "Cannot find module '@/components/ui/tabs'"
+
+### 🔧 Improvements
+- Updated `tsconfig.json` to include test files in type checking
+  - Removed exclusion of `e2e` and `tests` folders
+  - Allows TypeScript to properly resolve types for test files
+  - Fixes estree type definition resolution
+
 ## [0.4.1] - 2026-02-17
 
 ### ✨ Features - Twitch Subscriber Management System (Task 1)
