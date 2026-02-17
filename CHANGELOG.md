@@ -9,6 +9,11 @@
   - Resolves build error in DiscountManagementPanel component
   - Fixes TypeScript error: "Cannot find module '@/components/ui/tabs'"
 
+- Fixed: Next.js 16 dynamic route parameter compatibility
+  - Updated `src/app/api/discounts/analytics/[id]/route.ts` to use `Promise<{ id: string }>` for params
+  - Resolves Vercel build error with dynamic route handlers
+  - Ensures compatibility with Next.js 16.1.6 route handler signature
+
 ### 🔧 Improvements
 - Updated `tsconfig.json` to include test files in type checking
   - Removed exclusion of `e2e` and `tests` folders

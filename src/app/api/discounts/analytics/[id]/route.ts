@@ -14,10 +14,10 @@ import { notifyDiscord } from '@/lib/notifications/discord'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params
+    const { id } = await params
     const { searchParams } = new URL(request.url)
     const discountType = searchParams.get('type') as 'direct_user' | 'link' | 'coupon'
 
