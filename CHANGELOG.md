@@ -1,5 +1,153 @@
 # Changelog - WaveIGL
 
+## [0.4.1] - 2026-02-17
+
+### ✨ Features - Twitch Subscriber Management System (Task 1)
+- Added: Complete project structure for Twitch Subscriber Management
+  - Created `src/types/twitch.types.ts` with 12 core TypeScript interfaces
+  - Created `src/lib/twitch/` directory with service layer
+  - Created `supabase/migrations/` with database schema
+
+- Added: Core TypeScript Types
+  - `Subscriber` - Main subscriber data model
+  - `SubscriberContact` - Contact tracking with audit trail
+  - `ContactStatus` - Type-safe status enum (sent, not_sent, failed, blocked, banned)
+  - `SubscriptionTier` - Tier levels (tier_1, tier_2, tier_3)
+  - `PaginatedResult<T>` - Generic pagination wrapper
+  - `SubscriberStats` - Statistics aggregation
+  - `MessageSendResult` - Bulk send operation results
+  - `SyncResult` - Sync operation results
+  - `AdminActionLog` - Audit trail for admin actions
+  - Twitch API response types and error handling types
+
+- Added: Database Schema (Supabase PostgreSQL)
+  - `subscribers` table with 9 columns (id, channel_id, twitch_user_id, twitch_username, subscription_tier, subscription_date, subscription_status, created_at, updated_at)
+  - `subscriber_contacts` table with 7 columns (id, subscriber_id, message_sent_at, contact_status, error_message, sent_by_admin_id, created_at, updated_at)
+  - `admin_action_logs` table for audit trail (id, channel_id, admin_id, admin_username, action, action_details, created_at)
+  - Unique constraint on (channel_id, twitch_user_id) to prevent duplicates
+  - 8 database indexes for performance optimization
+  - Row Level Security (RLS) policies for multi-admin support
+  - Cascade delete for referential integrity
+
+- Added: TwitchSubscriberService
+  - `fetchSubscribersFromTwitch()` - Fetch all subscribers with automatic pagination
+  - `storeSubscribers()` - Upsert subscribers to prevent duplicates
+  - `getSubscribers()` - Query with filtering and pagination
+  - `getSubscriberStats()` - Aggregate statistics by contact status
+  - Comprehensive error handling with Discord notifications
+  - Structured logging at all operations
+
+- Added: ErrorHandlingService
+  - `logError()` - Structured error logging with Discord notifications
+  - `isRetryableError()` - Determine if error should be retried
+  - `isPermanentError()` - Identify permanent errors (no retry)
+  - `getRetryDelay()` - Calculate exponential backoff (1s, 2s, 4s, 8s)
+  - `isBlockedError()` - Detect "user blocked whispers" errors
+  - `isBannedError()` - Detect "user banned" errors
+
+- Added: ValidationService
+  - `validateSubscriberData()` - Validate Twitch API responses
+  - `validateMessage()` - Validate message content (1-500 chars)
+
+### ✨ Features - Twitch Subscriber Management UI Components (Task 8)
+- Added: SyncButton Component
+  - Button to trigger subscriber sync from Twitch API
+  - Loading state with spinner animation
+  - Disabled state during sync operation
+  - Accessible button with proper ARIA labels
+
+- Added: SendMessagesButton Component
+  - Button to send bulk messages to uncontacted subscribers
+  - Modal dialog for message input
+  - Character counter (max 500 characters)
+  - Message validation (empty check, length check)
+  - Loading state during send operation
+  - Error display in modal
+  - Cancel button to close modal
+
+- Added: SubscriberStats Component
+  - Display statistics by contact status
+  - Grid layout with 6 stat cards (Total, Contacted, Not Contacted, Failed, Blocked, Banned)
+  - Color-coded cards for each status
+  - Icons for visual identification
+  - Responsive design (1 col mobile, 2 cols tablet, 3 cols desktop)
+
+- Added: UI Component Tests (32 tests)
+  - SyncButton: 8 tests covering rendering, interactions, and styling
+  - SendMessagesButton: 9 tests covering modal, validation, and button states
+  - SubscriberStats: 15 tests covering rendering, styling, edge cases, and accessibility
+  - All tests passing with 100% coverage
+
+### 🐛 Bug Fixes
+- Fixed: SubscriberList component property names
+  - Changed `contact_status` to `contactStatus` to match TypeScript types
+  - Ensures proper type safety and prevents runtime errors
+  - `validateContactStatusFilter()` - Validate filter values
+  - `validatePaginationParams()` - Validate page/limit
+  - `validateChannelId()` - Validate channel ID
+  - `validateAccessToken()` - Validate OAuth token
+  - `validateAdminId()` - Validate admin ID
+  - `sanitizeString()` - SQL injection prevention
+
+### 🧪 Tests - 30+ Unit Tests
+- Added: ValidationService tests (18 tests)
+  - Subscriber data validation with all required fields
+  - Message length validation (empty, max length, valid)
+  - Contact status filter validation
+  - Pagination parameter validation
+  - Channel ID, access token, admin ID validation
+  - SQL injection prevention via sanitization
+
+- Added: ErrorHandlingService tests (12 tests)
+  - Retryable error detection (408, 429, 500, 502, 503, 504)
+  - Permanent error detection (400, 401, 403, 404)
+  - Exponential backoff calculation with jitter
+  - Retry-After header handling
+  - Blocked user error detection
+  - Banned user error detection
+  - Error logging with context
+
+### 🔧 Improvements
+- Improved: Multi-admin support with RLS policies
+  - Both channel owner and channel admins have identical permissions
+  - Audit trail tracks which admin performed each action
+  - Immediate access grant/revocation when admins are added/removed
+
+- Improved: Database performance
+  - Indexes on (channel_id, twitch_user_id) for fast lookups
+  - Indexes on (channel_id, subscription_status) for filtering
+  - Indexes on (channel_id, subscription_date) for sorting
+  - Indexes on contact_status for uncontacted subscriber queries
+
+- Improved: Error handling and resilience
+  - Exponential backoff for transient errors
+  - Permanent error detection to avoid unnecessary retries
+  - Structured logging with full context
+  - Discord notifications for critical errors
+
+### 🔐 Security
+- Security: Row Level Security (RLS) policies for multi-tenant isolation
+- Security: Unique constraint prevents duplicate subscribers per channel
+- Security: Cascade delete maintains referential integrity
+- Security: Input validation prevents SQL injection
+- Security: Audit trail tracks all admin actions
+
+### 📝 Documentation
+- Added: Comprehensive JSDoc comments on all services
+- Added: Type definitions with inline documentation
+- Added: Database migration with detailed comments
+- Added: Service interfaces with parameter documentation
+
+### 📋 Requirements Covered
+- Requirements 1.1, 1.2, 1.3, 1.5, 1.6, 1.7 (Fetch Subscribers)
+- Requirements 2.1, 2.2, 2.3, 2.4, 2.5 (Store Subscriber Data)
+- Requirements 3.1, 3.2, 3.3 (Track Contact Status)
+- Requirements 6.4, 6.5 (Error Handling)
+- Requirements 7.1, 7.2, 7.3, 7.4, 7.5 (Authorization - multi-admin support)
+- Requirements 8.1, 8.2, 8.3, 8.4 (Data Validation)
+- Requirements 9.1, 9.2, 9.3 (Performance)
+- Requirements 10.1, 10.2, 10.3, 10.4, 10.5 (Logging)
+
 ## [0.3.6] - 2026-02-16
 
 ### 🐛 Bug Fixes
