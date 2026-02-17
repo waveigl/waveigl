@@ -36,25 +36,43 @@ describe('MessageService', () => {
     it('should validate channel ID', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('', 'test message', 'token', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Channel ID must be a non-empty string')
     })
 
     it('should validate message content', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', '', 'token', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Message must be a non-empty string')
     })
 
     it('should validate access token', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', 'test message', '', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Access token must be a non-empty string')
     })
 
     it('should validate admin ID', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', 'test message', 'token', '')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Admin ID must be a non-empty string')
+    })
+
+    it('should return empty result when no uncontacted subscribers', async () => {
+      const result = await messageService.sendMessagesToUncontacted(
+        'channel-1',
+        'message',
+        'token',
+        'admin-1'
+      )
+
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
     })
   })
 
@@ -62,7 +80,7 @@ describe('MessageService', () => {
     it('should reject empty message', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', '', 'token', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Message must be a non-empty string')
     })
 
     it('should reject message exceeding max length', async () => {
@@ -74,15 +92,60 @@ describe('MessageService', () => {
           'token',
           'admin-1'
         )
-      ).rejects.toThrow()
+      ).rejects.toThrow('Message exceeds maximum length of 500 characters')
     })
 
     it('should accept valid message', async () => {
       const validMessage = 'Hello, this is a test message'
-      // This will fail due to mocking, but validates message passes validation
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', validMessage, 'token', 'admin-1')
-      ).rejects.toThrow() // Fails due to mock, not validation
+      const result = await messageService.sendMessagesToUncontacted(
+        'channel-1',
+        validMessage,
+        'token',
+        'admin-1'
+      )
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
+    })
+
+    it('should accept message at minimum length', async () => {
+      const result = await messageService.sendMessagesToUncontacted(
+        'channel-1',
+        'a',
+        'token',
+        'admin-1'
+      )
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
+    })
+
+    it('should accept message at maximum length', async () => {
+      const maxMessage = 'a'.repeat(500)
+      const result = await messageService.sendMessagesToUncontacted(
+        'channel-1',
+        maxMessage,
+        'token',
+        'admin-1'
+      )
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
     })
   })
 
@@ -90,85 +153,56 @@ describe('MessageService', () => {
     it('should validate channel ID format', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('', 'message', 'token', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Channel ID must be a non-empty string')
     })
 
     it('should validate access token format', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', 'message', '', 'admin-1')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Access token must be a non-empty string')
     })
 
     it('should validate admin ID format', async () => {
       await expect(
         messageService.sendMessagesToUncontacted('channel-1', 'message', 'token', '')
-      ).rejects.toThrow()
+      ).rejects.toThrow('Admin ID must be a non-empty string')
     })
 
     it('should trim whitespace from inputs', async () => {
-      // Validation should trim whitespace
-      await expect(
-        messageService.sendMessagesToUncontacted('  channel-1  ', 'message', 'token', 'admin-1')
-      ).rejects.toThrow() // Fails due to mock, not validation
-    })
-  })
-
-  describe('Message length validation', () => {
-    it('should accept message at minimum length', async () => {
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', 'a', 'token', 'admin-1')
-      ).rejects.toThrow() // Fails due to mock, not validation
-    })
-
-    it('should accept message at maximum length', async () => {
-      const maxMessage = 'a'.repeat(500)
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', maxMessage, 'token', 'admin-1')
-      ).rejects.toThrow() // Fails due to mock, not validation
-    })
-
-    it('should reject message exceeding maximum length', async () => {
-      const tooLongMessage = 'a'.repeat(501)
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', tooLongMessage, 'token', 'admin-1')
-      ).rejects.toThrow()
+      const result = await messageService.sendMessagesToUncontacted(
+        '  channel-1  ',
+        'message',
+        'token',
+        'admin-1'
+      )
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
     })
   })
 
   describe('Sequential processing', () => {
-    it('should process messages sequentially', async () => {
-      // This test validates that messages are sent with delays
-      // Implementation detail: messages should have 100ms delay between them
-      const startTime = Date.now()
+    it('should process messages sequentially with no subscribers', async () => {
+      const result = await messageService.sendMessagesToUncontacted(
+        'channel-1',
+        'message',
+        'token',
+        'admin-1'
+      )
 
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', 'message', 'token', 'admin-1')
-      ).rejects.toThrow() // Fails due to mock
-
-      // If we had real subscribers, we'd verify delays occurred
-      // For now, we just verify the method exists and validates inputs
-    })
-  })
-
-  describe('Error handling', () => {
-    it('should handle validation errors gracefully', async () => {
-      await expect(
-        messageService.sendMessagesToUncontacted('', 'message', 'token', 'admin-1')
-      ).rejects.toThrow()
-    })
-
-    it('should handle network errors gracefully', async () => {
-      // Network errors should be caught and logged
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', 'message', 'token', 'admin-1')
-      ).rejects.toThrow()
-    })
-
-    it('should handle database errors gracefully', async () => {
-      // Database errors should be caught and logged
-      await expect(
-        messageService.sendMessagesToUncontacted('channel-1', 'message', 'token', 'admin-1')
-      ).rejects.toThrow()
+      expect(result).toEqual({
+        total: 0,
+        sent: 0,
+        failed: 0,
+        blocked: 0,
+        banned: 0,
+        errors: [],
+      })
     })
   })
 })
