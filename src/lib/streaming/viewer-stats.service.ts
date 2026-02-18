@@ -116,16 +116,24 @@ export class ViewerStatsService {
                 return null
             }
 
-            // We only care about Twitch for now, as requested
-            const [twitch] = await Promise.all([
-                this.fetchTwitchViewers()
-            ])
+            // Smart Tracking logic:
+            // 1. Fetch Twitch viewers first
+            const twitch = await this.fetchTwitchViewers()
 
-            const youtube = 0
-            const kick = 0
+            let kick = 0
+            const youtube = 0 // YouTube tracking is currently disabled
+
+            // 2. Only fetch Kick if Twitch is live (indicates stream started)
+            if (twitch > 0) {
+                console.log('[ViewerStats] Twitch is live, fetching Kick stats...')
+                kick = await this.fetchKickViewers()
+            } else {
+                console.log('[ViewerStats] Twitch is offline, skipping Kick check.')
+            }
+
             const total = twitch + youtube + kick
 
-            console.log('[ViewerStats] Updating stats (Twitch-only mode):', { twitch, youtube, kick, total })
+            console.log('[ViewerStats] Updating stats (Smart Tracking):', { twitch, youtube, kick, total })
 
             // Insert the actual result
             const { error } = await this.supabase
