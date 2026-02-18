@@ -412,11 +412,12 @@ export default function DashboardPage() {
       } else if (data.reason === 'already_subscribed') {
         // Casos onde o backend já detecta assinatura ativa no check-eligibility
         setIsClubMember(true)
+        if (data.user) setClubOnboardingData(data.user)
         alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status será atualizado.')
-        await checkClubStatus() // Forçar refresh
+        await checkClubStatus() // Forçar refresh do estado
       } else {
         // Mostrar popup de onboarding
-        setClubOnboardingData(data.user)
+        if (data.user) setClubOnboardingData(data.user)
         setShowClubOnboarding(true)
       }
     } catch (e) {
@@ -926,9 +927,8 @@ export default function DashboardPage() {
                             setShowAdminPanel(true)
                           }
                         }}
-                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${ROLE_CONFIG[uiRole].bgColor} ${ROLE_CONFIG[uiRole].color} ${
-                          (uiRole === 'admin' || uiRole === 'streamer') ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                        }`}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${ROLE_CONFIG[uiRole].bgColor} ${ROLE_CONFIG[uiRole].color} ${(uiRole === 'admin' || uiRole === 'streamer') ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                          }`}
                       >
                         {ROLE_CONFIG[uiRole].icon}
                         <span className="text-xs font-medium">{ROLE_CONFIG[uiRole].label}</span>
@@ -1122,7 +1122,7 @@ export default function DashboardPage() {
                 </Button>
               )}
             </div>
-            
+
             {/* Contadores de Moderação */}
             {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
               <ModerationStats actions={moderationActions} compact={true} />

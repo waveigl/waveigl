@@ -11,9 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     const cookieHeader = request.headers.get('cookie')
     const session = await parseSessionCookie(cookieHeader)
-    
+
     if (!session) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         eligible: false,
         reason: 'not_authenticated',
         message: 'Você precisa estar logado para assinar'
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (profileError || !profile) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         eligible: false,
         reason: 'profile_not_found',
         message: 'Perfil não encontrado'
@@ -39,10 +39,18 @@ export async function GET(request: NextRequest) {
 
     // Verificar se já tem assinatura ativa
     if (profile.subscription_status === 'active') {
-      return NextResponse.json({ 
+      return NextResponse.json({
         eligible: false,
         reason: 'already_subscribed',
-        message: 'Você já possui uma assinatura ativa do Clube'
+        message: 'Você já possui uma assinatura ativa do Clube',
+        user: {
+          id: profile.id,
+          full_name: profile.full_name,
+          phone_number: profile.phone_number,
+          birth_date: profile.birth_date,
+          discord_connected: true, // Se está ativo, assumimos que passou pelo onboarding
+          subscription_status: profile.subscription_status
+        }
       })
     }
 
@@ -55,19 +63,19 @@ export async function GET(request: NextRequest) {
 
     // Verificar o que está faltando
     const missing: string[] = []
-    
+
     if (!discordConnection) {
       missing.push('discord')
     }
-    
+
     if (!profile.full_name) {
       missing.push('full_name')
     }
-    
+
     if (!profile.phone_number) {
       missing.push('phone_number')
     }
-    
+
     if (!profile.birth_date) {
       missing.push('birth_date')
     }
@@ -107,7 +115,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[Check Eligibility] Erro:', error)
-    return NextResponse.json({ 
+    return NextResponse.json({
       eligible: false,
       reason: 'server_error',
       message: 'Erro interno do servidor'
