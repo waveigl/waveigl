@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { parseSessionCookie } from '@/lib/auth/session'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 /**
  * GET /api/moderation/actions
@@ -9,53 +9,30 @@ import { cookies } from 'next/headers'
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll()
-          },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              )
-            } catch {
-              // Ignorar erro ao setar cookies
-            }
-          },
-        },
-      }
-    )
+    const session = await parseSessionCookie(request.headers.get('cookie'))
 
-    // Verificar autenticação
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
+    if (!session?.userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+
+    const supabase = getSupabaseAdmin()
 
     // Verificar se é streamer ou admin
     const { data: linkedAccounts } = await supabase
       .from('linked_accounts')
-      .select('platform, platform_username, is_moderator')
-      .eq('user_id', user.id)
+      .select('platform, platform_user_id, is_moderator')
+      .eq('user_id', session.userId)
 
     const isStreamer = linkedAccounts?.some(
-      acc =>
-        (acc.platform === 'twitch' && acc.platform_username?.toLowerCase() === 'waveigl') ||
-        (acc.platform === 'kick' && acc.platform_username?.toLowerCase() === 'waveigl')
+      (acc: any) =>
+        (acc.platform === 'twitch' && acc.platform_user_id === '173162545') || // waveigl
+        (acc.platform === 'kick' && acc.platform_user_id === '54454625')      // waveigl
     )
 
     const isAdmin = linkedAccounts?.some(
-      acc =>
-        (acc.platform === 'twitch' && acc.platform_username?.toLowerCase() === 'ogabrieltoth') ||
-        (acc.platform === 'kick' && acc.platform_username?.toLowerCase() === 'ogabrieltoth')
+      (acc: any) =>
+        (acc.platform === 'twitch' && acc.platform_user_id === '129980106') || // ogabrieltoth
+        (acc.platform === 'kick' && acc.platform_user_id === '4053403')       // OGabrielToth
     )
 
     if (!isStreamer && !isAdmin) {
@@ -86,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     // Combinar e formatar
     const actions = [
-      ...(bans || []).map(ban => ({
+      ...(bans || []).map((ban: any) => ({
         id: ban.id,
         userId: ban.target_user_id,
         username: ban.target_username,
@@ -97,7 +74,7 @@ export async function GET(request: NextRequest) {
         appliedAt: new Date(ban.created_at).getTime(),
         expiresAt: ban.expires_at ? new Date(ban.expires_at).getTime() : undefined,
       })),
-      ...(timeouts || []).map(timeout => ({
+      ...(timeouts || []).map((timeout: any) => ({
         id: timeout.id,
         userId: timeout.target_user_id,
         username: timeout.target_username,

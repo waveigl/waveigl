@@ -33,6 +33,13 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
   const [logs, setLogs] = useState<any[]>([])
   const [logsLoading, setLogsLoading] = useState(false)
 
+  // Carregar logs quando mudar para aba de logs
+  useEffect(() => {
+    if (activeTab === 'logs' && logs.length === 0) {
+      loadLogs()
+    }
+  }, [activeTab])
+
   // Se não é admin, não renderizar nada
   if (!isAdmin) {
     return null
@@ -56,13 +63,6 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
       />
     )
   }
-
-  // Carregar logs quando mudar para aba de logs
-  useEffect(() => {
-    if (activeTab === 'logs' && logs.length === 0) {
-      loadLogs()
-    }
-  }, [activeTab])
 
   const loadLogs = async () => {
     try {
@@ -158,31 +158,28 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
       <div className="flex gap-2 p-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
         <button
           onClick={() => setActiveTab('modules')}
-          className={`px-3 py-1 rounded text-sm font-medium transition ${
-            activeTab === 'modules'
+          className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'modules'
               ? 'bg-blue-500 text-white'
               : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
-          }`}
+            }`}
         >
           Módulos
         </button>
         <button
           onClick={() => setActiveTab('messages')}
-          className={`px-3 py-1 rounded text-sm font-medium transition ${
-            activeTab === 'messages'
+          className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'messages'
               ? 'bg-blue-500 text-white'
               : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
-          }`}
+            }`}
         >
           Mensagens
         </button>
         <button
           onClick={() => setActiveTab('logs')}
-          className={`px-3 py-1 rounded text-sm font-medium transition ${
-            activeTab === 'logs'
+          className={`px-3 py-1 rounded text-sm font-medium transition ${activeTab === 'logs'
               ? 'bg-blue-500 text-white'
               : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
-          }`}
+            }`}
         >
           Logs
         </button>
@@ -215,11 +212,10 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
                 </span>
                 <button
                   onClick={() => handleToggleModule(moduleName as ModuleName)}
-                  className={`px-3 py-1 rounded text-xs font-medium transition ${
-                    isEnabled
+                  className={`px-3 py-1 rounded text-xs font-medium transition ${isEnabled
                       ? 'bg-green-500 hover:bg-green-600 text-white'
                       : 'bg-red-500 hover:bg-red-600 text-white'
-                  }`}
+                    }`}
                 >
                   {isEnabled ? '✓ Ativo' : '✕ Inativo'}
                 </button>
@@ -239,11 +235,10 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
                 </span>
                 <button
                   onClick={handleToggleGroup}
-                  className={`px-3 py-1 rounded text-xs font-medium transition ${
-                    isGroupEnabled
+                  className={`px-3 py-1 rounded text-xs font-medium transition ${isGroupEnabled
                       ? 'bg-green-500 hover:bg-green-600 text-white'
                       : 'bg-red-500 hover:bg-red-600 text-white'
-                  }`}
+                    }`}
                 >
                   {isGroupEnabled ? '✓ Ativo' : '✕ Inativo'}
                 </button>
@@ -260,11 +255,10 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
               {Object.entries(state.messages).map(([messageType, settings]) => (
                 <div
                   key={messageType}
-                  className={`p-3 rounded border transition ${
-                    !isGroupEnabled
+                  className={`p-3 rounded border transition ${!isGroupEnabled
                       ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 opacity-50'
                       : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-900 dark:text-white">
@@ -273,13 +267,12 @@ export const AdminPanel: FC<AdminPanelProps> = ({ onClose }) => {
                     <button
                       onClick={() => handleToggleMessage(messageType as MessageType)}
                       disabled={!isGroupEnabled}
-                      className={`px-3 py-1 rounded text-xs font-medium transition ${
-                        !isGroupEnabled
+                      className={`px-3 py-1 rounded text-xs font-medium transition ${!isGroupEnabled
                           ? 'bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 cursor-not-allowed'
                           : settings.enabled
-                          ? 'bg-green-500 hover:bg-green-600 text-white'
-                          : 'bg-red-500 hover:bg-red-600 text-white'
-                      }`}
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-red-500 hover:bg-red-600 text-white'
+                        }`}
                     >
                       {settings.enabled ? '✓' : '✕'}
                     </button>
