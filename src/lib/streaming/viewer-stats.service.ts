@@ -116,15 +116,16 @@ export class ViewerStatsService {
                 return null
             }
 
-            const [twitch, youtube, kick] = await Promise.all([
-                this.fetchTwitchViewers(),
-                this.fetchYouTubeViewers(),
-                this.fetchKickViewers()
+            // We only care about Twitch for now, as requested
+            const [twitch] = await Promise.all([
+                this.fetchTwitchViewers()
             ])
 
+            const youtube = 0
+            const kick = 0
             const total = twitch + youtube + kick
 
-            console.log('[ViewerStats] Updating stats:', { twitch, youtube, kick, total })
+            console.log('[ViewerStats] Updating stats (Twitch-only mode):', { twitch, youtube, kick, total })
 
             // Insert the actual result
             const { error } = await this.supabase
