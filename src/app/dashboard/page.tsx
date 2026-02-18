@@ -234,7 +234,7 @@ export default function DashboardPage() {
   // Estados para assinatura do Clube
   const [showClubOnboarding, setShowClubOnboarding] = useState(false)
   const [clubOnboardingData, setClubOnboardingData] = useState<any>(null)
-  const [isClubMember, setIsClubMember] = useState(false)
+  const [isClubMember, setIsClubMember] = useState<boolean | null>(null)
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
 
   // Estado para painel admin
@@ -289,6 +289,14 @@ export default function DashboardPage() {
       })
       setLinkedAccounts(linkedAccounts)
       setAccountsNeedingReauth(data.accounts_needing_reauth || [])
+
+      // Detecção imediata de assinatura baseado na resposta /api/me
+      if (data.user?.subscription_status === 'active') {
+        setIsClubMember(true)
+      } else if (data.user) {
+        setIsClubMember(false)
+      }
+
       // Verificar se é moderador pelo banco de dados ou pelo campo is_moderator
       setIsModerator(!!data.user?.is_moderator || !!data.is_moderator || finalRole === 'moderator' || finalRole === 'admin' || finalRole === 'owner')
     } catch (e) {
@@ -490,11 +498,16 @@ export default function DashboardPage() {
 
   // Envolver funções em useCallback para evitar recriação
   const handleInitializeUser = useCallback(async () => {
+    // Carregar dados básicos do usuário primeiro (contém status inicial da sub)
     await loadUser()
-    await checkModeratorViaAPI()
-    await loadBenefits()
-    await checkClubStatus()
-    await loadModerationActions()
+
+    // Carregar o restante em paralelo para otimizar velocidade
+    await Promise.all([
+      checkModeratorViaAPI(),
+      loadBenefits(),
+      checkClubStatus(),
+      loadModerationActions()
+    ])
 
     const params = new URLSearchParams(window.location.search)
     if (params.get('onboarding') === 'continue') {
@@ -864,7 +877,12 @@ export default function DashboardPage() {
             </div>
             {/* Indicador de status do Clube + Botão de assinar */}
             <div className="flex items-center gap-2">
-              {isClubMember ? (
+              {isClubMember === null ? (
+                <Badge className="bg-zinc-700/50 text-zinc-500 border border-zinc-600 animate-pulse">
+                  <div className="w-3 h-3 mr-1 bg-zinc-600 rounded-full" />
+                  Verificando...
+                </Badge>
+              ) : isClubMember ? (
                 <Badge className="bg-green-500/20 text-green-400 border border-green-500/30">
                   <Crown className="w-3 h-3 mr-1" />
                   Clube Ativo
@@ -880,7 +898,7 @@ export default function DashboardPage() {
                     {clubOnboardingData?.subscription_status === 'active' ? 'Assinante' : 'Sem Clube'}
                   </Badge>
                   {/* Botão "Assinar Clube" - Apenas visível para usuários não assinantes */}
-                  {!isClubMember && (
+                  {isClubMember === false && (
                     <Button
                       onClick={handleSubscribeClick}
                       size="sm"
