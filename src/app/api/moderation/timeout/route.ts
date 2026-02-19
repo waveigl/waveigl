@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { getUserRole, canModerate, isProtectedLinkedAccounts } from '@/lib/permissions'
+import { verifyDashboardAccess } from '@/lib/auth/access'
+import { canModerate, isProtectedLinkedAccounts } from '@/lib/permissions'
 import { applyPlatformTimeout } from '@/lib/moderation/actions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { targetPlatformUserId, targetUsername, targetPlatform, durationSeconds, reason, moderatorId } = await request.json()
+    const auth = await verifyDashboardAccess(request)
+    if (!auth.success) {
+      return NextResponse.json({ error: auth.error || 'Não autenticado' }, { status: 401 })
+    }
 
-    if (!targetPlatformUserId || !targetUsername || !targetPlatform || !durationSeconds || !moderatorId) {
+    if (!canModerate(auth.context!.role)) {
+      return NextResponse.json({ error: 'Sem permissão para moderar' }, { status: 403 })
+    }
+
+    const { targetPlatformUserId, targetUsername, targetPlatform, durationSeconds, reason } = await request.json()
+    const moderatorId = auth.context!.userId
+
+    if (!targetPlatformUserId || !targetUsername || !targetPlatform || !durationSeconds) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
     const db = getSupabaseAdmin()
-
-    // Validar permissão do moderador
-    const { data: modLinked } = await db
-      .from('linked_accounts')
-      .select('*')
-      .eq('user_id', moderatorId)
-    const modRole = getUserRole(modLinked || [])
-    if (!canModerate(modRole)) {
-      return NextResponse.json({ error: 'Sem permissão para moderar' }, { status: 403 })
-    }
 
     // Buscar conta vinculada do alvo pelo platform_user_id
     const { data: targetAccount } = await db

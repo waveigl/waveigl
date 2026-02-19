@@ -14,20 +14,20 @@ export async function GET(_req: NextRequest) {
   if (!connectorsStarted) {
     // inicializa leitores de chat de todas as plataformas
     connectorsStarted = true
-    
+
     // Inicializar funções de envio na fila
     initializeQueueSenders(messageQueue)
-    
+
     // Iniciar leitor da Twitch
     startTwitchReader().catch((err) => {
       console.error('[Chat Stream] Erro ao iniciar Twitch reader:', err)
     })
-    
+
     // Iniciar leitor da Kick
     startKickReader().catch((err) => {
       console.error('[Chat Stream] Erro ao iniciar Kick reader:', err)
     })
-    
+
     // Iniciar leitor do YouTube
     startYouTubeReader().catch((err) => {
       console.error('[Chat Stream] Erro ao iniciar YouTube reader:', err)
@@ -47,38 +47,38 @@ export async function GET(_req: NextRequest) {
           // Ignore error if controller is already closed
         }
       }
-      
+
       // Subscribe para mensagens de chat
       const unsubscribeChat = chatHub.subscribe(send)
-      
+
       // Subscribe para eventos de moderação
       const unsubscribeMod = moderationHub.subscribe((event) => {
         send({ ...event, eventType: 'moderation' })
       })
-      
+
       // Subscribe para status do YouTube (evita polling no frontend)
       const unsubscribeYoutube = youtubeStatusHub.subscribe((event) => {
         send({ ...event, eventType: 'youtube_status' })
       })
-      
+
       // hello event
       send({ type: 'hello', ts: Date.now() })
-      
+
       // Enviar status atual do YouTube imediatamente (se disponível)
       const currentYtStatus = youtubeStatusHub.getLastStatus()
       if (currentYtStatus) {
         send({ ...currentYtStatus, eventType: 'youtube_status' })
       }
-      
-      // keep-alive
+
+      // keep-alive (mais frequente para evitar timeouts de proxy/vercel)
       const interval = setInterval(() => {
         if (isClosed) {
-            clearInterval(interval)
-            return
+          clearInterval(interval)
+          return
         }
         send({ type: 'ping', ts: Date.now() })
-      }, 25000)
-      
+      }, 15000)
+
       // cleanup
       return () => {
         isClosed = true

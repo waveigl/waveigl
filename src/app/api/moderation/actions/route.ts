@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
+import { verifyDashboardAccess } from '@/lib/auth/access'
+import { canManageModerators } from '@/lib/permissions'
 
 /**
  * GET /api/moderation/actions
@@ -9,38 +10,21 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await parseSessionCookie(request.headers.get('cookie'))
+    const auth = await verifyDashboardAccess(request)
 
-    if (!session?.userId) {
-      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    if (!auth.success) {
+      return NextResponse.json({ error: auth.error || 'Não autenticado' }, { status: 401 })
     }
 
-    const supabase = getSupabaseAdmin()
-
-    // Verificar se é streamer ou admin
-    const { data: linkedAccounts } = await supabase
-      .from('linked_accounts')
-      .select('platform, platform_user_id, is_moderator')
-      .eq('user_id', session.userId)
-
-    const isStreamer = linkedAccounts?.some(
-      (acc: any) =>
-        (acc.platform === 'twitch' && acc.platform_user_id === '173162545') || // waveigl
-        (acc.platform === 'kick' && acc.platform_user_id === '54454625')      // waveigl
-    )
-
-    const isAdmin = linkedAccounts?.some(
-      (acc: any) =>
-        (acc.platform === 'twitch' && acc.platform_user_id === '129980106') || // ogabrieltoth
-        (acc.platform === 'kick' && acc.platform_user_id === '4053403')       // OGabrielToth
-    )
-
-    if (!isStreamer && !isAdmin) {
+    if (!canManageModerators(auth.context!.role)) {
       return NextResponse.json(
         { error: 'Acesso negado' },
         { status: 403 }
       )
     }
+
+    const { userId } = auth.context!
+    const supabase = getSupabaseAdmin()
 
     // Buscar ações de moderação ativas
     const now = new Date()

@@ -522,99 +522,133 @@ export default function DashboardPage() {
     }
   }, [])
 
+  // Efeito para gerenciar a conexão SSE
   useEffect(() => {
-    handleInitializeUser()
+    let es: EventSource | null = null
+    let reconnectTimeout: NodeJS.Timeout | null = null
 
-    // Conectar SSE para chat em tempo real (apenas uma vez)
-    const es = new EventSource('/api/chat/stream')
-    es.onmessage = (ev) => {
-      try {
-        const payload = JSON.parse(ev.data)
+    const connect = () => {
+      if (es) es.close()
 
-        // Evento de status do YouTube (live on/off)
-        if (payload.eventType === 'youtube_status') {
-          console.log('[Dashboard] Status YouTube via SSE:', payload.isLive ? 'ONLINE' : 'OFFLINE')
-          setYoutubeStatus({
-            isLive: payload.isLive,
-            videoId: payload.videoId,
-            liveChatId: payload.liveChatId
-          })
-          return
-        }
+      console.log('[Dashboard] Conectando ao SSE...')
+      es = new EventSource('/api/chat/stream')
 
-        // Evento de moderação (alguém foi promovido/removido de moderador)
-        if (payload.eventType === 'moderation') {
-          console.log('[Dashboard] Evento de moderação:', payload)
-          const currentLinkedAccounts = linkedAccountsRef.current
+      es.onopen = () => {
+        console.log('[Dashboard] ✅ Conexão SSE estabelecida')
+      }
 
-          // Verificar se o evento é sobre o usuário atual
-          const matchingAccount = currentLinkedAccounts.find(
-            acc => acc.platform === payload.platform &&
-              acc.platform_username?.toLowerCase() === payload.username?.toLowerCase()
-          )
+      es.onmessage = (ev) => {
+        try {
+          const payload = JSON.parse(ev.data)
 
-          if (matchingAccount) {
-            if (payload.type === 'mod_added') {
-              console.log('[Dashboard] Você foi promovido a moderador em', payload.platform)
-              setIsModerator(true)
-              updateModeratorStatus(payload.platform, true)
-            } else if (payload.type === 'mod_removed') {
-              console.log('[Dashboard] Você foi removido de moderador em', payload.platform)
-              checkModeratorViaAPI()
-            }
-          }
-          return
-        }
-
-        // Mensagem de chat normal
-        if (payload && payload.message && payload.platform) {
-          const messageId = String(payload.id || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
-          const newMessage = {
-            id: messageId,
-            platform: payload.platform,
-            username: payload.username || 'user',
-            userId: payload.userId || 'unknown',
-            message: payload.message,
-            timestamp: payload.timestamp || Date.now(),
-            badges: payload.badges || []
+          // Evento de status do YouTube (live on/off)
+          if (payload.eventType === 'youtube_status') {
+            setYoutubeStatus({
+              isLive: payload.isLive,
+              videoId: payload.videoId,
+              liveChatId: payload.liveChatId
+            })
+            return
           }
 
-          // Usar função de atualização para evitar duplicatas
-          setMessages((curr) => {
-            // Verificar se já existe mensagem com este ID
-            if (curr.some(m => m.id === messageId)) {
-              return curr // Não adicionar duplicata
-            }
-            return [...curr.slice(-200), newMessage]
-          })
+          // Evento de moderação
+          if (payload.eventType === 'moderation') {
+            console.log('[Dashboard] Evento de moderação:', payload)
 
-          // Verificar se esta mensagem é do usuário atual e tem badge de moderador
-          const currentLinkedAccounts = linkedAccountsRef.current
-          if (currentLinkedAccounts.length > 0) {
+            // Se for ban, timeout ou unban, atualizar a lista de ações
+            if (['ban', 'timeout', 'unban'].includes(payload.type)) {
+              console.log(`[Dashboard] Atualizando ações devido a: ${payload.type}`)
+              loadModerationActions()
+            }
+
+            const currentLinkedAccounts = linkedAccountsRef.current
             const matchingAccount = currentLinkedAccounts.find(
-              acc => acc.platform === payload.platform && acc.platform_user_id === payload.userId
+              acc => acc.platform === payload.platform &&
+                acc.platform_username?.toLowerCase() === payload.username?.toLowerCase()
             )
 
-            // Se é mensagem do usuário atual e tem badges de moderador
-            if (matchingAccount && checkIfUserIsModerator(payload.badges)) {
-              // Verificar se já checamos esta plataforma
-              if (!moderatorCheckedPlatformsRef.current.has(payload.platform)) {
-                moderatorCheckedPlatformsRef.current.add(payload.platform)
-                console.log(`[Dashboard] Usuário é moderador em ${payload.platform}:`, payload.badges)
-
-                // Ativar modo moderador localmente
+            if (matchingAccount) {
+              if (payload.type === 'mod_added') {
                 setIsModerator(true)
-                // Salvar no banco de dados para persistir
                 updateModeratorStatus(payload.platform, true)
+              } else if (payload.type === 'mod_removed') {
+                checkModeratorViaAPI()
+              }
+            }
+            return
+          }
+
+          // Mensagem de chat
+          if (payload && payload.message && payload.platform) {
+            const messageId = String(payload.id || `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
+            const newMessage = {
+              id: messageId,
+              platform: payload.platform,
+              username: payload.username || 'user',
+              userId: payload.userId || 'unknown',
+              message: payload.message,
+              timestamp: payload.timestamp || Date.now(),
+              badges: payload.badges || []
+            }
+
+            setMessages((curr) => {
+              if (curr.some(m => m.id === messageId)) return curr
+              return [...curr.slice(-200), newMessage]
+            })
+
+            const currentLinkedAccounts = linkedAccountsRef.current
+            if (currentLinkedAccounts.length > 0) {
+              const matchingAccount = currentLinkedAccounts.find(
+                acc => acc.platform === payload.platform && acc.platform_user_id === payload.userId
+              )
+              if (matchingAccount && checkIfUserIsModerator(payload.badges)) {
+                if (!moderatorCheckedPlatformsRef.current.has(payload.platform)) {
+                  moderatorCheckedPlatformsRef.current.add(payload.platform)
+                  setIsModerator(true)
+                  updateModeratorStatus(payload.platform, true)
+                }
               }
             }
           }
+        } catch (e) {
+          console.error('[Dashboard] Erro ao processar mensagem SSE:', e)
         }
-      } catch { }
+      }
+
+      es.onerror = (err) => {
+        console.error('[Dashboard] ❌ Erro no SSE:', err)
+        if (es) es.close()
+        // Tentar reconectar em 5 segundos
+        if (reconnectTimeout) clearTimeout(reconnectTimeout)
+        reconnectTimeout = setTimeout(connect, 5000)
+      }
     }
+
+    connect()
+
+    // Lidar com visibilidade da página (reconectar se ficou muito tempo fora)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[Dashboard] Aba visível, verificando conexão...')
+        // Se a conexão estava fechada ou deu erro, connect() vai reiniciar
+        if (!es || es.readyState === EventSource.CLOSED) {
+          connect()
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
-      es.close()
+      if (es) es.close()
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
+  }, [])
+
+  // Inicialização (apenas na montagem)
+  useEffect(() => {
+    handleInitializeUser()
   }, [handleInitializeUser])
 
   const handleSendMessage = (message: string) => {

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifySubscriberManagementAccess } from '@/lib/twitch/authorization.middleware'
+import { verifyDashboardAccess } from '@/lib/auth/access'
 
 export async function GET(request: NextRequest) {
     try {
         // 1. Verificar autorização (Moderador, Admin ou Streamer)
-        const auth = await verifySubscriberManagementAccess(request)
+        const auth = await verifyDashboardAccess(request)
         if (!auth.success) {
             return NextResponse.json(
                 { error: auth.error || 'Não autorizado' },
-                { status: auth.error?.includes('Forbidden') ? 403 : 401 }
+                { status: auth.error === 'Acesso negado' ? 403 : 401 }
             )
         }
 

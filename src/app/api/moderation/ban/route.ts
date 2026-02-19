@@ -1,27 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { getUserRole, canBan, isProtectedLinkedAccounts } from '@/lib/permissions'
+import { verifyDashboardAccess } from '@/lib/auth/access'
+import { canBan, isProtectedLinkedAccounts } from '@/lib/permissions'
 import { applyPlatformBan } from '@/lib/moderation/actions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { targetPlatformUserId, targetUsername, targetPlatform, reason, moderatorId } = await request.json()
+    const auth = await verifyDashboardAccess(request)
+    if (!auth.success) {
+      return NextResponse.json({ error: auth.error || 'Não autenticado' }, { status: 401 })
+    }
 
-    if (!targetPlatformUserId || !targetUsername || !targetPlatform || !moderatorId) {
+    if (!canBan(auth.context!.role)) {
+      return NextResponse.json({ error: 'Apenas administradores podem aplicar bans permanentes' }, { status: 403 })
+    }
+
+    const { targetPlatformUserId, targetUsername, targetPlatform, reason } = await request.json()
+    const moderatorId = auth.context!.userId
+
+    if (!targetPlatformUserId || !targetUsername || !targetPlatform) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
     const db = getSupabaseAdmin()
-
-    // Validar permissão do moderador - APENAS owner e admin podem banir
-    const { data: modLinked } = await db
-      .from('linked_accounts')
-      .select('*')
-      .eq('user_id', moderatorId)
-    const modRole = getUserRole(modLinked || [])
-    if (!canBan(modRole)) {
-      return NextResponse.json({ error: 'Apenas administradores podem aplicar bans permanentes' }, { status: 403 })
-    }
 
     // Buscar conta vinculada do alvo pelo platform_user_id
     const { data: targetAccount } = await db
@@ -66,6 +67,13 @@ export async function POST(request: NextRequest) {
         reason: reason || 'Ban aplicado via chat unificado',
         platforms: [targetPlatform]
       })
+
+    // Limpar timeouts ativos para este usuário na plataforma
+    await db
+      .from('active_timeouts')
+      .delete()
+      .eq('platform', targetPlatform)
+      .eq('platform_user_id', targetPlatformUserId)
 
     return NextResponse.json({
       success: true,
