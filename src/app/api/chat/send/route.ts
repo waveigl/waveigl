@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { sendTwitchMessage, refreshTwitchToken } from '@/lib/chat/twitch'
 import { sendYouTubeMessage, getCurrentLiveChatId, getActiveLiveChatId, isYouTubeLiveActive, refreshYouTubeToken } from '@/lib/chat/youtube'
 import { sendKickMessage, refreshKickToken } from '@/lib/chat/kick'
+import { processSlashCommand } from '@/lib/chat/slash-commands'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,21 @@ export async function POST(request: NextRequest) {
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return NextResponse.json({ error: 'Mensagem inválida' }, { status: 400 })
     }
+
+    // INTERCEPTAR COMANDOS DE BARRA (Moderation Triggers)
+    if (message.startsWith('/')) {
+      console.log(`[Chat Command] Interceptado: ${message} (user: ${session.userId}, platform: ${platform})`)
+      const commandResult = await processSlashCommand(session.userId, platform, message)
+
+      if (commandResult.isCommand) {
+        return NextResponse.json({
+          ok: commandResult.success,
+          command: true,
+          message: commandResult.message
+        })
+      }
+    }
+
     if (!['twitch', 'youtube', 'kick'].includes(platform)) {
       return NextResponse.json({ error: 'Plataforma inválida' }, { status: 400 })
     }

@@ -384,41 +384,40 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     const messageText = newMessage.trim()
     if (!messageText) return
 
-    // Se for enviar para todas as plataformas
-    if (sendPlatform === 'all') {
-      await handleSendToAllPlatforms(messageText)
-      return
+    const isCommand = messageText.startsWith('/')
+
+    // Criar mensagem local otimista apenas se NÃO for comando
+    let tempId: string | null = null
+    if (!isCommand) {
+      tempId = generateTempId()
+      const userIsModerator = currentUser?.is_moderator ||
+        currentUser?.linkedAccounts?.some(acc => acc.is_moderator) ||
+        isModerator
+
+      const localMsg: LocalMessage = {
+        id: tempId,
+        tempId,
+        platform: sendPlatform as Platform,
+        username: getCurrentPlatformUsername(),
+        user_id: getCurrentPlatformUserId() || 'unknown',
+        message: messageText,
+        timestamp: String(Date.now()),
+        created_at: new Date().toISOString(),
+        badges: userIsModerator ? ['moderator'] : [],
+        status: 'sending',
+        isLocal: true
+      }
+
+      setLocalMessages(prev => [...prev, localMsg])
     }
 
-    // Criar mensagem local otimista
-    // Se o usuário é moderador (em qualquer plataforma), adicionar badge de moderador
-    const userIsModerator = currentUser?.is_moderator ||
-      currentUser?.linkedAccounts?.some(acc => acc.is_moderator) ||
-      isModerator
-
-    const tempId = generateTempId()
-    const localMsg: LocalMessage = {
-      id: tempId,
-      tempId,
-      platform: sendPlatform as Platform,
-      username: getCurrentPlatformUsername(),
-      user_id: getCurrentPlatformUserId() || 'unknown',
-      message: messageText,
-      timestamp: String(Date.now()),
-      created_at: new Date().toISOString(),
-      badges: userIsModerator ? ['moderator'] : [],
-      status: 'sending',
-      isLocal: true
-    }
-
-    // Adicionar mensagem local imediatamente
-    setLocalMessages(prev => [...prev, localMsg])
     setNewMessage('')
     setIsSending(true)
 
     trackEvent(AnalyticsEvents.CHAT_INTERACTION, {
       platform: sendPlatform,
-      message_length: messageText.length
+      message_length: messageText.length,
+      is_command: isCommand
     });
 
     try {
@@ -430,7 +429,44 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
         credentials: 'include'
       })
 
+      const data = await response.json()
+
       if (response.ok) {
+        // Se foi um comando com sucesso, talvez mostrar feedback
+        if (isCommand && data.command && data.message) {
+          // Adicionar mensagem de sistema temporária
+          const sysId = generateTempId()
+          const sysMsg: LocalMessage = {
+            id: sysId,
+            tempId: sysId,
+            platform: sendPlatform === 'all' ? 'twitch' : sendPlatform as Platform,
+            username: 'Sistema',
+            user_id: 'system',
+            message: `[🛡️ ${data.message}]`,
+            timestamp: String(Date.now()),
+            created_at: new Date().toISOString(),
+            badges: ['moderator'],
+            status: 'sent',
+            isLocal: true
+          }
+          setLocalMessages(prev => [...prev, sysMsg])
+
+          // Remover mensagem de sistema após 5 segundos
+          setTimeout(() => {
+            setLocalMessages(prev => prev.filter(m => m.id !== sysId))
+          }, 5000)
+        }
+
+        // Sucesso - atualizar status para 'sent' se houver tempId
+        if (tempId) {
+          setLocalMessages(prev =>
+            prev.map(msg =>
+              msg.tempId === tempId
+                ? { ...msg, status: 'sent' as MessageStatus }
+                : msg
+            )
+          )
+        }
         // Sucesso - atualizar status para 'sent'
         setLocalMessages(prev =>
           prev.map(msg =>
@@ -479,11 +515,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
 
   // Função para enviar mensagem para todas as plataformas
   const handleSendToAllPlatforms = async (messageText: string) => {
-    const userIsModerator = currentUser?.is_moderator ||
-      currentUser?.linkedAccounts?.some(acc => acc.is_moderator) ||
-      isModerator
-
-    // Plataformas para enviar (inclui YouTube apenas se estiver live)
+    const isCommand = messageText.startsWith('/')
     const platformsToSend: Platform[] = ['twitch', 'kick']
     if (youtubeIsLive) {
       platformsToSend.push('youtube')
@@ -492,29 +524,34 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     setNewMessage('')
     setIsSending(true)
 
-    // Criar mensagens locais para cada plataforma
-    const tempIds: Record<Platform, string> = {} as Record<Platform, string>
+    // Criar mensagens locais apenas se NÃO for comando
+    const tempIds: Record<string, string> = {}
+    if (!isCommand) {
+      const userIsModerator = currentUser?.is_moderator ||
+        currentUser?.linkedAccounts?.some(acc => acc.is_moderator) ||
+        isModerator
 
-    platformsToSend.forEach(platform => {
-      const tempId = generateTempId()
-      tempIds[platform] = tempId
+      platformsToSend.forEach(platform => {
+        const tempId = generateTempId()
+        tempIds[platform] = tempId
 
-      const localMsg: LocalMessage = {
-        id: tempId,
-        tempId,
-        platform,
-        username: getCurrentPlatformUsername(),
-        user_id: getCurrentPlatformUserId() || 'unknown',
-        message: messageText,
-        timestamp: String(Date.now()),
-        created_at: new Date().toISOString(),
-        badges: userIsModerator ? ['moderator'] : [],
-        status: 'sending',
-        isLocal: true
-      }
+        const localMsg: LocalMessage = {
+          id: tempId,
+          tempId,
+          platform,
+          username: getCurrentPlatformUsername(),
+          user_id: getCurrentPlatformUserId() || 'unknown',
+          message: messageText,
+          timestamp: String(Date.now()),
+          created_at: new Date().toISOString(),
+          badges: userIsModerator ? ['moderator'] : [],
+          status: 'sending',
+          isLocal: true
+        }
 
-      setLocalMessages(prev => [...prev, localMsg])
-    })
+        setLocalMessages(prev => [...prev, localMsg])
+      })
+    }
 
     // Enviar para cada plataforma em paralelo
     const results = await Promise.allSettled(
