@@ -1052,6 +1052,20 @@ export default function DashboardPage() {
               </DialogContent>
             </Dialog>
 
+            {/* Botão Admin Específico no Header */}
+            {(user?.role === 'admin' || user?.role === 'streamer') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdminPanel(true)}
+                className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 border border-purple-500/20"
+                title="Abrir Painel Admin"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Admin
+              </Button>
+            )}
+
             {user ? (
               <Button
                 onClick={handleLogout}
@@ -1101,12 +1115,6 @@ export default function DashboardPage() {
       {/* Main Content */}
       <div className={`flex flex-col ${accountsNeedingReauth.length > 0 ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-80px)]'} overflow-hidden`}>
 
-        {/* Stats Bar - Somente para Streamer e Admin */}
-        {(user?.role === 'streamer' || user?.role === 'admin') && (
-          <div className="px-6 py-4 border-b border-border bg-card/50 shrink-0">
-            <DashboardStats />
-          </div>
-        )}
 
         <div className="flex flex-1 overflow-hidden">
           {/* Video Player Section */}
@@ -1192,9 +1200,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Painel de Informações de Live */}
+        {/* Painel de Estatísticas e Informações de Live */}
         {(user?.role === 'streamer' || user?.role === 'admin') && (
-          <div className="p-6 border-t border-border">
+          <div className="p-6 border-t border-border space-y-6">
+            <DashboardStats />
             <LiveInfoPanel
               isStreamer={isOwner(user?.role)}
               isAdmin={isAdmin(user?.role)}

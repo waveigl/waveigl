@@ -155,6 +155,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       setYoutubeIsLive(youtubeStatusFromSSE.isLive)
 
       // Se YouTube ficou offline e estava selecionado, mudar para Kick
+      // Mas se estava em 'all', deixa em 'all'
       if (!youtubeStatusFromSSE.isLive && sendPlatform === 'youtube') {
         setSendPlatform('kick')
       }
@@ -199,8 +200,8 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       const isLive = data.isLive === true
       setYoutubeIsLive(isLive)
 
-      // Se YouTube ficou online, automaticamente selecionar
-      if (isLive) {
+      // Se YouTube ficou online e estávamos em modo de plataforma única (não 'all'), selecionar youtube
+      if (isLive && sendPlatform !== 'all') {
         setSendPlatform('youtube')
       }
     } catch {
@@ -324,12 +325,15 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       const msgUserId = (msg as any).userId || (msg as any).user_id
       const msgTimestamp = Number(msg.timestamp)
 
-      // Tenta encontrar uma mensagem idêntica recente do mesmo usuário no array de merged
-      const existing = merged.find(m =>
-        m.username === msg.username &&
-        m.message === msg.message &&
-        Math.abs(m.timestamp - msgTimestamp) < 2000 // Janela de 2 segundos para considerar a mesma mensagem
-      )
+      // Tenta encontrar uma mensagem idêntica recente (mesmo texto, mesmo username OU mesmo userId de plataforma vinculada)
+      const existing = merged.find(m => {
+        const sameContent = m.message === msg.message
+        const sameAuthor = m.username === msg.username ||
+          ((m as any).userId === msgUserId && msgUserId !== 'unknown')
+        const sameTime = Math.abs(m.timestamp - msgTimestamp) < 3000 // Aumentado para 3 segundos
+
+        return sameContent && sameAuthor && sameTime
+      })
 
       if (existing) {
         // Se encontrou, apenas adiciona a plataforma à lista se não existir
@@ -340,7 +344,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           existing.platforms.push(msg.platform)
         }
       } else {
-        // Se não encontrou, adicione como nova mensagem, garantindo que temos um userId unificado para o render
+        // Se não encontrou, adicione como nova mensagem
         merged.push({
           ...msg,
           userId: msgUserId,
@@ -1012,10 +1016,9 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 scroll-smooth"
         >
           {allMessages.map((message) => {
-            // Verifica se é uma mensagem local
-            const isLocalMessage = 'isLocal' in message && message.isLocal
-            const localStatus = isLocalMessage ? (message as LocalMessage).status : null
-            const tempId = isLocalMessage ? (message as LocalMessage).tempId : null
+            const isLocalMessage = (message && typeof message === 'object' && 'isLocal' in message) ? (message as any).isLocal : false
+            const localStatus = isLocalMessage ? (message as any).status : null
+            const tempId = isLocalMessage ? (message as any).tempId : null
 
             return (
               <div
@@ -1052,7 +1055,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       {/* Badge da plataforma (ou múltiplas se merged) */}
                       <div className="flex items-center gap-1">
                         {(message as any).platforms && (message as any).platforms.length > 1 ? (
-                          (message as any).platforms.map((p: Platform) => (
+                          ((message as any).platforms as Platform[]).map((p: Platform) => (
                             <Badge key={p} variant="outline" className={`text-[10px] px-1 py-0 ${getPlatformColor(p)} border-none text-white`}>
                               {p}
                             </Badge>
