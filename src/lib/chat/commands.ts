@@ -154,7 +154,7 @@ async function sendStreamerMessage(message: string): Promise<boolean> {
  */
 async function sendStreamerWhisper(targetUsername: string, message: string): Promise<boolean> {
   console.log(`[Whisper] 📤 Iniciando envio de whisper para: ${targetUsername}`)
-  
+
   try {
     const supabase = getSupabaseAdmin()
 
@@ -232,12 +232,12 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
     if (!userResponse.ok) {
       const errorText = await userResponse.text()
       console.error(`[Whisper] ❌ Erro ao buscar usuário: ${userResponse.status}`, errorText)
-      
+
       // Se token expirado, tentar renovar
       if (userResponse.status === 401 && streamerAccount.refresh_token) {
         console.log('[Whisper] 🔄 Token expirado, tentando renovar...')
         console.log('[Whisper] Refresh token presente:', !!streamerAccount.refresh_token)
-        
+
         const { refreshTwitchToken } = await import('./twitch')
         // Precisamos do user_id do banco, não do platform_user_id
         const { data: fullAccount } = await supabase
@@ -246,7 +246,7 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
           .eq('platform', 'twitch')
           .ilike('platform_username', TWITCH_CHANNEL)
           .maybeSingle()
-        
+
         if (fullAccount?.user_id) {
           console.log('[Whisper] Chamando refreshTwitchToken...')
           const newToken = await refreshTwitchToken(streamerAccount.refresh_token, fullAccount.user_id)
@@ -312,14 +312,14 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
       } else {
         console.error('[Whisper] → Token pode estar expirado ou inválido')
       }
-      
+
       // Marcar que precisa reautenticação
       await supabase
         .from('linked_accounts')
         .update({ needs_reauth: true })
         .eq('platform', 'twitch')
         .ilike('platform_username', TWITCH_CHANNEL)
-        
+
     } else if (whisperResponse.status === 400) {
       console.error('[Whisper] ⚠️ ERRO 400 - Requisição inválida')
       console.error('[Whisper] Possíveis causas:')
@@ -327,18 +327,18 @@ async function sendStreamerWhisper(targetUsername: string, message: string): Pro
       console.error('  → Usuário bloqueou whispers')
       console.error('  → Usuário é o próprio streamer')
       console.error('  → Rate limit excedido (3/s, 100/min)')
-      
+
     } else if (whisperResponse.status === 403) {
       console.error('[Whisper] 🚫 ERRO 403 - Acesso negado')
       console.error('[Whisper] Possíveis causas:')
       console.error('  → Conta do streamer precisa de verificação de telefone')
       console.error('  → Conta do streamer está suspensa')
       console.error('  → Whispers desabilitados para a conta')
-      
+
     } else if (whisperResponse.status === 404) {
       console.error('[Whisper] 🔍 ERRO 404 - Usuário não encontrado')
       console.error(`  → Verifique se ${targetUsername} existe na Twitch`)
-      
+
     } else if (whisperResponse.status === 429) {
       console.error('[Whisper] ⏱️ ERRO 429 - Rate limit excedido')
       console.error('  → Aguarde alguns segundos antes de tentar novamente')
@@ -796,6 +796,14 @@ export async function applyTimeoutWithReapply(
   const firstTimeoutDuration = Math.min(totalDurationSeconds, maxDuration)
 
   console.log(`[Timeout] Iniciando timeout de ${totalDurationSeconds}s para ${targetUserId} no ${targetPlatform}`)
+
+  // SEMPRE limpar qualquer re-aplicação pendente para este usuário antes de aplicar novo timeout
+  const timeoutKey = `${targetPlatform}:${targetUserId}`
+  if (globalThis.__activeTimeouts?.has(timeoutKey)) {
+    console.log(`[Timeout] 🗑️ Removendo re-aplicação anterior para ${timeoutKey}`)
+    globalThis.__activeTimeouts.delete(timeoutKey)
+  }
+
   console.log(`[Timeout] Máximo da plataforma: ${maxDuration}s, primeiro timeout: ${firstTimeoutDuration}s`)
 
   // Importar dinamicamente para evitar dependência circular

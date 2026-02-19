@@ -560,3 +560,48 @@ async function applyYouTubeUnban(userId: string): Promise<{ success: boolean; er
     return { success: false, error: String(error) }
   }
 }
+
+/**
+ * Busca o ID de um usuário na plataforma pelo username
+ */
+export async function getPlatformUserIdByName(platform: string, username: string): Promise<string | null> {
+  const db = getSupabaseAdmin()
+  const cleanUsername = username.replace('@', '').trim()
+
+  // 1. Tentar buscar no banco primeiro
+  const { data: account } = await db
+    .from('linked_accounts')
+    .select('platform_user_id')
+    .eq('platform', platform)
+    .ilike('platform_username', cleanUsername)
+    .maybeSingle()
+
+  if (account?.platform_user_id) {
+    return account.platform_user_id
+  }
+
+  // 2. Tentar via API se não houver no banco (especialmente Twitch)
+  if (platform === 'twitch') {
+    try {
+      const broadcaster = await getBroadcasterToken('twitch')
+      if (!broadcaster) return null
+
+      const response = await fetch(`https://api.twitch.tv/helix/users?login=${cleanUsername}`, {
+        headers: {
+          'Authorization': `Bearer ${broadcaster.token}`,
+          'Client-Id': process.env.TWITCH_CLIENT_ID!
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.data?.[0]?.id || null
+      }
+    } catch (e) {
+      console.error('[Moderation] Erro ao buscar usuário na Twitch:', e)
+    }
+  }
+
+  // Kick e YouTube por enquanto dependem do banco ou já estarem no chat (ID passado)
+  return null
+}
