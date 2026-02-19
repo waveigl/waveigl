@@ -117,18 +117,18 @@ export class ViewerStatsService {
             }
 
             // Smart Tracking logic:
-            // 1. Fetch Twitch viewers first
+            // 1. Fetch Twitch and YouTube viewers
             const twitch = await this.fetchTwitchViewers()
+            const youtube = await this.fetchYouTubeViewers()
 
             let kick = 0
-            const youtube = 0 // YouTube tracking is currently disabled
 
-            // 2. Only fetch Kick if Twitch is live (indicates stream started)
-            if (twitch > 0) {
-                console.log('[ViewerStats] Twitch is live, fetching Kick stats...')
+            // 2. Only fetch Kick if Twitch or YouTube is live (indicates stream started)
+            if (twitch > 0 || youtube > 0) {
+                console.log('[ViewerStats] Stream is live, fetching Kick stats...')
                 kick = await this.fetchKickViewers()
             } else {
-                console.log('[ViewerStats] Twitch is offline, skipping Kick check.')
+                console.log('[ViewerStats] All platforms offline, skipping Kick check.')
             }
 
             const total = twitch + youtube + kick

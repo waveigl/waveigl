@@ -103,6 +103,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   })
   const [youtubeIsLive, setYoutubeIsLive] = useState(false)
   const [showChatSettings, setShowChatSettings] = useState(false)
+  const [showScrollBottom, setShowScrollBottom] = useState(false)
   const [messageLimit, setMessageLimit] = useState<number>(() => {
     // Carregar do localStorage se disponível
     if (typeof window !== 'undefined') {
@@ -119,7 +120,22 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     return DEFAULT_MESSAGE_LIMITS[role]
   })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const isAtBottom = useRef(true)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Handler de scroll para detectar se o usuário está no final
+  const handleScroll = useCallback(() => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current
+      // Margem de 10px para considerar "no final" (mais restrito)
+      const atBottom = scrollHeight - scrollTop - clientHeight < 10
+      isAtBottom.current = atBottom
+
+      // Mostrar botão de scroll se não estiver no final e houver mensagens
+      setShowScrollBottom(!atBottom && allMessages.length > 5)
+    }
+  }, [])
 
   // Atualizar limite quando o role mudar
   useEffect(() => {
@@ -306,12 +322,19 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
   const lastServerMessageCountRef = useRef(messages.length)
 
   useEffect(() => {
-    // Só rolar para baixo quando chegam novas mensagens do servidor (não quando status local muda)
+    // Só rolar para baixo quando chegam novas mensagens se o usuário já estiver no final
+    // ou se a última mensagem for local (enviada pelo próprio usuário)
+    const lastMessage = messages[messages.length - 1]
+    const userPlatformIds = getAllUserPlatformIds()
+    const isFromCurrentUser = lastMessage && userPlatformIds.get(lastMessage.platform as Platform) === lastMessage.userId
+
     if (messages.length > lastServerMessageCountRef.current) {
-      scrollToBottom()
+      if (isAtBottom.current || isFromCurrentUser) {
+        scrollToBottom()
+      }
     }
     lastServerMessageCountRef.current = messages.length
-  }, [messages.length])
+  }, [messages.length, getAllUserPlatformIds])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -946,7 +969,11 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+        <div
+          ref={chatContainerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 scroll-smooth"
+        >
           {allMessages.map((message) => {
             // Verifica se é uma mensagem local
             const isLocalMessage = 'isLocal' in message && message.isLocal
@@ -1150,11 +1177,11 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
 
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="destructive"
                         onClick={() => handleModeration(getMessageUserId(message), message.username, message.platform, 'ban')}
-                        className="w-full justify-start text-destructive hover:bg-destructive/10"
+                        className="w-full justify-start bg-red-600 hover:bg-red-700 text-white font-bold border-t border-red-500/50 rounded-none h-11 px-4 shadow-sm"
                       >
-                        <Ban className="w-3 h-3 mr-2" />
+                        <Ban className="w-4 h-4 mr-2" />
                         Banir permanentemente
                       </Button>
 
@@ -1174,6 +1201,19 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
             )
           })}
           <div ref={messagesEndRef} />
+
+          {/* Botão flutuante para scroll ao fundo */}
+          {showScrollBottom && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={scrollToBottom}
+              className="fixed bottom-20 right-8 rounded-full shadow-lg border border-border bg-background/80 backdrop-blur-sm hover:bg-background animate-bounce z-20 flex items-center gap-2"
+            >
+              <ChevronDown className="w-4 h-4" />
+              <span>Novas mensagens</span>
+            </Button>
+          )}
         </div>
       )}
 

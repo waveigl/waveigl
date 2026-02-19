@@ -22,7 +22,8 @@ import SubscriberBenefitsPopup from '@/components/SubscriberBenefitsPopup'
 import BenefitsPanel from '@/components/BenefitsPanel'
 import ClubOnboardingPopup from '@/components/ClubOnboardingPopup'
 import { AdminPanel } from '@/components/AdminPanel'
-import { getUserRole } from '@/lib/permissions'
+import { DashboardStats } from '@/components/DashboardStats'
+import { getUserRole, isOwner, isAdmin } from '@/lib/permissions'
 import { useSessionProvider } from '@/hooks/use-session-sync'
 
 // Configuração visual dos cargos
@@ -1098,159 +1099,176 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content */}
-      <div className={`flex ${accountsNeedingReauth.length > 0 ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-80px)]'} overflow-hidden`}>
-        {/* Video Player Section */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <div className="p-6 border-b border-border shrink-0">
-            <PlatformSelector
-              selectedPlatform={selectedPlatform}
-              onPlatformChange={setSelectedPlatform}
-              availablePlatforms={['twitch', 'youtube', 'kick']}
-            />
+      <div className={`flex flex-col ${accountsNeedingReauth.length > 0 ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-80px)]'} overflow-hidden`}>
+
+        {/* Stats Bar - Somente para Streamer e Admin */}
+        {(user?.role === 'streamer' || user?.role === 'admin') && (
+          <div className="px-6 py-4 border-b border-border bg-card/50 shrink-0">
+            <DashboardStats />
+          </div>
+        )}
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Video Player Section */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="p-6 border-b border-border shrink-0">
+              <PlatformSelector
+                selectedPlatform={selectedPlatform}
+                onPlatformChange={setSelectedPlatform}
+                availablePlatforms={['twitch', 'youtube', 'kick']}
+              />
+            </div>
+
+            <div className="flex-1 p-6 min-h-0">
+              <VideoPlayer
+                platform={selectedPlatform}
+                channelId="waveigl"
+                className="w-full h-full rounded-lg"
+                youtubeStatusFromSSE={youtubeStatus}
+              />
+            </div>
           </div>
 
-          <div className="flex-1 p-6 min-h-0">
-            <VideoPlayer
-              platform={selectedPlatform}
-              channelId="waveigl"
-              className="w-full h-full rounded-lg"
-              youtubeStatusFromSSE={youtubeStatus}
-            />
-          </div>
-        </div>
-
-        {/* Chat Section */}
-        <div className="w-96 border-l border-border bg-card flex flex-col shrink-0">
-          <div className="p-4 border-b border-border shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
-                <p className="text-sm text-muted-foreground">
-                  Mensagens de Twitch, YouTube e Kick
-                </p>
+          {/* Chat Section */}
+          <div className="w-96 border-l border-border bg-card flex flex-col shrink-0">
+            <div className="p-4 border-b border-border shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Mensagens de Twitch, YouTube e Kick
+                  </p>
+                </div>
+                {/* Botão para streamer/admin desativar chat quando offline */}
+                {user?.role && (user.role === 'streamer' || user.role === 'admin') && (
+                  <Button
+                    size="sm"
+                    variant={isChatEnabled ? 'default' : 'outline'}
+                    onClick={() => setIsChatEnabled(!isChatEnabled)}
+                    className={isChatEnabled ? 'bg-green-600 hover:bg-green-700' : 'border-red-500 text-red-500'}
+                    title={isChatEnabled ? 'Chat ativo - Clique para desativar' : 'Chat desativado - Clique para ativar'}
+                  >
+                    {isChatEnabled ? '🟢 Ativo' : '🔴 Offline'}
+                  </Button>
+                )}
               </div>
-              {/* Botão para streamer/admin desativar chat quando offline */}
-              {user?.role && (user.role === 'streamer' || user.role === 'admin') && (
-                <Button
-                  size="sm"
-                  variant={isChatEnabled ? 'default' : 'outline'}
-                  onClick={() => setIsChatEnabled(!isChatEnabled)}
-                  className={isChatEnabled ? 'bg-green-600 hover:bg-green-700' : 'border-red-500 text-red-500'}
-                  title={isChatEnabled ? 'Chat ativo - Clique para desativar' : 'Chat desativado - Clique para ativar'}
-                >
-                  {isChatEnabled ? '🟢 Ativo' : '🔴 Offline'}
-                </Button>
+
+              {/* Contadores de Moderação */}
+              {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
+                <ModerationStats actions={moderationActions} compact={true} />
               )}
             </div>
 
-            {/* Contadores de Moderação */}
-            {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
-              <ModerationStats actions={moderationActions} compact={true} />
-            )}
-          </div>
-
-          <div className="flex-1 min-h-0">
-            {isChatEnabled ? (
-              <UnifiedChat
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isModerator={isModerator}
-                onModerate={handleModerate}
-                isLogged={!!user}
-                youtubeStatusFromSSE={youtubeStatus}
-                currentUser={user ? {
-                  id: user.id,
-                  is_moderator: isModerator,
-                  role: user.role || 'user',
-                  linkedAccounts: linkedAccounts.map(acc => ({
-                    platform: acc.platform as Platform,
-                    platform_user_id: acc.platform_user_id,
-                    platform_username: acc.platform_username,
-                    is_moderator: acc.is_moderator
-                  }))
-                } : undefined}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <p className="text-lg mb-2">💤 Chat desativado</p>
-                  <p className="text-sm">O streamer desativou o chat enquanto está offline.</p>
+            <div className="flex-1 min-h-0">
+              {isChatEnabled ? (
+                <UnifiedChat
+                  messages={messages}
+                  onSendMessage={handleSendMessage}
+                  isModerator={isModerator}
+                  onModerate={handleModerate}
+                  isLogged={!!user}
+                  youtubeStatusFromSSE={youtubeStatus}
+                  currentUser={user ? {
+                    id: user.id,
+                    is_moderator: isModerator,
+                    role: user.role || 'user',
+                    linkedAccounts: linkedAccounts.map(acc => ({
+                      platform: acc.platform as Platform,
+                      platform_user_id: acc.platform_user_id,
+                      platform_username: acc.platform_username,
+                      is_moderator: acc.is_moderator
+                    }))
+                  } : undefined}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg mb-2">💤 Chat desativado</p>
+                    <p className="text-sm">O streamer desativou o chat enquanto está offline.</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Painel de Informações de Live */}
-      {(user?.role === 'streamer' || user?.role === 'admin') && (
-        <div className="p-6 border-t border-border">
-          <LiveInfoPanel
-            isStreamer={user?.role === 'streamer'}
-            isAdmin={user?.role === 'admin'}
-            onRefresh={loadModerationActions}
+        {/* Painel de Informações de Live */}
+        {(user?.role === 'streamer' || user?.role === 'admin') && (
+          <div className="p-6 border-t border-border">
+            <LiveInfoPanel
+              isStreamer={isOwner(user?.role)}
+              isAdmin={isAdmin(user?.role)}
+              onRefresh={loadModerationActions}
+            />
+          </div>
+        )}
+
+        {/* Painel Dev: dados do usuário e contas vinculadas */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="p-6">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground">Dev: Sessão e Contas Vinculadas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
+                  {JSON.stringify(user, null, 2)}
+                  Linked: {JSON.stringify(linkedAccounts, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Popup de onboarding de benefícios para novos subs */}
+        {pendingBenefit && (
+          <SubscriberBenefitsPopup
+            benefit={pendingBenefit}
+            isOpen={showBenefitsPopup}
+            onClose={() => {
+              setShowBenefitsPopup(false)
+              loadBenefits() // Recarregar para atualizar status
+            }}
+            onDismiss={() => {
+              setShowBenefitsPopup(false)
+            }}
+            discordConnected={!!discordConnection}
           />
-        </div>
-      )}
+        )}
 
-      {/* Painel Dev: dados do usuário e contas vinculadas */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="p-6">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Dev: Sessão e Contas Vinculadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
-                {JSON.stringify(user, null, 2)}
-                Linked: {JSON.stringify(linkedAccounts, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Popup de onboarding de benefícios para novos subs */}
-      {pendingBenefit && (
-        <SubscriberBenefitsPopup
-          benefit={pendingBenefit}
-          isOpen={showBenefitsPopup}
-          onClose={() => {
-            setShowBenefitsPopup(false)
-            loadBenefits() // Recarregar para atualizar status
+        {/* Painel completo de benefícios */}
+        <BenefitsPanel
+          isOpen={showBenefitsPanel}
+          onClose={() => setShowBenefitsPanel(false)}
+          onOpenOnboarding={(benefit) => {
+            setPendingBenefit(benefit)
+            setShowBenefitsPanel(false)
+            setShowBenefitsPopup(true)
           }}
-          onDismiss={() => {
-            setShowBenefitsPopup(false)
-          }}
-          discordConnected={!!discordConnection}
         />
-      )}
 
-      {/* Painel completo de benefícios */}
-      <BenefitsPanel
-        isOpen={showBenefitsPanel}
-        onClose={() => setShowBenefitsPanel(false)}
-        onOpenOnboarding={(benefit) => {
-          setPendingBenefit(benefit)
-          setShowBenefitsPanel(false)
-          setShowBenefitsPopup(true)
-        }}
-      />
+        {/* Popup de onboarding para assinatura do Clube */}
+        {clubOnboardingData && (
+          <ClubOnboardingPopup
+            isOpen={showClubOnboarding}
+            onClose={() => setShowClubOnboarding(false)}
+            userData={{
+              id: clubOnboardingData.id,
+              full_name: clubOnboardingData.full_name || null,
+              phone_number: clubOnboardingData.phone_number || null,
+              birth_date: clubOnboardingData.birth_date || null,
+              discord_connected: !!discordConnection,
+              discord_username: discordConnection?.discord_username || null
+            }}
+            onComplete={handleOnboardingComplete}
+          />
+        )}
 
-      {/* Popup de onboarding para assinatura do Clube */}
-      {clubOnboardingData && (
-        <ClubOnboardingPopup
-          isOpen={showClubOnboarding}
-          onClose={() => setShowClubOnboarding(false)}
-          userData={clubOnboardingData}
-          onComplete={handleOnboardingComplete}
-        />
-      )}
-
-      {/* Painel Admin - Apenas para Gabriel Toth */}
-      {showAdminPanel && (
-        <AdminPanel onClose={() => setShowAdminPanel(false)} />
-      )}
+        {/* Painel Admin - Apenas para Gabriel Toth */}
+        {showAdminPanel && (
+          <AdminPanel onClose={() => setShowAdminPanel(false)} />
+        )}
+      </div>
     </div>
   )
 }

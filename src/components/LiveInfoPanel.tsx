@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Crown,
 } from 'lucide-react'
 
 interface ModerationAction {
@@ -39,6 +40,7 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
   const [isLoading, setIsLoading] = useState(false)
   const [expandedSection, setExpandedSection] = useState<'bans' | 'timeouts' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [liveStats, setLiveStats] = useState<{ clubMembers: number; platformSubscribers: number } | null>(null)
 
   // Carregar ações de moderação
   const loadModerationActions = async () => {
@@ -60,9 +62,26 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
     }
   }
 
+  // Carregar dados de estatísticas
+  const loadStats = async () => {
+    try {
+      const res = await fetch('/api/dashboard/stats')
+      if (res.ok) {
+        const data = await res.json()
+        setLiveStats({
+          clubMembers: data.stats?.clubMembers || 0,
+          platformSubscribers: data.stats?.platformSubscribers || 0
+        })
+      }
+    } catch (err) {
+      console.error('[LiveInfoPanel] Erro ao carregar estatísticas:', err)
+    }
+  }
+
   // Carregar na montagem
   useEffect(() => {
     loadModerationActions()
+    loadStats()
   }, [])
 
   // Separar bans e timeouts
@@ -70,7 +89,7 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
     const now = Date.now()
     const bans = moderationActions.filter(a => a.action === 'ban')
     const timeouts = moderationActions.filter(a => a.action === 'timeout')
-    
+
     const activeBans = bans.filter(a => !a.expiresAt || a.expiresAt > now)
     const activeTimeouts = timeouts.filter(a => !a.expiresAt || a.expiresAt > now)
 
@@ -80,17 +99,17 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
   // Calcular tempo restante
   const getTimeRemaining = (expiresAt?: number): string => {
     if (!expiresAt) return 'Permanente'
-    
+
     const now = Date.now()
     const remaining = expiresAt - now
-    
+
     if (remaining <= 0) return 'Expirado'
-    
+
     const seconds = Math.floor(remaining / 1000)
     const minutes = Math.floor(seconds / 60)
     const hours = Math.floor(minutes / 60)
     const days = Math.floor(hours / 24)
-    
+
     if (days > 0) return `${days}d ${hours % 24}h`
     if (hours > 0) return `${hours}h ${minutes % 60}m`
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`
@@ -132,6 +151,7 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
         <Button
           onClick={() => {
             loadModerationActions()
+            loadStats()
             onRefresh?.()
           }}
           disabled={isLoading}
@@ -149,37 +169,61 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
         </Alert>
       )}
 
-      {/* Resumo de Bans e Timeouts */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Card de Bans */}
+      {/* Resumo de Estatísticas e Moderação */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Card de Membros do Clube */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white text-sm flex items-center gap-2">
-              <Ban className="w-4 h-4 text-red-400" />
-              Banimentos
+          <CardHeader className="pb-3 px-4">
+            <CardTitle className="text-white text-xs flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-500" />
+              Clube
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-red-400">{activeBans.length}</div>
-            <p className="text-xs text-slate-400 mt-1">
-              {activeBans.length === 1 ? 'pessoa banida' : 'pessoas banidas'}
-            </p>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-bold text-amber-500">{liveStats?.clubMembers || 0}</div>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Membros</p>
+          </CardContent>
+        </Card>
+
+        {/* Card de Inscritos */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3 px-4">
+            <CardTitle className="text-white text-xs flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-purple-400" />
+              Subs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-bold text-purple-400">{liveStats?.platformSubscribers || 0}</div>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Inscritos</p>
+          </CardContent>
+        </Card>
+
+        {/* Card de Bans */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader className="pb-3 px-4">
+            <CardTitle className="text-white text-xs flex items-center gap-2">
+              <Ban className="w-4 h-4 text-red-400" />
+              Bans
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-bold text-red-400">{activeBans.length}</div>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Ativos</p>
           </CardContent>
         </Card>
 
         {/* Card de Timeouts */}
         <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white text-sm flex items-center gap-2">
+          <CardHeader className="pb-3 px-4">
+            <CardTitle className="text-white text-xs flex items-center gap-2">
               <Clock className="w-4 h-4 text-yellow-400" />
               Timeouts
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-yellow-400">{activeTimeouts.length}</div>
-            <p className="text-xs text-slate-400 mt-1">
-              {activeTimeouts.length === 1 ? 'pessoa em timeout' : 'pessoas em timeout'}
-            </p>
+          <CardContent className="px-4 pb-4">
+            <div className="text-2xl font-bold text-yellow-400">{activeTimeouts.length}</div>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Ativos</p>
           </CardContent>
         </Card>
       </div>
