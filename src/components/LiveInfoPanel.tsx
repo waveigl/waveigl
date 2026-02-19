@@ -169,65 +169,6 @@ export function LiveInfoPanel({ isStreamer = false, isAdmin = false, onRefresh }
         </Alert>
       )}
 
-      {/* Resumo de Estatísticas e Moderação */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Card de Membros do Clube */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-white text-xs flex items-center gap-2">
-              <Crown className="w-4 h-4 text-amber-500" />
-              Clube
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold text-amber-500">{liveStats?.clubMembers || 0}</div>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Membros</p>
-          </CardContent>
-        </Card>
-
-        {/* Card de Inscritos */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-white text-xs flex items-center gap-2">
-              <RefreshCw className="w-4 h-4 text-purple-400" />
-              Subs
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold text-purple-400">{liveStats?.platformSubscribers || 0}</div>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Inscritos</p>
-          </CardContent>
-        </Card>
-
-        {/* Card de Bans */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-white text-xs flex items-center gap-2">
-              <Ban className="w-4 h-4 text-red-400" />
-              Bans
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold text-red-400">{activeBans.length}</div>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Ativos</p>
-          </CardContent>
-        </Card>
-
-        {/* Card de Timeouts */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="text-white text-xs flex items-center gap-2">
-              <Clock className="w-4 h-4 text-yellow-400" />
-              Timeouts
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-2xl font-bold text-yellow-400">{activeTimeouts.length}</div>
-            <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Ativos</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Seção de Banimentos */}
       <Card className="bg-slate-800 border-slate-700">
         <CardHeader

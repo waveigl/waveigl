@@ -110,7 +110,7 @@ async function handleTimeoutCommand(
 
     for (const p of targetPlatforms) {
         totalCount++
-        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername)
+        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername, moderatorId)
 
         if (!targetPlatformUserId) {
             errors.push(`${p}: Usuário não encontrado`)
@@ -166,7 +166,7 @@ async function handleBanCommand(
     const errors: string[] = []
 
     for (const p of targetPlatforms) {
-        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername)
+        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername, moderatorId)
         if (!targetPlatformUserId) continue
 
         const result = await applyPlatformBan(p, targetPlatformUserId, reason, moderatorId)
@@ -197,7 +197,7 @@ async function handleUnbanCommand(
     let successCount = 0
 
     for (const p of targetPlatforms) {
-        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername)
+        const targetPlatformUserId = await getPlatformUserIdByName(p, targetUsername, moderatorId)
         if (!targetPlatformUserId) continue
 
         const result = await applyPlatformUnban(p, targetPlatformUserId, moderatorId)
