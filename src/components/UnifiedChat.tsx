@@ -86,7 +86,7 @@ interface ExtendedUnifiedChatProps extends UnifiedChatProps {
 
 export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser, isPopup = false, onOpenPopup, defaultCompact = false }: ExtendedUnifiedChatProps) {
   const [newMessage, setNewMessage] = useState('')
-  const [sendPlatform, setSendPlatform] = useState<Platform | 'all'>('kick')
+  const [sendPlatform, setSendPlatform] = useState<Platform | 'all'>('all')
   const [showModerationMenu, setShowModerationMenu] = useState<string | null>(null)
   const [customTimeoutInput, setCustomTimeoutInput] = useState('')
   const [customTimeoutUnit, setCustomTimeoutUnit] = useState<'seconds' | 'minutes' | 'hours' | 'days' | 'months' | 'permanent'>('days')
@@ -316,7 +316,44 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
 
   // Aplicar limite de mensagens - mantém apenas as mais recentes
   // IMPORTANTE: Isso remove as mensagens mais antigas da memória, não apenas da visualização
-  const allMessages = combinedMessages.slice(-messageLimit)
+  // Agrupa mensagens idênticas de um mesmo usuário em plataformas diferentes (deduplicação visual)
+  const displayMessages = (() => {
+    const merged: (UnifiedMessage & { platforms?: Platform[] })[] = []
+
+    combinedMessages.slice(-messageLimit).forEach(msg => {
+      const msgUserId = (msg as any).userId || (msg as any).user_id
+      const msgTimestamp = Number(msg.timestamp)
+
+      // Tenta encontrar uma mensagem idêntica recente do mesmo usuário no array de merged
+      const existing = merged.find(m =>
+        m.username === msg.username &&
+        m.message === msg.message &&
+        Math.abs(m.timestamp - msgTimestamp) < 2000 // Janela de 2 segundos para considerar a mesma mensagem
+      )
+
+      if (existing) {
+        // Se encontrou, apenas adiciona a plataforma à lista se não existir
+        if (!existing.platforms) {
+          existing.platforms = [existing.platform]
+        }
+        if (!existing.platforms.includes(msg.platform)) {
+          existing.platforms.push(msg.platform)
+        }
+      } else {
+        // Se não encontrou, adicione como nova mensagem, garantindo que temos um userId unificado para o render
+        merged.push({
+          ...msg,
+          userId: msgUserId,
+          timestamp: msgTimestamp,
+          platforms: [msg.platform]
+        } as any)
+      }
+    })
+
+    return merged
+  })()
+
+  const allMessages = displayMessages
 
   // Ref para rastrear o último número de mensagens do servidor (para scroll apenas em novas mensagens)
   const lastServerMessageCountRef = useRef(messages.length)
@@ -987,8 +1024,16 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
               >
                 <div className="flex items-start space-x-2">
                   <div className="shrink-0">
-                    <div className={`w-8 h-8 rounded-full ${getPlatformColor(message.platform)} flex items-center justify-center text-white text-xs`}>
-                      {getPlatformIcon(message.platform)}
+                    <div className="flex -space-x-4">
+                      {((message as any).platforms || [message.platform]).map((p: Platform, idx: number) => (
+                        <div
+                          key={`${p}-${idx}`}
+                          className={`w-8 h-8 rounded-full ${getPlatformColor(p)} flex items-center justify-center text-white text-xs ring-2 ring-background`}
+                          style={{ zIndex: 10 - idx }}
+                        >
+                          {getPlatformIcon(p)}
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -1004,10 +1049,20 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         {message.username}
                       </span>
 
-                      {/* Badge da plataforma */}
-                      <Badge variant="outline" className="text-[10px] px-1 py-0">
-                        {message.platform}
-                      </Badge>
+                      {/* Badge da plataforma (ou múltiplas se merged) */}
+                      <div className="flex items-center gap-1">
+                        {(message as any).platforms && (message as any).platforms.length > 1 ? (
+                          (message as any).platforms.map((p: Platform) => (
+                            <Badge key={p} variant="outline" className={`text-[10px] px-1 py-0 ${getPlatformColor(p)} border-none text-white`}>
+                              {p}
+                            </Badge>
+                          ))
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            {message.platform}
+                          </Badge>
+                        )}
+                      </div>
 
                       {/* Horário */}
                       <span className="text-[10px] text-muted-foreground">
