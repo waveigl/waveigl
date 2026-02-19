@@ -11,29 +11,29 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Frame-Options', 'SAMEORIGIN')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-XSS-Protection', '1; mode=block')
-  
+
   // Referrer Policy
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  
+
   // Permissions Policy (desabilitar recursos não utilizados)
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  
+
   // HSTS - Força HTTPS (apenas em produção)
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   }
-  
+
   // Content Security Policy
   // Permite recursos do próprio domínio + CDNs necessários para players de vídeo
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://player.twitch.tv https://www.youtube.com https://kick.com https://www.youtube-nocookie.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://player.twitch.tv https://www.youtube.com https://kick.com https://www.youtube-nocookie.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https: http:",
+    "img-src 'self' data: blob: https: http: https://www.google-analytics.com https://www.googletagmanager.com https://c.bing.com",
     // Permitir iframes dos players de vídeo
     "frame-src 'self' https://player.twitch.tv https://embed.twitch.tv https://www.youtube.com https://www.youtube-nocookie.com https://kick.com https://player.kick.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twitch.tv https://id.twitch.tv https://www.googleapis.com https://kick.com https://discord.com wss://*.pusher.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twitch.tv https://id.twitch.tv https://www.googleapis.com https://kick.com https://discord.com wss://*.pusher.com https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms",
     "media-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -42,9 +42,9 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     // Isso NÃO impede que incorporemos outros sites (como os players)
     "frame-ancestors 'none'",
   ].join('; ')
-  
+
   response.headers.set('Content-Security-Policy', csp)
-  
+
   return response
 }
 
