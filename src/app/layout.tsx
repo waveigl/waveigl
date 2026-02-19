@@ -211,10 +211,10 @@ export default function RootLayout({
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         )}
+
         {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID && (
-          <Script
+          <script
             id="microsoft-clarity"
-            strategy="afterInteractive"
             dangerouslySetInnerHTML={{
               __html: `
                 (function(c,l,a,r,i,t,y){
