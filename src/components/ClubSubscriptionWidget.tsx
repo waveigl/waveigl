@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { trackEvent, AnalyticsEvents } from '@/lib/analytics'
 import { Crown, AlertCircle, Loader2, Info, CreditCard, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -77,8 +78,13 @@ export default function ClubSubscriptionWidget({
   useEffect(() => {
     if (status !== 'loading') {
       onStatusChange?.(status as 'no_club' | 'eligible' | 'subscriber')
+
+      trackEvent('club_status_view', {
+        status: status,
+        is_target_sync: isTargetUserForSync
+      });
     }
-  }, [status, onStatusChange])
+  }, [status, onStatusChange, isTargetUserForSync])
 
   const checkMercadoPagoNotifications = async () => {
     try {
@@ -107,6 +113,10 @@ export default function ClubSubscriptionWidget({
 
   const handleSubscribeClick = async () => {
     if (isCheckingEligibility) return
+
+    trackEvent(AnalyticsEvents.SUB_INTENT, {
+      current_status: status
+    });
 
     setIsCheckingEligibility(true)
     try {

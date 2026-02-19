@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { trackEvent, AnalyticsEvents } from '@/lib/analytics'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronRight, ChevronLeft, Check, User, Phone, Calendar, Crown, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,7 @@ export default function ClubOnboardingPopup({
   const [currentStep, setCurrentStep] = useState<Step>(getInitialStep())
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Dados do formulário
   const [fullName, setFullName] = useState(userData.full_name || '')
   const [phoneNumber, setPhoneNumber] = useState(userData.phone_number || '')
@@ -52,7 +53,12 @@ export default function ClubOnboardingPopup({
     if (isOpen) {
       const step = getInitialStep()
       setCurrentStep(step)
-      
+
+      trackEvent(AnalyticsEvents.FORM_START, {
+        step: step,
+        initial_step: step === 'discord' ? 'discord' : 'personal'
+      });
+
       // Se já está completo, ir direto para checkout
       if (step === 'complete') {
         onComplete()
@@ -63,7 +69,7 @@ export default function ClubOnboardingPopup({
   const formatPhoneNumber = (value: string) => {
     // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '')
-    
+
     // Aplica a máscara (XX) XXXXX-XXXX
     if (numbers.length <= 2) return numbers
     if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
@@ -80,18 +86,18 @@ export default function ClubOnboardingPopup({
       setError('Informe seu nome completo (nome e sobrenome)')
       return false
     }
-    
+
     const phoneDigits = phoneNumber.replace(/\D/g, '')
     if (phoneDigits.length < 10 || phoneDigits.length > 11) {
       setError('Informe um número de celular válido')
       return false
     }
-    
+
     if (!birthDate) {
       setError('Informe sua data de nascimento')
       return false
     }
-    
+
     // Verificar idade mínima (18 anos - obrigatório para pagamento)
     const birth = new Date(birthDate)
     const today = new Date()
@@ -100,27 +106,27 @@ export default function ClubOnboardingPopup({
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--
     }
-    
+
     if (age < 18) {
       setError('Você precisa ter pelo menos 18 anos para assinar')
       return false
     }
-    
+
     if (age > 120) {
       setError('Data de nascimento inválida')
       return false
     }
-    
+
     return true
   }
 
   const handleSavePersonalData = async () => {
     setError(null)
-    
+
     if (!validatePersonalData()) return
-    
+
     setIsSubmitting(true)
-    
+
     try {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
@@ -131,16 +137,19 @@ export default function ClubOnboardingPopup({
           birth_date: birthDate
         })
       })
-      
+
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || 'Erro ao salvar dados')
         return
       }
-      
+
       // Ir para checkout
+      trackEvent(AnalyticsEvents.FORM_COMPLETE, {
+        form: 'club_onboarding'
+      });
       onComplete()
-      
+
     } catch {
       setError('Erro de conexão. Tente novamente.')
     } finally {
@@ -189,7 +198,7 @@ export default function ClubOnboardingPopup({
             >
               <X size={20} />
             </button>
-            
+
             <Crown className="w-12 h-12 mx-auto mb-3 text-white" />
             <h2 className="text-xl font-bold text-white">
               Assinar Clube WaveIGL
@@ -205,10 +214,10 @@ export default function ClubOnboardingPopup({
               <div key={step.key} className="flex items-center">
                 <div className={`
                   flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors
-                  ${index < currentStepIndex 
-                    ? 'bg-green-500 text-white' 
-                    : index === currentStepIndex 
-                      ? 'bg-[#E38817] text-white' 
+                  ${index < currentStepIndex
+                    ? 'bg-green-500 text-white'
+                    : index === currentStepIndex
+                      ? 'bg-[#E38817] text-white'
                       : 'bg-zinc-700 text-zinc-400'
                   }
                 `}>
@@ -236,12 +245,12 @@ export default function ClubOnboardingPopup({
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 mx-auto bg-indigo-500/20 rounded-full flex items-center justify-center mb-3">
                     <svg className="w-8 h-8 text-indigo-400" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
                     </svg>
                   </div>
                   <h3 className="text-lg font-semibold text-white mb-2">Vincule seu Discord</h3>
                   <p className="text-sm text-zinc-400">
-                    O Clube WaveIGL funciona através do Discord. 
+                    O Clube WaveIGL funciona através do Discord.
                     Vincule sua conta para receber acesso ao servidor exclusivo.
                   </p>
                 </div>
@@ -251,7 +260,7 @@ export default function ClubOnboardingPopup({
                   className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
                   </svg>
                   Vincular Discord
                 </Button>
@@ -294,6 +303,7 @@ export default function ClubOnboardingPopup({
                       placeholder="Seu nome completo"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      onFocus={() => trackEvent('field_focus', { field: 'full_name' })}
                       className="bg-zinc-800 border-zinc-600 text-white"
                     />
                   </div>
@@ -309,6 +319,7 @@ export default function ClubOnboardingPopup({
                       placeholder="(00) 00000-0000"
                       value={phoneNumber}
                       onChange={handlePhoneChange}
+                      onFocus={() => trackEvent('field_focus', { field: 'phone_number' })}
                       className="bg-zinc-800 border-zinc-600 text-white"
                       maxLength={15}
                     />
@@ -324,6 +335,7 @@ export default function ClubOnboardingPopup({
                       type="date"
                       value={birthDate}
                       onChange={(e) => setBirthDate(e.target.value)}
+                      onFocus={() => trackEvent('field_focus', { field: 'birth_date' })}
                       className="bg-zinc-800 border-zinc-600 text-white"
                       max={new Date().toISOString().split('T')[0]}
                     />

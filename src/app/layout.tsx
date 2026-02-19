@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { GoogleAnalytics } from '@next/third-parties/google'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   keywords: [
-    'WaveIGL', 'Wave', 'clube de membros', 'streaming', 'comunidade', 
+    'WaveIGL', 'Wave', 'clube de membros', 'streaming', 'comunidade',
     'CS2', 'Counter-Strike 2', 'Counter-Strike', 'aulas CS2', 'professor CS2',
     'Twitch', 'streamer brasileiro', 'gaming', 'esports', 'BlackBelt CSGO'
   ],
@@ -199,12 +201,12 @@ export default function RootLayout({
         {/* Preconnect to important domains */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/favicon.webp" />
         <link rel="manifest" href="/manifest.json" />
-        
+
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"
@@ -215,6 +217,24 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
+        {process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID && (
+          <Script
+            id="microsoft-clarity"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function(c,l,a,r,i,t,y){
+                    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+                })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID}");
+              `,
+            }}
+          />
+        )}
       </body>
     </html>
   )
