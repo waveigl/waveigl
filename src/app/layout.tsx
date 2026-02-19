@@ -207,16 +207,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/favicon.webp" />
         <link rel="manifest" href="/manifest.json" />
 
-        {/* JSON-LD Structured Data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationSchema, websiteSchema, productSchema])
-          }}
-        />
-      </head>
-      <body className={inter.className}>
-        {children}
+        {/* Analytics (Google Analytics & Microsoft Clarity) */}
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
         )}
@@ -235,6 +226,17 @@ export default function RootLayout({
             }}
           />
         )}
+
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([organizationSchema, websiteSchema, productSchema])
+          }}
+        />
+      </head>
+      <body className={inter.className}>
+        {children}
       </body>
     </html>
   )
