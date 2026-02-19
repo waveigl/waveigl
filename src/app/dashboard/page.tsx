@@ -620,8 +620,8 @@ export default function DashboardPage() {
     console.log('Enviando mensagem:', message)
   }
 
-  const handleModerate = async (userId: string, platform: string, action: string, duration?: number, reason?: string) => {
-    console.log('Moderando usuário:', userId, 'plataforma:', platform, 'ação:', action, 'duração:', duration, 'motivo:', reason)
+  const handleModerate = async (userId: string, username: string, platform: string, action: string, duration?: number, reason?: string) => {
+    console.log('Moderando usuário:', userId, 'username:', username, 'plataforma:', platform, 'ação:', action, 'duração:', duration, 'motivo:', reason)
 
     if (!user?.id) {
       console.error('Usuário não autenticado')
@@ -637,6 +637,7 @@ export default function DashboardPage() {
         endpoint = '/api/moderation/timeout'
         body = {
           targetPlatformUserId: userId,
+          targetUsername: username,
           targetPlatform: platform,
           durationSeconds: duration || 600, // 10 minutos padrão
           reason: reason || 'Timeout via chat unificado',
@@ -646,6 +647,7 @@ export default function DashboardPage() {
         endpoint = '/api/moderation/ban'
         body = {
           targetPlatformUserId: userId,
+          targetUsername: username,
           targetPlatform: platform,
           reason: reason || 'Ban via chat unificado',
           moderatorId: user.id

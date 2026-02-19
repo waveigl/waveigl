@@ -5,9 +5,9 @@ import { applyPlatformBan } from '@/lib/moderation/actions'
 
 export async function POST(request: NextRequest) {
   try {
-    const { targetPlatformUserId, targetPlatform, reason, moderatorId } = await request.json()
+    const { targetPlatformUserId, targetUsername, targetPlatform, reason, moderatorId } = await request.json()
 
-    if (!targetPlatformUserId || !targetPlatform || !moderatorId) {
+    if (!targetPlatformUserId || !targetUsername || !targetPlatform || !moderatorId) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios não fornecidos' }, { status: 400 })
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         .from('linked_accounts')
         .select('*')
         .eq('user_id', targetAccount.user_id)
-      
+
       if (allTargetAccounts && isProtectedLinkedAccounts(allTargetAccounts)) {
         return NextResponse.json({ error: 'Usuário protegido não pode ser punido' }, { status: 403 })
       }
@@ -47,24 +47,25 @@ export async function POST(request: NextRequest) {
     const result = await applyPlatformBan(targetPlatform, targetPlatformUserId, reason, moderatorId)
 
     if (!result.success) {
-      return NextResponse.json({ 
-        success: false, 
-        error: result.error || 'Falha ao aplicar ban na plataforma' 
+      return NextResponse.json({
+        success: false,
+        error: result.error || 'Falha ao aplicar ban na plataforma'
       }, { status: 400 })
     }
 
-    // Registrar ação se o usuário estiver no sistema
-    if (targetAccount) {
-      await db
-        .from('moderation_actions')
-        .insert({
-          user_id: targetAccount.user_id,
-          moderator_id: moderatorId,
-          action_type: 'ban',
-          reason: reason || 'Ban aplicado via chat unificado',
-          platforms: [targetPlatform]
-        })
-    }
+    // Registrar ação SEMPRE
+    await db
+      .from('moderation_actions')
+      .insert({
+        user_id: targetAccount?.user_id || null,
+        moderator_id: moderatorId,
+        action_type: 'ban',
+        target_user_id: targetPlatformUserId,
+        target_username: targetUsername,
+        platform: targetPlatform,
+        reason: reason || 'Ban aplicado via chat unificado',
+        platforms: [targetPlatform]
+      })
 
     return NextResponse.json({
       success: true,

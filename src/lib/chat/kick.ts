@@ -33,13 +33,13 @@ globalThis.__kickFirstMessageReceived = globalThis.__kickFirstMessageReceived ||
 function checkYouTubeOnKickActivity(): void {
   if (globalThis.__kickFirstMessageReceived) return
   globalThis.__kickFirstMessageReceived = true
-  
+
   console.log('='.repeat(60))
   console.log('[STREAMER LIVE] 🟢 WaveIGL detectado AO VIVO na Kick!')
   console.log('[STREAMER LIVE] Primeira mensagem recebida no chat da Kick')
   console.log('[STREAMER LIVE] Disparando verificação do YouTube...')
   console.log('='.repeat(60))
-  
+
   setTimeout(() => {
     triggerYouTubeCheck().catch(err => {
       console.error('[Kick] Erro ao sinalizar YouTube:', err)
@@ -79,7 +79,7 @@ export async function startKickReader(): Promise<void> {
   try {
     // Primeiro, buscar o chatroom_id do canal
     const chatroomId = await getChatroomId(KICK_CHANNEL)
-    
+
     if (!chatroomId) {
       console.error('[Kick] Não foi possível obter o chatroom_id')
       console.error('[Kick] Configure KICK_CHATROOM_ID no .env.local')
@@ -126,7 +126,7 @@ async function getChatroomId(channelSlug: string): Promise<number | null> {
         'Origin': 'https://kick.com'
       }
     })
-    
+
     if (!res.ok) {
       const errorText = await res.text()
       console.error('[Kick] Erro ao buscar canal:', res.status, errorText.substring(0, 200))
@@ -135,7 +135,7 @@ async function getChatroomId(channelSlug: string): Promise<number | null> {
 
     const data = await res.json()
     console.log('[Kick] Dados do canal recebidos, chatroom:', data?.chatroom?.id)
-    
+
     if (data?.chatroom?.id) {
       globalThis.__kickCachedChatroomId = data.chatroom.id
       return globalThis.__kickCachedChatroomId
@@ -164,7 +164,7 @@ function connectWebSocket(chatroomId: number): void {
 
   globalThis.__kickWs.on('open', () => {
     console.log('[Kick] WebSocket conectado!')
-    
+
     // Subscrever ao canal de chat
     const subscribeMessage = JSON.stringify({
       event: 'pusher:subscribe',
@@ -180,37 +180,37 @@ function connectWebSocket(chatroomId: number): void {
   globalThis.__kickWs.on('message', (rawData) => {
     try {
       const data = JSON.parse(rawData.toString())
-      
+
       // Log de TODOS os eventos para debug (incluindo pusher internos)
       console.log('[Kick] Evento raw:', data.event, data.channel ? `canal: ${data.channel}` : '')
-      
+
       // Confirmação de subscription
       if (data.event === 'pusher_internal:subscription_succeeded') {
         console.log('[Kick] Subscription confirmada para:', data.channel)
       }
-      
+
       // Ignorar eventos de sistema do Pusher
       if (data.event?.startsWith('pusher:') || data.event?.startsWith('pusher_internal:')) {
         return
       }
-      
+
       // Log detalhado de qualquer evento não-pusher
       if (data.event) {
         console.log('[Kick] Evento de aplicação:', data.event)
         console.log('[Kick] Data:', typeof data.data === 'string' ? data.data.substring(0, 200) : JSON.stringify(data.data).substring(0, 200))
       }
-      
+
       // Mensagens de chat - tentar múltiplos formatos de evento
-      if (data.event === 'App\\Events\\ChatMessageEvent' || 
-          data.event === 'ChatMessageEvent' ||
-          data.event === 'chat-message' ||
-          data.event === 'ChatMessage' ||
-          data.event === 'message') {
+      if (data.event === 'App\\Events\\ChatMessageEvent' ||
+        data.event === 'ChatMessageEvent' ||
+        data.event === 'chat-message' ||
+        data.event === 'ChatMessage' ||
+        data.event === 'message') {
         console.log('[Kick] Mensagem de chat recebida!')
-        
+
         // Quando receber primeira mensagem, verificar YouTube (economiza quota)
         checkYouTubeOnKickActivity()
-        
+
         const messageData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data
         handleChatMessage(messageData)
       }
@@ -239,11 +239,11 @@ function connectWebSocket(chatroomId: number): void {
  */
 function handleChatMessage(message: KickChatMessage): void {
   console.log('[Kick] Processando mensagem:', message.content?.substring(0, 50))
-  
+
   // Mapear badges da Kick
   const rawBadges = message.sender?.identity?.badges || []
   const badges: string[] = []
-  
+
   rawBadges.forEach(badge => {
     const badgeType = badge.type?.toLowerCase() || ''
     // Mapear tipos de badges da Kick para nomes padrão
@@ -263,16 +263,16 @@ function handleChatMessage(message: KickChatMessage): void {
       badges.push(badgeType)
     }
   })
-  
+
   // Log para debug
   if (badges.length > 0) {
     console.log('[Kick] Badges do usuário', message.sender?.username, ':', badges)
   }
-  
+
   const username = message.sender?.username || 'Anônimo'
   const userId = String(message.sender?.id || 'unknown')
   const content = message.content
-  
+
   chatHub.broadcast({
     id: message.id,
     platform: 'kick',
@@ -282,7 +282,7 @@ function handleChatMessage(message: KickChatMessage): void {
     timestamp: new Date(message.created_at).getTime(),
     badges
   })
-  
+
   // Processar comandos (ex: !testmod)
   if (content.startsWith('!')) {
     processCommand({
@@ -307,8 +307,8 @@ function handleChatMessage(message: KickChatMessage): void {
  * @param userKickId - ID do usuário na Kick (opcional, usado como fallback para broadcaster_user_id)
  */
 export async function sendKickMessage(
-  username: string, 
-  accessToken: string, 
+  username: string,
+  accessToken: string,
   message: string,
   userKickId?: string
 ): Promise<boolean> {
@@ -320,13 +320,13 @@ export async function sendKickMessage(
   try {
     // Buscar o broadcaster_user_id do canal usando a API autenticada
     let broadcasterId = await getBroadcasterUserIdWithAuth(accessToken)
-    
+
     // Se não conseguir, tentar usar o ID do usuário (caso seja o próprio canal do usuário)
     if (!broadcasterId && userKickId) {
       console.log('[Kick] Usando userKickId como broadcaster_user_id:', userKickId)
       broadcasterId = parseInt(userKickId, 10)
     }
-    
+
     if (!broadcasterId) {
       console.error('[Kick] Não foi possível obter o broadcaster_user_id')
       console.error('[Kick] Configure KICK_BROADCASTER_USER_ID no .env.local com o ID do canal waveigl')
@@ -409,7 +409,7 @@ async function getBroadcasterUserIdWithAuth(accessToken: string): Promise<number
     if (res.ok) {
       const data = await res.json()
       console.log('[Kick] Channel data:', JSON.stringify(data))
-      
+
       // Tentar extrair o broadcaster_user_id
       if (data.data && Array.isArray(data.data) && data.data.length > 0) {
         cachedBroadcasterId = data.data[0].broadcaster_user_id
@@ -471,7 +471,7 @@ async function getBroadcasterUserId(): Promise<number | null> {
         'Origin': 'https://kick.com'
       }
     })
-    
+
     if (!res.ok) {
       const errorText = await res.text()
       console.error('[Kick] Erro ao buscar canal:', res.status, errorText)
@@ -479,7 +479,7 @@ async function getBroadcasterUserId(): Promise<number | null> {
     }
 
     const data = await res.json()
-    
+
     // O user_id está no campo user.id
     if (data?.user?.id) {
       cachedBroadcasterId = data.user.id
@@ -523,12 +523,12 @@ export async function refreshKickToken(
   try {
     const clientId = process.env.KICK_CLIENT_ID
     const clientSecret = process.env.KICK_CLIENT_SECRET
-    
+
     if (!clientId || !clientSecret) {
       console.error('[Kick] Client ID ou Secret não configurados')
       return null
     }
-    
+
     const tokenResponse = await fetch('https://id.kick.com/oauth/token', {
       method: 'POST',
       headers: {
@@ -541,38 +541,45 @@ export async function refreshKickToken(
         refresh_token: refreshToken,
       }),
     })
-    
+
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
       console.error('[Kick] Erro ao renovar token:', tokenResponse.status, errorText)
       return null
     }
-    
+
     const tokenData = await tokenResponse.json()
-    
+
     if (!tokenData.access_token) {
       console.error('[Kick] Resposta de token inválida:', tokenData)
       return null
     }
-    
+
+    // Calcular data de expiração (agora + expires_in segundos)
+    const expiresAt = tokenData.expires_in
+      ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+      : null
+
     // Atualizar o token no banco de dados
     const { error: updateError } = await db
       .from('linked_accounts')
       .update({
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token || refreshToken, // Manter o antigo se não vier novo
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
       })
       .eq('user_id', userId)
       .eq('platform', 'kick')
-    
+
     if (updateError) {
       console.error('[Kick] Erro ao salvar novo token:', updateError)
     } else {
-      console.log('[Kick] Token renovado com sucesso')
+      console.log('[Kick] Token renovado com sucesso. Expira em:', expiresAt)
     }
-    
+
     return tokenData.access_token
-    
+
   } catch (error) {
     console.error('[Kick] Erro ao renovar token:', error)
     return null

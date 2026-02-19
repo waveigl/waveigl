@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { createSessionCookie, parseSessionCookie } from '@/lib/auth/session'
-import { 
-  generateCodeVerifier, 
-  generateCodeChallenge, 
+import {
+  generateCodeVerifier,
+  generateCodeChallenge,
   generateState,
   buildAuthorizationUrl,
   exchangeCodeForTokens,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     // Armazenar code_verifier e state em cookies seguros
     const cookieStore = await cookies()
-    
+
     cookieStore.set('kick_code_verifier', codeVerifier, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       maxAge: 600, // 10 minutos
       path: '/'
     })
-    
+
     cookieStore.set('kick_oauth_state', stateValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
       // Tentar achar usuário existente por email
       const { data: { users } } = await supabase.auth.admin.listUsers()
       const existingUser = users.find(u => u.email === email)
-      
+
       if (existingUser) {
         userId = existingUser.id
         await ensureProfileExists(supabase, userId, email, kickUser)
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
         })
         if (createError || !user) throw createError
         userId = user.id
-        
+
         await ensureProfileExists(supabase, userId, email, kickUser)
       }
     }
@@ -187,6 +187,11 @@ export async function GET(request: NextRequest) {
       is_moderator: isModerator
     })
 
+    // Calcular data de expiração
+    const expiresAt = tokenData.expires_in
+      ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+      : null
+
     const { error: upsertError } = await supabase
       .from('linked_accounts')
       .upsert({
@@ -196,12 +201,13 @@ export async function GET(request: NextRequest) {
         platform_username: kickUser.name,
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
+        expires_at: expiresAt,
         is_moderator: isModerator,
         authorized_scopes: REQUIRED_SCOPES.kick,
         needs_reauth: false,
-      }, { 
+      }, {
         onConflict: 'platform,platform_user_id',
-        ignoreDuplicates: false 
+        ignoreDuplicates: false
       })
 
     if (upsertError) {
@@ -225,7 +231,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(`${appUrl}/dashboard?success=kick_linked`)
     response.cookies.delete('kick_code_verifier')
     response.cookies.delete('kick_oauth_state')
-    
+
     // Criar sessão se não estiver logado
     if (!currentUserId) {
       const sessionCookie = await createSessionCookie(userId)
@@ -236,7 +242,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('[Kick Auth] Erro:', error)
-    
+
     // Limpar cookies em caso de erro
     const response = NextResponse.redirect(`${appUrl}/dashboard?error=kick_auth_failed`)
     response.cookies.delete('kick_code_verifier')

@@ -588,17 +588,17 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
     return 'unknown'
   }
 
-  const handleModeration = (userId: string, platform: Platform, action: string, duration?: number) => {
-    onModerate(userId, platform, action as any, duration, 'Moderação via chat unificado')
+  const handleModeration = (userId: string, username: string, platform: Platform, action: string, duration?: number) => {
+    onModerate(userId, username, platform, action as any, duration, 'Moderação via chat unificado')
     setShowModerationMenu(null)
     setShowCustomTimeout(false)
     setCustomTimeoutInput('')
   }
 
-  const handleCustomTimeout = (userId: string, platform: Platform) => {
+  const handleCustomTimeout = (userId: string, username: string, platform: Platform) => {
     // Se for permanente, chamar ban
     if (customTimeoutUnit === 'permanent') {
-      handleModeration(userId, platform, 'ban')
+      handleModeration(userId, username, platform, 'ban')
       return
     }
 
@@ -626,7 +626,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
         seconds = value * 24 * 60 * 60 // default: dias
     }
 
-    handleModeration(userId, platform, 'timeout', seconds)
+    handleModeration(userId, username, platform, 'timeout', seconds)
   }
 
   // Verifica se o usuário tem badge de moderador
@@ -972,7 +972,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
 
                       {/* Nome do usuário */}
                       <span className={`font-semibold text-sm ${message.badges?.includes('system') ? 'text-yellow-500' :
-                          hasModeratorBadge(message.badges) ? 'text-green-400' : 'text-foreground'
+                        hasModeratorBadge(message.badges) ? 'text-green-400' : 'text-foreground'
                         }`}>
                         {message.username}
                       </span>
@@ -1051,7 +1051,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleModeration(getMessageUserId(message), message.platform, 'timeout', 86400)}
+                        onClick={() => handleModeration(getMessageUserId(message), message.username, message.platform, 'timeout', 86400)}
                         className="h-7 px-2 text-xs text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10"
                         title="Timeout 1 dia"
                       >
@@ -1061,7 +1061,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleModeration(getMessageUserId(message), message.platform, 'timeout', 1209600)}
+                        onClick={() => handleModeration(getMessageUserId(message), message.username, message.platform, 'timeout', 1209600)}
                         className="h-7 px-2 text-xs text-orange-500 hover:text-orange-400 hover:bg-orange-500/10"
                         title="Timeout 14 dias"
                       >
@@ -1137,7 +1137,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => handleCustomTimeout(getMessageUserId(message), message.platform)}
+                            onClick={() => handleCustomTimeout(getMessageUserId(message), message.username, message.platform)}
                             disabled={customTimeoutUnit !== 'permanent' && (!customTimeoutInput || parseInt(customTimeoutInput) < 1)}
                             className="h-7 text-xs w-full"
                           >
@@ -1151,7 +1151,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleModeration(getMessageUserId(message), message.platform, 'ban')}
+                        onClick={() => handleModeration(getMessageUserId(message), message.username, message.platform, 'ban')}
                         className="w-full justify-start text-destructive hover:bg-destructive/10"
                       >
                         <Ban className="w-3 h-3 mr-2" />
@@ -1161,7 +1161,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleModeration(getMessageUserId(message), message.platform, 'unban')}
+                        onClick={() => handleModeration(getMessageUserId(message), message.username, message.platform, 'unban')}
                         className="w-full justify-start text-green-500 hover:bg-green-500/10"
                       >
                         <RotateCcw className="w-3 h-3 mr-2" />
@@ -1185,9 +1185,9 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
             {(isPopup || isCompactMode) && (
               <span
                 className={`w-3 h-3 rounded-full shrink-0 ${sendPlatform === 'all' ? 'bg-gradient-to-r from-purple-600 via-red-500 to-green-500' :
-                    sendPlatform === 'kick' ? 'bg-green-500' :
-                      sendPlatform === 'twitch' ? 'bg-purple-600' :
-                        sendPlatform === 'youtube' ? 'bg-red-600' : 'bg-muted'
+                  sendPlatform === 'kick' ? 'bg-green-500' :
+                    sendPlatform === 'twitch' ? 'bg-purple-600' :
+                      sendPlatform === 'youtube' ? 'bg-red-600' : 'bg-muted'
                   }`}
                 title={`Enviando para: ${sendPlatform === 'all' ? 'Todos' : sendPlatform}`}
               />
