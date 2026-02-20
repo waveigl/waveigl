@@ -10,7 +10,7 @@ import { PlatformSelector } from '@/components/PlatformSelector'
 import { LiveInfoPanel } from '@/components/LiveInfoPanel'
 import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
-import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, CreditCard, XCircle } from 'lucide-react'
+import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, CreditCard, XCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, PanelRightClose, PanelRightOpen, PanelBottomClose, PanelBottomOpen, LayoutPanelTop } from 'lucide-react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ProfileEditor } from '@/components/ProfileEditor'
@@ -250,6 +250,56 @@ export default function DashboardPage() {
     videoId: string | null
     liveChatId: string | null
   }>({ isLive: false, videoId: null, liveChatId: null })
+
+  // Estados para Layout Customizável
+  const [chatWidth, setChatWidth] = useState(384) // Padrão: w-96 (384px)
+  const [bottomHeight, setBottomHeight] = useState(400) // Padrão
+  const [isChatVisible, setIsChatVisible] = useState(true)
+  const [isBottomVisible, setIsBottomVisible] = useState(true)
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+
+  // Refs para controle de redimensionamento
+  const isResizingChat = useRef(false)
+  const isResizingBottom = useRef(false)
+
+  // Handlers para redimensionamento
+  const startResizingChat = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizingChat.current = true
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'col-resize'
+  }, [])
+
+  const startResizingBottom = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizingBottom.current = true
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'row-resize'
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    isResizingChat.current = false
+    isResizingBottom.current = false
+    document.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('mouseup', stopResizing)
+    document.body.style.cursor = 'default'
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isResizingChat.current) {
+      const newWidth = window.innerWidth - e.clientX
+      if (newWidth >= 300 && newWidth <= 800) {
+        setChatWidth(newWidth)
+      }
+    } else if (isResizingBottom.current) {
+      const newHeight = window.innerHeight - e.clientY
+      if (newHeight >= 150 && newHeight <= 600) {
+        setBottomHeight(newHeight)
+      }
+    }
+  }, [])
 
   // Sincronizar sessão com popups via BroadcastChannel
   const sessionData = useMemo(() => ({
@@ -897,9 +947,27 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Overlay para suavizar redimensionamento (evita problemas com IFrames) */}
+      {(isResizingChat.current || isResizingBottom.current) && (
+        <div className="fixed inset-0 z-[100] cursor-col-resize select-none" />
+      )}
+
+      {/* Botão flutuante para restaurar header se oculto */}
+      {!isHeaderVisible && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsHeaderVisible(true)}
+          className="absolute top-0 left-1/2 -translate-x-1/2 z-50 bg-card rounded-t-none border-x border-b border-border h-6 px-4 hover:bg-muted"
+          title="Mostrar Menu"
+        >
+          <ChevronDown className="w-4 h-4" />
+        </Button>
+      )}
+
       {/* Header */}
-      <header className="bg-card border-b border-border">
+      <header className={`bg-card border-b border-border transition-all duration-300 overflow-hidden ${isHeaderVisible ? 'h-[73px]' : 'h-0 opacity-0'}`}>
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
@@ -912,6 +980,16 @@ export default function DashboardPage() {
               />
               <span className="text-xl font-bold text-foreground">WaveIGL</span>
             </div>
+            {/* Botão Ocultar Header */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsHeaderVisible(false)}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="Ocultar Menu"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </Button>
             {/* Indicador de status do Clube + Botão de assinar */}
             <div className="flex items-center gap-2">
               {isClubMember === null ? (
@@ -1147,7 +1225,7 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content */}
-      <div className={`flex flex-col ${accountsNeedingReauth.length > 0 ? 'h-[calc(100vh-140px)]' : 'h-[calc(100vh-80px)]'} overflow-hidden`}>
+      <div className="flex flex-col flex-1 overflow-hidden">
 
 
         <div className="flex flex-1 overflow-hidden">
@@ -1165,84 +1243,166 @@ export default function DashboardPage() {
               <VideoPlayer
                 platform={selectedPlatform}
                 channelId="waveigl"
-                className="w-full h-full rounded-lg"
+                className="w-full h-full rounded-lg shadow-2xl"
                 youtubeStatusFromSSE={youtubeStatus}
               />
             </div>
           </div>
 
+          {/* Resizer Handle Horizontal */}
+          {isChatVisible && (
+            <div
+              onMouseDown={startResizingChat}
+              className="w-1.5 cursor-col-resize bg-border/40 hover:bg-primary/50 transition-colors z-10"
+              title="Arraste para redimensionar o chat"
+            />
+          )}
+
           {/* Chat Section */}
-          <div className="w-96 border-l border-border bg-card flex flex-col shrink-0">
-            <div className="p-4 border-b border-border shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Mensagens de Twitch, YouTube e Kick
-                  </p>
-                </div>
-                {/* Botão para streamer/admin desativar chat quando offline */}
-                {user?.role && (user.role === 'streamer' || user.role === 'admin') && (
-                  <Button
-                    size="sm"
-                    variant={isChatEnabled ? 'default' : 'outline'}
-                    onClick={() => setIsChatEnabled(!isChatEnabled)}
-                    className={isChatEnabled ? 'bg-green-600 hover:bg-green-700' : 'border-red-500 text-red-500'}
-                    title={isChatEnabled ? 'Chat ativo - Clique para desativar' : 'Chat desativado - Clique para ativar'}
-                  >
-                    {isChatEnabled ? '🟢 Ativo' : '🔴 Offline'}
-                  </Button>
-                )}
-              </div>
+          <div
+            style={{ width: isChatVisible ? `${chatWidth}px` : '48px' }}
+            className="border-l border-border bg-card flex flex-col shrink-0 transition-[width] duration-300 relative group"
+          >
+            {/* Botão Shelve Chat */}
+            <button
+              onClick={() => setIsChatVisible(!isChatVisible)}
+              className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 bg-card border border-border rounded-full p-1 shadow-md hover:bg-muted transition-all opacity-0 group-hover:opacity-100"
+              title={isChatVisible ? "Recolher Chat" : "Abrir Chat"}
+            >
+              {isChatVisible ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            </button>
 
-              {/* Contadores de Moderação */}
-              {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
-                <ModerationStats actions={moderationActions} compact={true} />
-              )}
-            </div>
-
-            <div className="flex-1 min-h-0">
-              {isChatEnabled ? (
-                <UnifiedChat
-                  messages={messages}
-                  onSendMessage={handleSendMessage}
-                  isModerator={isModerator}
-                  onModerate={handleModerate}
-                  isLogged={!!user}
-                  youtubeStatusFromSSE={youtubeStatus}
-                  currentUser={user ? {
-                    id: user.id,
-                    is_moderator: isModerator,
-                    role: user.role || 'user',
-                    linkedAccounts: linkedAccounts.map(acc => ({
-                      platform: acc.platform as Platform,
-                      platform_user_id: acc.platform_user_id,
-                      platform_username: acc.platform_username,
-                      is_moderator: acc.is_moderator
-                    }))
-                  } : undefined}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <p className="text-lg mb-2">💤 Chat desativado</p>
-                    <p className="text-sm">O streamer desativou o chat enquanto está offline.</p>
+            <div className={`p-4 border-b border-border shrink-0 flex items-center justify-between ${!isChatVisible ? 'h-full py-8' : ''}`}>
+              {isChatVisible ? (
+                <>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Chat Unificado</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Mensagens sincronizadas
+                    </p>
                   </div>
+                  {/* Botão para streamer/admin desativar chat quando offline */}
+                  {user?.role && (user.role === 'streamer' || user.role === 'admin') && (
+                    <Button
+                      size="sm"
+                      variant={isChatEnabled ? 'default' : 'outline'}
+                      onClick={() => setIsChatEnabled(!isChatEnabled)}
+                      className={isChatEnabled ? 'bg-green-600/20 text-green-400 hover:bg-green-600/30' : 'border-red-500/50 text-red-500'}
+                      title={isChatEnabled ? 'Chat ativo' : 'Chat desativado'}
+                    >
+                      {isChatEnabled ? '🟢' : '🔴'}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <div
+                  className="flex flex-col items-center gap-6 cursor-pointer"
+                  onClick={() => setIsChatVisible(true)}
+                >
+                  <PanelRightOpen className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest [writing-mode:vertical-lr]">CHAT</span>
                 </div>
               )}
             </div>
+
+            {isChatVisible && (
+              <>
+                {/* Contadores de Moderação */}
+                {(user?.role === 'streamer' || user?.role === 'admin') && moderationActions.length > 0 && (
+                  <div className="px-4 py-2 border-b border-border bg-muted/20">
+                    <ModerationStats actions={moderationActions} compact={true} />
+                  </div>
+                )}
+
+                <div className="flex-1 min-h-0">
+                  {isChatEnabled ? (
+                    <UnifiedChat
+                      messages={messages}
+                      onSendMessage={handleSendMessage}
+                      isModerator={isModerator}
+                      onModerate={handleModerate}
+                      isLogged={!!user}
+                      youtubeStatusFromSSE={youtubeStatus}
+                      currentUser={user ? {
+                        id: user.id,
+                        is_moderator: isModerator,
+                        role: user.role || 'user',
+                        linkedAccounts: linkedAccounts.map(acc => ({
+                          platform: acc.platform as Platform,
+                          platform_user_id: acc.platform_user_id,
+                          platform_username: acc.platform_username,
+                          is_moderator: acc.is_moderator
+                        }))
+                      } : undefined}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground p-8 text-center">
+                      <div>
+                        <p className="text-lg mb-2">💤 Chat desativado</p>
+                        <p className="text-sm">Inativo pelo streamer.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
+        {/* Resizer Handle Vertical */}
+        {(user?.role === 'streamer' || user?.role === 'admin') && isBottomVisible && (
+          <div
+            onMouseDown={startResizingBottom}
+            className="h-1.5 cursor-row-resize bg-border/40 hover:bg-primary/50 transition-colors z-10"
+            title="Arraste para redimensionar o painel inferior"
+          />
+        )}
+
         {/* Painel de Estatísticas e Informações de Live */}
         {(user?.role === 'streamer' || user?.role === 'admin') && (
-          <div className="p-6 border-t border-border space-y-6">
-            <DashboardStats />
-            <LiveInfoPanel
-              isStreamer={isOwner(user?.role)}
-              isAdmin={isAdmin(user?.role)}
-              onRefresh={loadModerationActions}
-            />
+          <div
+            style={{ height: isBottomVisible ? `${bottomHeight}px` : '40px' }}
+            className={`border-t border-border bg-card relative transition-[height] duration-300 group ${!isBottomVisible ? 'overflow-hidden' : ''}`}
+          >
+            {/* Botão Shelve Bottom Panel */}
+            <button
+              onClick={() => setIsBottomVisible(!isBottomVisible)}
+              className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-card border border-border rounded-full p-1 shadow-md hover:bg-muted transition-all opacity-0 group-hover:opacity-100"
+              title={isBottomVisible ? "Recolher Painel" : "Expandir Painel"}
+            >
+              {isBottomVisible ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </button>
+
+            {!isBottomVisible ? (
+              <div
+                className="h-full flex items-center justify-center gap-3 cursor-pointer"
+                onClick={() => setIsBottomVisible(true)}
+              >
+                <LayoutPanelTop className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Painel de Infos & Stats</span>
+              </div>
+            ) : (
+              <div className="h-full overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500" />
+                    Gerenciamento da Live
+                  </h3>
+                  <Button variant="ghost" size="sm" onClick={() => setIsBottomVisible(false)}>
+                    <Minimize2 className="w-4 h-4 mr-2" />
+                    Ocultar
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  <DashboardStats />
+                  <LiveInfoPanel
+                    isStreamer={isOwner(user?.role)}
+                    isAdmin={isAdmin(user?.role)}
+                    onRefresh={loadModerationActions}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
