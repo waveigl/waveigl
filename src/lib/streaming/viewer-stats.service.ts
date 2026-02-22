@@ -70,6 +70,10 @@ export class ViewerStatsService {
     async fetchYouTubeViewers(): Promise<number> {
         try {
             const liveInfo = await getCurrentYouTubeLive()
+            // Only return viewer count if the stream is confirmed live
+            if (!liveInfo.isLive) {
+                return 0
+            }
             return liveInfo.viewerCount || 0
         } catch (error) {
             console.error('[ViewerStats] YouTube error:', error)
@@ -117,18 +121,31 @@ export class ViewerStatsService {
             }
 
             // Smart Tracking logic:
-            // 1. Fetch Twitch and YouTube viewers
+            // 1. Fetch Twitch viewers (Primary Indicator)
             const twitch = await this.fetchTwitchViewers()
-            const youtube = await this.fetchYouTubeViewers()
 
+            let youtube = 0
             let kick = 0
 
-            // 2. Only fetch Kick if Twitch or YouTube is live (indicates stream started)
-            if (twitch > 0 || youtube > 0) {
-                console.log('[ViewerStats] Stream is live, fetching Kick stats...')
+            // Smart Tracking logic (Optimized):
+            // The user rarely streams on YouTube, so we only check it if we are sure 
+            // the stream is actually happening (Twitch or Kick is online).
+            // This avoids YouTube scraping false-positives from previous/recorded lives.
+
+            if (twitch > 0) {
+                console.log('[ViewerStats] Twitch is live, fetching others...')
+                youtube = await this.fetchYouTubeViewers()
                 kick = await this.fetchKickViewers()
             } else {
-                console.log('[ViewerStats] All platforms offline, skipping Kick check.')
+                console.log('[ViewerStats] Twitch offline, checking Kick...')
+                kick = await this.fetchKickViewers()
+
+                if (kick > 0) {
+                    console.log('[ViewerStats] Kick is live, fetching YouTube...')
+                    youtube = await this.fetchYouTubeViewers()
+                } else {
+                    console.log('[ViewerStats] All primary platforms offline, YouTube check skipped.')
+                }
             }
 
             const total = twitch + youtube + kick

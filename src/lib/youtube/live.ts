@@ -435,6 +435,8 @@ async function scrapeLiveDetection(): Promise<LiveStreamInfo> {
 
     if (result.isLive) {
       console.log('[YouTube] ✅ Live detectada via scraping:', result.videoId)
+    } else {
+      console.log('[YouTube] ℹ️ Metadados encontrados via scraping, mas stream não parece estar ao vivo:', result.videoId)
     }
 
     return result
