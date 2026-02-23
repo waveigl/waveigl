@@ -29,7 +29,8 @@ export const REQUIRED_SCOPES = {
   ],
   youtube: [
     'https://www.googleapis.com/auth/youtube.readonly',
-    'https://www.googleapis.com/auth/youtube' // Permite gerenciar canal, chat, etc
+    'https://www.googleapis.com/auth/youtube', // Permite gerenciar canal, chat, etc
+    'https://www.googleapis.com/auth/contacts' // Permite gerenciar contatos
   ],
   kick: [
     'user:read',
@@ -43,7 +44,7 @@ export const REQUIRED_SCOPES = {
  */
 export function scopesToString(platform: 'twitch' | 'youtube' | 'kick'): string {
   const scopes = REQUIRED_SCOPES[platform]
-  
+
   if (platform === 'twitch') {
     return scopes.join('+')
   } else if (platform === 'youtube') {
@@ -51,7 +52,7 @@ export function scopesToString(platform: 'twitch' | 'youtube' | 'kick'): string 
   } else if (platform === 'kick') {
     return scopes.join(' ')
   }
-  
+
   return scopes.join(' ')
 }
 
@@ -65,7 +66,7 @@ export function hasAllRequiredScopes(
   if (!authorizedScopes || authorizedScopes.length === 0) {
     return false
   }
-  
+
   const required = REQUIRED_SCOPES[platform]
   return required.every(scope => authorizedScopes.includes(scope))
 }
@@ -80,7 +81,7 @@ export function getMissingScopes(
   if (!authorizedScopes) {
     return [...REQUIRED_SCOPES[platform]]
   }
-  
+
   const required = REQUIRED_SCOPES[platform]
   return required.filter(scope => !authorizedScopes.includes(scope))
 }

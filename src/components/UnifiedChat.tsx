@@ -5,7 +5,7 @@ import { trackEvent, AnalyticsEvents } from '@/lib/analytics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { UnifiedChatProps, Platform, ChatMessage, UserRole, UnifiedMessage } from '@/types'
-import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X, ChevronUp, ChevronDown, ExternalLink, Minimize2, Maximize2 } from 'lucide-react'
+import { Send, Shield, Clock, Ban, Lock, Crown, Sword, Star, Timer, Loader2, Check, AlertCircle, RotateCcw, Gem, Settings, X, ChevronUp, ChevronDown, ExternalLink, Minimize2, Maximize2, MoreHorizontal } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 // Limites padrão de mensagens por role
@@ -1191,7 +1191,30 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         14d
                       </Button>
 
-                      {/* Botão para menu completo */}
+                      {/* Botão de Ban Rápido - Apenas para Streamer/Owner */}
+                      {(currentUser?.role === 'streamer' || currentUser?.role === 'owner') && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            // Se a mensagem já indica que foi deletada ou se estivéssemos rastreando o estado de ban,
+                            // poderíamos alternar. Para este MVP, vamos de toggle por ação.
+                            // Nota: O backend handleModeration chama onModerate.
+                            handleModeration(
+                              getMessageUserId(message),
+                              message.username,
+                              message.platform,
+                              'ban' // No toggle real precisaríamos do status atual do usuário (banned: boolean)
+                            )
+                          }}
+                          className="h-7 px-2 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                          title="Banimento Direto"
+                        >
+                          <Shield className="w-3 h-3" />
+                        </Button>
+                      )}
+
+                      {/* Botão para menu completo (3 circulos) */}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -1202,7 +1225,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
                         className="h-7 px-2 text-muted-foreground hover:text-foreground"
                         title="Mais opções"
                       >
-                        <Shield className="w-3 h-3" />
+                        <MoreHorizontal className="w-3 h-3" />
                       </Button>
                     </div>
                   )}

@@ -13,7 +13,8 @@ const profileSchema = z.object({
   phone_number: z.string().optional().refine(
     (val) => !val || phoneRegex.test(val.replace(/\s/g, '')),
     { message: 'Número de telefone inválido' }
-  )
+  ),
+  consent_google_contacts: z.boolean().optional()
 })
 
 // Função para normalizar telefone (remove caracteres especiais, mantém apenas números)
@@ -40,12 +41,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Dados inválidos', details: result.error.flatten() }, { status: 400 })
     }
 
-    const { full_name, birth_date, phone_number } = result.data
-    
+    const { full_name, birth_date, phone_number, consent_google_contacts } = result.data
+
     // Buscar perfil atual
     const { data: profile, error: fetchError } = await getSupabaseAdmin()
       .from('profiles')
-      .select('birth_date, birth_date_edits, last_profile_edit_at, phone_number, last_phone_edit_at')
+      .select('birth_date, birth_date_edits, last_profile_edit_at, phone_number, last_phone_edit_at, consent_google_contacts')
       .eq('id', session.userId)
       .single()
 
@@ -62,8 +63,8 @@ export async function PUT(request: NextRequest) {
         const lastEdit = new Date(profile.last_profile_edit_at)
         const diffDays = Math.floor((now.getTime() - lastEdit.getTime()) / (1000 * 60 * 60 * 24))
         if (diffDays < 30) {
-          return NextResponse.json({ 
-            error: `Aguarde ${30 - diffDays} dias para editar o nome novamente.` 
+          return NextResponse.json({
+            error: `Aguarde ${30 - diffDays} dias para editar o nome novamente.`
           }, { status: 400 })
         }
       }
@@ -75,33 +76,40 @@ export async function PUT(request: NextRequest) {
     if (birth_date !== undefined) {
       // Se a data enviada for igual a atual, ignorar
       if (birth_date !== profile.birth_date) {
-         if ((profile.birth_date_edits || 0) >= 2) {
-            return NextResponse.json({ error: 'Limite de edições de data de nascimento atingido.' }, { status: 400 })
-         }
-         updates.birth_date = birth_date
-         updates.birth_date_edits = (profile.birth_date_edits || 0) + 1
+        if ((profile.birth_date_edits || 0) >= 2) {
+          return NextResponse.json({ error: 'Limite de edições de data de nascimento atingido.' }, { status: 400 })
+        }
+        updates.birth_date = birth_date
+        updates.birth_date_edits = (profile.birth_date_edits || 0) + 1
       }
     }
 
     // Validação de 30 dias para phone_number
     if (phone_number !== undefined) {
       const normalizedPhone = phone_number ? normalizePhone(phone_number) : null
-      
+
       // Se o telefone enviado for igual ao atual (normalizado), ignorar
       const currentNormalized = profile.phone_number ? normalizePhone(profile.phone_number) : null
-      
+
       if (normalizedPhone !== currentNormalized) {
         if (profile.last_phone_edit_at) {
           const lastEdit = new Date(profile.last_phone_edit_at)
           const diffDays = Math.floor((now.getTime() - lastEdit.getTime()) / (1000 * 60 * 60 * 24))
           if (diffDays < 30) {
-            return NextResponse.json({ 
-              error: `Aguarde ${30 - diffDays} dias para editar o telefone novamente.` 
+            return NextResponse.json({
+              error: `Aguarde ${30 - diffDays} dias para editar o telefone novamente.`
             }, { status: 400 })
           }
         }
         updates.phone_number = normalizedPhone
         updates.last_phone_edit_at = now.toISOString()
+      }
+    }
+
+    // Consentimento para contatos
+    if (consent_google_contacts !== undefined) {
+      if (consent_google_contacts !== profile.consent_google_contacts) {
+        updates.consent_google_contacts = consent_google_contacts
       }
     }
 
@@ -117,6 +125,15 @@ export async function PUT(request: NextRequest) {
     if (updateError) {
       console.error('Erro update profile:', updateError)
       return NextResponse.json({ error: 'Erro ao atualizar perfil' }, { status: 500 })
+    }
+
+    // Sincronizar com Google Contacts se o telefone, nome ou consentimento mudaram
+    // Fazemos isso de forma assíncrona (não bloqueante para o usuário)
+    if (updates.phone_number || updates.full_name || updates.consent_google_contacts) {
+      const { syncUserToGoogleContacts } = await import('@/lib/google/contacts')
+      syncUserToGoogleContacts(session.userId).catch(err =>
+        console.error('[API] Erro ao sincronizar contatos:', err)
+      )
     }
 
     return NextResponse.json({ success: true })

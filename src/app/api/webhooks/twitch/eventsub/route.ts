@@ -160,6 +160,44 @@ export async function POST(request: NextRequest) {
           })
           break
 
+        // Perfil do usuário atualizado (Nick Change)
+        case 'user.update':
+          try {
+            console.log(`[TwitchEventSub] Usuário atualizou perfil: ${event.user_id} -> ${event.user_login} (${event.user_name})`)
+            const supabase = (await import('@/lib/supabase/server')).getSupabaseAdmin()
+
+            // 1. Atualizar display_name no banco de dados para todos os locais onde o ID do usuário da plataforma bate
+            // Precisamos encontrar qual perfil WaveIGL pertence a este platform_user_id
+            const { data: accounts, error: accountError } = await supabase
+              .from('linked_accounts')
+              .select('user_id')
+              .eq('platform', 'twitch')
+              .eq('platform_user_id', event.user_id)
+
+            if (!accountError && accounts && accounts.length > 0) {
+              const waveUserId = accounts[0].user_id
+
+              // 2. Atualizar o profile com o novo nick
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .update({ display_name: event.user_name })
+                .eq('id', waveUserId)
+
+              if (!profileError) {
+                console.log(`[TwitchEventSub] Nick atualizado para ${event.user_name} no perfil WaveIGL ${waveUserId}`)
+
+                // 3. Re-sincronizar contatos se houver telefone
+                const { syncUserToGoogleContacts } = await import('@/lib/google/contacts')
+                syncUserToGoogleContacts(waveUserId).catch(err =>
+                  console.error('[TwitchEventSub] Erro ao re-sincronizar contato após nick change:', err)
+                )
+              }
+            }
+          } catch (error) {
+            console.error('[TwitchEventSub] Erro ao processar user.update:', error)
+          }
+          break
+
         // Sub recebida como gift
         case 'channel.subscription.message':
           try {
@@ -237,12 +275,13 @@ export async function POST(request: NextRequest) {
 
 // GET para verificação manual
 export async function GET() {
-  return NextResponse.json({ 
+  return NextResponse.json({
     status: 'Twitch EventSub webhook ativo',
     events: [
       'channel.subscribe',
       'channel.subscription.gift',
-      'channel.subscription.message'
+      'channel.subscription.message',
+      'user.update'
     ]
   })
 }
