@@ -251,6 +251,10 @@ export default function DashboardPage() {
     liveChatId: string | null
   }>({ isLive: false, videoId: null, liveChatId: null })
 
+  // Estados para cancelamento de assinatura
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
+
   // Estados para Layout Customizável
   const [chatWidth, setChatWidth] = useState(384) // Padrão: w-96 (384px)
   const [bottomHeight, setBottomHeight] = useState(400) // Padrão
@@ -261,14 +265,17 @@ export default function DashboardPage() {
   // Refs para controle de redimensionamento
   const isResizingChat = useRef(false)
   const isResizingBottom = useRef(false)
+  const dashboardRef = useRef<HTMLDivElement>(null)
+  const rafId = useRef<number | null>(null)
 
-  // Handlers para redimensionamento
+  // Handlers para redimensionamento otimizados
   const startResizingChat = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     isResizingChat.current = true
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', stopResizing)
     document.body.style.cursor = 'col-resize'
+    document.body.classList.add('resizing')
   }, [])
 
   const startResizingBottom = useCallback((e: React.MouseEvent) => {
@@ -277,27 +284,61 @@ export default function DashboardPage() {
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', stopResizing)
     document.body.style.cursor = 'row-resize'
+    document.body.classList.add('resizing')
   }, [])
 
   const stopResizing = useCallback(() => {
+    if (isResizingChat.current || isResizingBottom.current) {
+      // Salvar valores finais no estado quando terminar o ajuste
+      if (dashboardRef.current) {
+        const style = window.getComputedStyle(dashboardRef.current)
+        if (isResizingChat.current) {
+          setChatWidth(parseInt(style.getPropertyValue('--chat-width'), 10))
+        } else if (isResizingBottom.current) {
+          setBottomHeight(parseInt(style.getPropertyValue('--bottom-height'), 10))
+        }
+      }
+    }
+
     isResizingChat.current = false
     isResizingBottom.current = false
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', stopResizing)
     document.body.style.cursor = 'default'
+    document.body.classList.remove('resizing')
+
+    if (rafId.current) {
+      cancelAnimationFrame(rafId.current)
+      rafId.current = null
+    }
   }, [])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isResizingChat.current) {
-      const newWidth = window.innerWidth - e.clientX
-      if (newWidth >= 300 && newWidth <= 800) {
-        setChatWidth(newWidth)
+    if (rafId.current) return
+
+    rafId.current = requestAnimationFrame(() => {
+      rafId.current = null
+      if (!dashboardRef.current) return
+
+      if (isResizingChat.current) {
+        const newWidth = window.innerWidth - e.clientX
+        if (newWidth >= 300 && newWidth <= 800) {
+          dashboardRef.current.style.setProperty('--chat-width', `${newWidth}px`)
+        }
+      } else if (isResizingBottom.current) {
+        const newHeight = window.innerHeight - e.clientY
+        if (newHeight >= 150 && newHeight <= 600) {
+          dashboardRef.current.style.setProperty('--bottom-height', `${newHeight}px`)
+        }
       }
-    } else if (isResizingBottom.current) {
-      const newHeight = window.innerHeight - e.clientY
-      if (newHeight >= 150 && newHeight <= 600) {
-        setBottomHeight(newHeight)
-      }
+    })
+  }, [])
+
+  // Atualizar variáveis CSS iniciais
+  useEffect(() => {
+    if (dashboardRef.current) {
+      dashboardRef.current.style.setProperty('--chat-width', `${chatWidth}px`)
+      dashboardRef.current.style.setProperty('--bottom-height', `${bottomHeight}px`)
     }
   }, [])
 
@@ -544,6 +585,28 @@ export default function DashboardPage() {
       }
     } catch (e) {
       console.error('Erro ao carregar ações de moderação:', e)
+    }
+  }
+
+  // Cancelar Assinatura
+  const handleCancelSubscription = async () => {
+    setIsCancelling(true)
+    try {
+      const res = await fetch('/api/subscription/cancel', { method: 'POST' })
+      const data = await res.json()
+
+      if (res.ok) {
+        alert('Assinatura cancelada com sucesso. Seu status será atualizado em breve.')
+        setIsCancelDialogOpen(false)
+        await loadUser()
+      } else {
+        alert(data.error || 'Erro ao cancelar assinatura')
+      }
+    } catch (error) {
+      console.error('Erro ao cancelar:', error)
+      alert('Erro ao processar o cancelamento')
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -998,7 +1061,11 @@ export default function DashboardPage() {
                   Verificando...
                 </Badge>
               ) : isClubMember ? (
-                <Badge className="bg-green-500/20 text-green-400 border border-green-500/30">
+                <Badge
+                  className="bg-green-500/20 text-green-400 border border-green-500/30 cursor-pointer hover:bg-green-500/30 transition-colors"
+                  onClick={() => setIsCancelDialogOpen(true)}
+                  title="Assinatura Ativa - Clique para gerenciar"
+                >
                   <Crown className="w-3 h-3 mr-1" />
                   Clube Ativo
                 </Badge>
@@ -1260,7 +1327,12 @@ export default function DashboardPage() {
 
           {/* Chat Section */}
           <div
-            style={{ width: isChatVisible ? `${chatWidth}px` : '48px' }}
+            ref={dashboardRef}
+            style={{
+              width: isChatVisible ? 'var(--chat-width, 384px)' : '48px',
+              '--chat-width': `${chatWidth}px`,
+              '--bottom-height': `${bottomHeight}px`
+            } as any}
             className="border-l border-border bg-card flex flex-col shrink-0 transition-[width] duration-300 relative group"
           >
             {/* Botão Shelve Chat */}
@@ -1361,7 +1433,7 @@ export default function DashboardPage() {
         {/* Painel de Estatísticas e Informações de Live */}
         {(user?.role === 'streamer' || user?.role === 'admin') && (
           <div
-            style={{ height: isBottomVisible ? `${bottomHeight}px` : '40px' }}
+            style={{ height: isBottomVisible ? 'var(--bottom-height, 400px)' : '40px' }}
             className={`border-t border-border bg-card relative transition-[height] duration-300 group ${!isBottomVisible ? 'overflow-hidden' : ''}`}
           >
             {/* Botão Shelve Bottom Panel */}
@@ -1471,6 +1543,48 @@ export default function DashboardPage() {
         {showAdminPanel && (
           <AdminPanel onClose={() => setShowAdminPanel(false)} />
         )}
+
+        {/* Dialog de Cancelamento de Assinatura */}
+        <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <DialogContent className="bg-card border-border text-foreground">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                Gerenciar Assinatura do Clube
+              </DialogTitle>
+              <CardDescription>
+                Você possui uma assinatura ativa do Clube WaveIGL.
+              </CardDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <Alert className="bg-amber-500/10 border-amber-500/20 text-amber-200">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription>
+                  Ao cancelar, você perderá acesso aos benefícios exclusivos, chat prioritário e badges especiais ao final do período atual.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col gap-2">
+                <h4 className="text-sm font-medium">Tem certeza que deseja cancelar?</h4>
+                <p className="text-xs text-muted-foreground">
+                  Sua assinatura no Mercado Pago será interrompida e não haverá novas cobranças.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)} disabled={isCancelling}>
+                Manter Assinatura
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelSubscription}
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Cancelando...' : 'Confirmar Cancelamento'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
