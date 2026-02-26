@@ -1010,7 +1010,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
       {/* Overlay para suavizar redimensionamento (evita problemas com IFrames) */}
       {(isResizingChat.current || isResizingBottom.current) && (
         <div className="fixed inset-0 z-[100] cursor-col-resize select-none" />
@@ -1333,7 +1333,7 @@ export default function DashboardPage() {
               '--chat-width': `${chatWidth}px`,
               '--bottom-height': `${bottomHeight}px`
             } as any}
-            className="border-l border-border bg-card flex flex-col shrink-0 transition-[width] duration-300 relative group"
+            className="border-l border-border bg-card flex flex-col h-full shrink-0 transition-[width] duration-300 relative group overflow-hidden"
           >
             {/* Botão Shelve Chat */}
             <button
