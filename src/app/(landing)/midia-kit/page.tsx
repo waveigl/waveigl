@@ -146,9 +146,7 @@ export default function MidiaKitPage() {
               <Link href="/" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
                 Sobre
               </Link>
-              <Link href="/clube-do-waveigl" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors font-medium">
-                Clube
-              </Link>
+
             </div>
           </nav>
         </div>

@@ -3,7 +3,6 @@ import crypto from 'crypto'
 import { handleSubscriptionEvent } from '@/lib/notifications/subscription'
 import { validateUUID } from '@/lib/validation/uuid'
 import { logWebhookEvent, logValidationError } from '@/lib/logging/subscription-logger'
-import { notifyDiscordOnError } from '@/lib/notifications/discord'
 
 const TWITCH_MESSAGE_ID = 'Twitch-Eventsub-Message-Id'
 const TWITCH_MESSAGE_TIMESTAMP = 'Twitch-Eventsub-Message-Timestamp'
@@ -55,13 +54,6 @@ export async function POST(request: NextRequest) {
       logWebhookEvent('error', 'Assinatura Twitch inválida', {
         source: 'twitch_eventsub',
         error: 'Invalid signature'
-      })
-
-      await notifyDiscordOnError({
-        level: 'warning',
-        title: 'Twitch EventSub Signature Verification Failed',
-        message: 'Invalid webhook signature received',
-        context: { timestamp: new Date().toISOString() }
       })
 
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
@@ -116,13 +108,6 @@ export async function POST(request: NextRequest) {
                 username: event.user_name
               })
 
-              await notifyDiscordOnError({
-                level: 'warning',
-                title: 'Twitch EventSub Validation Error',
-                message: `Invalid user ID: ${event.user_id}`,
-                context: { username: event.user_name, error: userIdValidation.error }
-              })
-
               return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
             }
 
@@ -142,12 +127,6 @@ export async function POST(request: NextRequest) {
               error: errorMessage
             })
 
-            await notifyDiscordOnError({
-              level: 'error',
-              title: 'Twitch Subscription Processing Error',
-              message: `Failed to process subscription for ${event.user_name}`,
-              context: { username: event.user_name, error: errorMessage }
-            })
           }
           break
 
@@ -230,12 +209,6 @@ export async function POST(request: NextRequest) {
               error: errorMessage
             })
 
-            await notifyDiscordOnError({
-              level: 'error',
-              title: 'Twitch Resub Processing Error',
-              message: `Failed to process resub for ${event.user_name}`,
-              context: { username: event.user_name, error: errorMessage }
-            })
           }
           break
 
@@ -258,14 +231,6 @@ export async function POST(request: NextRequest) {
     logWebhookEvent('error', 'Erro geral Twitch EventSub', {
       source: 'twitch_eventsub',
       error: errorMessage,
-      stackTrace
-    })
-
-    await notifyDiscordOnError({
-      level: 'error',
-      title: 'Twitch EventSub Webhook Error',
-      message: `Webhook processing failed: ${errorMessage}`,
-      context: { error: errorMessage, timestamp: new Date().toISOString() },
       stackTrace
     })
 

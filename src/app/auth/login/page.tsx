@@ -28,7 +28,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-white text-2xl">Acesse sua conta</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Conecte-se com uma das suas contas para acessar o clube exclusivo
+            Conecte-se com uma das suas contas para acessar o WaveIGL
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

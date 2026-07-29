@@ -6,13 +6,10 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { queueMessage } from './queue'
 import { createOrUpdateBenefit } from '@/lib/benefits'
-import { sendDiscordSubNotification } from '@/lib/notifications/discord'
 import { findLinkedUserWithProfileByUsername } from '@/lib/notifications/subscription'
 import tmi from 'tmi.js'
 
-// Configuração
 const TWITCH_CHANNEL = process.env.WAVEIGL_TWITCH_CHANNEL || 'waveigl'
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || ''
 
 // Cache para evitar processamento duplicado de comandos
 // Armazena hash do comando -> timestamp
@@ -58,48 +55,6 @@ function isCommandDuplicate(ctx: CommandContext): boolean {
   }
 
   return false
-}
-
-/**
- * Envia mensagem no Discord via Webhook
- */
-async function sendDiscordNotification(content: string, embedTitle?: string, embedDescription?: string): Promise<boolean> {
-  if (!DISCORD_WEBHOOK_URL) {
-    console.log('[Commands] DISCORD_WEBHOOK_URL não configurado')
-    return false
-  }
-
-  try {
-    const payload: any = {}
-
-    if (embedTitle || embedDescription) {
-      payload.embeds = [{
-        title: embedTitle || 'Notificação',
-        description: embedDescription || content,
-        color: 0x9146FF, // Roxo Twitch
-        timestamp: new Date().toISOString()
-      }]
-    } else {
-      payload.content = content
-    }
-
-    const response = await fetch(DISCORD_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
-    if (!response.ok) {
-      console.error('[Commands] Erro ao enviar para Discord:', response.status)
-      return false
-    }
-
-    console.log('[Commands] ✅ Notificação enviada ao Discord')
-    return true
-  } catch (error) {
-    console.error('[Commands] Erro ao enviar para Discord:', error)
-    return false
-  }
 }
 
 /**
@@ -427,18 +382,9 @@ async function handleTestSubCommand(ctx: CommandContext): Promise<void> {
     console.log(`[Commands] ⚠️ Usuário ${ctx.username} não está cadastrado no sistema`)
   }
 
-  // Mensagem de inscrição
-  const subMessage = `🎉 @${ctx.username} se inscreveu com Tier 1 na ${platformName} - Por enquanto, envie seu whatsapp no sussuro para ser convidado para o grupo exclusivo.`
+  const subMessage = `🎉 @${ctx.username} se inscreveu com Tier 1 na ${platformName}`
 
-  // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-
-  // Notificar no Discord
-  await sendDiscordNotification(
-    '',
-    '🎉 Nova Inscrição (Teste)',
-    `**Usuário:** ${ctx.username}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testsub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-  )
 
   console.log('[Commands] ✅ !testsub executado com sucesso')
 }
@@ -488,18 +434,9 @@ async function handleTestReceiveSubCommand(ctx: CommandContext): Promise<void> {
     console.log(`[Commands] ⚠️ Usuário ${ctx.username} não está cadastrado no sistema`)
   }
 
-  // Mensagem de recebimento de sub
-  const subMessage = `🎁 @${ctx.username} recebeu inscrição de presente com Tier 1 de @${gifterName} na ${platformName} - Por enquanto, envie seu whatsapp no sussuro para ser convidado para o grupo exclusivo.`
+  const subMessage = `🎁 @${ctx.username} recebeu inscrição de presente com Tier 1 de @${gifterName} na ${platformName}`
 
-  // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-
-  // Notificar no Discord
-  await sendDiscordNotification(
-    '',
-    '🎁 Inscrição de Presente Recebida (Teste)',
-    `**Recebedor:** ${ctx.username}\n**Doador:** ${gifterName}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testrecebersub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-  )
 
   console.log('[Commands] ✅ !testrecebersub executado com sucesso')
 }
@@ -520,18 +457,9 @@ async function handleTestGiftSubCommand(ctx: CommandContext): Promise<void> {
   const platformName = getPlatformDisplayName(ctx.platform)
   const receiverName = 'principedosdragoes'
 
-  // Mensagem de doação de sub
-  const subMessage = `🎁 @${ctx.username} enviou uma assinatura de presente para @${receiverName}, portanto o @${ctx.username} pode enviar no sussurro do @waveigl o link da steam para receber assinatura`
+  const subMessage = `🎁 @${ctx.username} enviou uma assinatura de presente para @${receiverName} na ${platformName}`
 
-  // Enviar em todas as plataformas
   await broadcastSubscriptionMessage(subMessage)
-
-  // Notificar no Discord
-  await sendDiscordNotification(
-    '',
-    '🎁 Inscrição de Presente Enviada (Teste)',
-    `**Doador:** ${ctx.username}\n**Recebedor:** ${receiverName}\n**Tier:** Tier 1\n**Plataforma:** ${platformName}\n**Tipo:** Teste (!testdoarsub)\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-  )
 
   console.log('[Commands] ✅ !testdoarsub executado com sucesso')
 }
@@ -587,29 +515,12 @@ async function handleTestModCommand(ctx: CommandContext): Promise<void> {
     return
   }
 
-  // 4. É moderador no sistema mas NÃO tem mod na Kick - notificar Discord
-  console.log(`[Commands] !testmod: ${ctx.username} é moderador no sistema mas NÃO tem mod na Kick. Notificando Discord...`)
+  // 4. É moderador no sistema mas NÃO tem mod na Kick
+  console.log(`[Commands] !testmod: ${ctx.username} é moderador no sistema mas NÃO tem mod na Kick.`)
 
   try {
-    // Enviar mensagem no chat da Kick
-    await sendKickMessage(`@${ctx.username} você foi identificado como moderador no sistema WaveIGL! 🎉 O streamer foi notificado para adicionar você como mod na Kick.`)
-
-    // Enviar notificação IMPORTANTE no Discord para o streamer/admin adicionar manualmente
-    await sendDiscordNotification(
-      '@everyone', // Ping para chamar atenção
-      '🚨 AÇÃO NECESSÁRIA: Adicionar Moderador na Kick',
-      `**Usuário solicitando mod:** \`${ctx.username}\`\n\n` +
-      `**Status no sistema:** ✅ Identificado como moderador\n` +
-      `**Plataforma:** Kick\n` +
-      `**User ID:** ${ctx.userId}\n\n` +
-      `⚠️ **AÇÃO MANUAL NECESSÁRIA:**\n` +
-      `O streamer ou admin precisa digitar no chat da Kick:\n` +
-      `\`\`\`\n/mod ${ctx.username}\n\`\`\`\n\n` +
-      `**Horário:** ${new Date().toLocaleString('pt-BR')}`
-    )
-
-    console.log(`[Commands] !testmod: Notificação enviada ao Discord para adicionar ${ctx.username} como mod`)
-
+    await sendKickMessage(`@${ctx.username} você foi identificado como moderador no sistema WaveIGL! 🎉`)
+    console.log(`[Commands] !testmod: ${ctx.username} identificado como mod`)
   } catch (error) {
     console.error('[Commands] !testmod: Erro ao processar:', error)
     await sendKickMessage(`@${ctx.username} erro ao processar !testmod. Tente novamente mais tarde.`)
@@ -986,12 +897,6 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
 
   if (!targetUserId) {
     console.log(`[Commands] !testto: Usuário ${targetUsername} não encontrado`)
-    // Notificar no Discord sobre a falha
-    await sendDiscordNotification(
-      '',
-      '❌ Teste de Timeout Falhou',
-      `**Iniciado por:** ${ctx.username}\n**Alvo:** ${targetUsername}\n**Erro:** Usuário não encontrado\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-    )
     return
   }
 
@@ -1009,24 +914,9 @@ async function handleTestTimeoutCommand(ctx: CommandContext): Promise<void> {
   )
 
   if (result.success) {
-    // Notificar no Discord (não depende do token do streamer)
-    await sendDiscordNotification(
-      '',
-      '🧪 Teste de Timeout com Reaplicação',
-      `**Iniciado por:** ${ctx.username}\n**Alvo:** ${targetUsername}\n**Duração total:** 5 minutos\n**Blocos de:** ${testTimeoutDuration}s\n**Reaplicações:** ${Math.ceil(totalDurationSeconds / testTimeoutDuration) - 1}\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-    )
-
-    // Enviar mensagem via sistema de filas (não depende do token do streamer)
     queueMessage(`🧪 @${ctx.username} iniciou teste de timeout: @${targetUsername} receberá timeout de 5 minutos (reaplicação a cada ${testTimeoutDuration}s)`, 'twitch', 'high')
-
     console.log('[Commands] ✅ !testto executado com sucesso')
   } else {
-    // Notificar falha no Discord
-    await sendDiscordNotification(
-      '',
-      '❌ Teste de Timeout Falhou',
-      `**Iniciado por:** ${ctx.username}\n**Alvo:** ${targetUsername}\n**Erro:** ${result.error}\n**Horário:** ${new Date().toLocaleString('pt-BR')}`
-    )
     console.error('[Commands] ❌ !testto falhou:', result.error)
   }
 }
@@ -1103,40 +993,11 @@ export async function broadcastSubscriptionEvent(
 ): Promise<void> {
   const platformDisplayName = getPlatformDisplayName(platform)
 
-  // Buscar informações do usuário para notificação rica e whisper
-  const userInfo = await findLinkedUserWithProfileByUsername(platform, username)
+  const subMessage = `🎉 @${username} se inscreveu com ${tierName} na ${platformDisplayName}`
 
-  // Mensagem para whisper
-  const whisperMessage = `Obrigado por se inscrever! Envie seu numero aqui para ser convidado para o grupo do Whatsapp`
+  console.log(`[Commands] Evento de inscrição: ${username} na ${platform}`)
 
-  // Tentar enviar whisper na Twitch se for a plataforma
-  if (platform === 'twitch') {
-    await sendStreamerWhisper(username, whisperMessage)
-  }
-
-  // Mensagem de inscrição
-  const subMessage = `🎉 @${username} se inscreveu com ${tierName} na ${platformDisplayName} - Cadastre-se no site waveigl.com para ser convidado para o grupo exclusivo do WhatsApp`
-
-  // TEMPORARIAMENTE DESABILITADO: Notificação no chat
-  // TODO: Reativar quando whisper estiver funcionando corretamente
-  // queueMessage(subMessage, 'all', 'high') // Alta prioridade para subs normais
-  console.log(`[Commands] ⏸️ Notificação no chat DESABILITADA temporariamente: ${subMessage.substring(0, 50)}...`)
-
-  // Notificar no Discord (Rico) - Substitui a notificação simples
-  await sendDiscordSubNotification({
-    platform,
-    username,
-    platformUserId: userInfo?.platform_user_id || 'unknown',
-    phoneNumber: userInfo?.phone_number || null,
-    isRegistered: !!userInfo,
-    isGift: false,
-    tier: tierName
-  })
-
-  // Criar benefício automaticamente se o usuário estiver cadastrado
   await createBenefitForUser(username, platform, tierName, false)
-
-  console.log(`[Commands] ✅ Evento de inscrição adicionado à fila: ${username} na ${platform}`)
 }
 
 /**
@@ -1150,47 +1011,9 @@ export async function broadcastGiftSubEvent(
   tierName: string,
   platform: 'twitch' | 'kick' | 'youtube'
 ): Promise<void> {
-  const platformDisplayName = getPlatformDisplayName(platform)
+  console.log(`[Commands] Evento de gift sub: ${gifterUsername} -> ${recipientUsername} na ${platform}`)
 
-  // Buscar informações do RECEBEDOR para notificação rica e whisper
-  const userInfo = await findLinkedUserWithProfileByUsername(platform, recipientUsername)
-
-  // Mensagem para whisper (para quem recebeu)
-  const whisperMessage = `Você recebeu uma inscrição de presente, envie seu numero aqui para ser convidado para o grupo do Whatsapp`
-
-  // Tentar enviar whisper na Twitch se for a plataforma
-  if (platform === 'twitch') {
-    await sendStreamerWhisper(recipientUsername, whisperMessage)
-  }
-
-  // Mensagem para quem recebeu
-  const receiverMessage = `🎁 @${recipientUsername} recebeu inscrição de presente com ${tierName} de @${gifterUsername} na ${platformDisplayName} - Cadastre-se no site waveigl.com para ser convidado para o grupo exclusivo do WhatsApp`
-
-  // Mensagem para quem deu
-  const gifterMessage = `🎁 @${gifterUsername} enviou uma assinatura de presente para @${recipientUsername}, portanto o @${gifterUsername} pode enviar no sussurro do @waveigl o link da steam para receber assinatura`
-
-  // TEMPORARIAMENTE DESABILITADO: Notificação no chat
-  // TODO: Reativar quando whisper estiver funcionando corretamente
-  // queueMessage(receiverMessage, 'all', 'normal')
-  // queueMessage(gifterMessage, 'all', 'normal')
-  console.log(`[Commands] ⏸️ Notificação no chat DESABILITADA temporariamente para gift sub`)
-
-  // Notificar no Discord (Rico)
-  await sendDiscordSubNotification({
-    platform,
-    username: recipientUsername,
-    platformUserId: userInfo?.platform_user_id || 'unknown',
-    phoneNumber: userInfo?.phone_number || null,
-    isRegistered: !!userInfo,
-    isGift: true,
-    donorUsername: gifterUsername,
-    tier: tierName
-  })
-
-  // Criar benefício para quem RECEBEU (não para quem deu)
   await createBenefitForUser(recipientUsername, platform, tierName, true, gifterUsername)
-
-  console.log(`[Commands] ✅ Evento de gift sub adicionado à fila: ${gifterUsername} -> ${recipientUsername} na ${platform}`)
 }
 
 /**

@@ -54,11 +54,9 @@
   - `storeSubscribers()` - Upsert subscribers to prevent duplicates
   - `getSubscribers()` - Query with filtering and pagination
   - `getSubscriberStats()` - Aggregate statistics by contact status
-  - Comprehensive error handling with Discord notifications
   - Structured logging at all operations
 
 - Added: ErrorHandlingService
-  - `logError()` - Structured error logging with Discord notifications
   - `isRetryableError()` - Determine if error should be retried
   - `isPermanentError()` - Identify permanent errors (no retry)
   - `getRetryDelay()` - Calculate exponential backoff (1s, 2s, 4s, 8s)
@@ -143,8 +141,6 @@
   - Exponential backoff for transient errors
   - Permanent error detection to avoid unnecessary retries
   - Structured logging with full context
-  - Discord notifications for critical errors
-
 ### 🔐 Security
 - Security: Row Level Security (RLS) policies for multi-tenant isolation
 - Security: Unique constraint prevents duplicate subscribers per channel
@@ -186,7 +182,6 @@
   - Discount links with redemption limits
   - Coupon codes with expiration dates
   - Discount validation and analytics
-  - Mercado Pago integration for discount application
 
 ### 📝 Documentation
 - Updated: CHANGELOG.md with bug fixes and feature verification
@@ -252,120 +247,7 @@
 - Updated: CHANGELOG.md with dependency update details
 - Note: All tests passing after dependency updates
 
-## [0.4.0] - 2025-02-11
 
-### ✨ Features - Subscription System Reliability & Error Recovery
-- Added: Comprehensive UUID validation module (`src/lib/validation/uuid.ts`) with v4 format validation
-- Added: Retry handler with exponential backoff (1s, 2s, 4s, 8s) in `src/lib/retry/backoff.ts`
-- Added: Structured logging module (`src/lib/logging/subscription-logger.ts`) with context-aware logging
-- Added: Event storage for failed operations (`src/lib/storage/event-store.ts`) with Supabase persistence
-- Added: Health check endpoint (`/api/health/webhooks`) for webhook connectivity verification
-- Added: Background job for retrying failed events (`src/lib/jobs/retry-failed-events.ts`)
-- Added: Enhanced Discord notification handler with retry logic and error context
-- Added: Subscription event validation module (`src/lib/validation/subscription-event.ts`)
-- Added: Configuration check for `NOTIFY_UNREGISTERED_SUBS` environment variable
-
-### 🔧 Improvements - Webhook Processing
-- Improved: Mercado Pago webhook handler (`/api/subscription/webhook`) with:
-  - Rigorous UUID validation before processing
-  - Subscription event validation with detailed error messages
-  - Retry logic with exponential backoff for transient failures
-  - Structured logging at each step
-  - Discord error notifications on validation/creation failure
-  - Graceful error handling for Discord notification failures
-  - Proper HTTP status codes (400 for validation, 500 for operation errors)
-
-- Improved: Twitch EventSub webhook handler (`/api/webhooks/twitch/eventsub`) with:
-  - UUID validation for user IDs
-  - Subscription event validation
-  - Retry logic with exponential backoff
-  - Structured logging at each step
-  - Discord error notifications on failure
-  - Try-catch blocks around subscription event handling
-  - Graceful error handling for whisper failures
-
-- Improved: Twitch whisper handler with:
-  - Full error context capture (recipient, message, error)
-  - Error re-throwing for upstream handling
-  - Discord warning notifications on failure
-  - Success logging with recipient and timestamp
-
-### 🧪 Tests - Comprehensive Test Coverage
-- Added: 11 property-based tests for UUID validation (Property 1)
-- Added: 12 property-based tests for exponential backoff retry (Properties 3, 4, 5)
-- Added: 8 property-based tests for structured logging (Property 9)
-- Added: 6 property-based tests for event storage round trip (Property 11)
-- Added: 8 property-based tests for Discord error notifications (Properties 2, 7)
-- Added: 6 property-based tests for Twitch whisper error handling (Property 6)
-- Added: 6 property-based tests for notification configuration (Property 8)
-- Added: 8 property-based tests for health check (Property 10)
-- Added: 25+ integration tests covering:
-  - Full subscription flow from webhook to notifications
-  - Validation failure scenarios with Discord alerts
-  - Retry logic with exponential backoff
-  - Max retry exhaustion with critical notifications
-  - Notification configuration respect (enabled/disabled)
-  - Event storage and retrieval
-- Added: 15+ end-to-end tests covering:
-  - Successful subscription creation through webhook
-  - Discord and Twitch notification delivery
-  - Error recovery and retry scenarios
-  - Health check endpoint functionality
-  - Concurrent webhook request handling
-  - Duplicate webhook idempotency
-
-### 🔐 Security
-- Security: Rigorous UUID v4 validation prevents invalid data from corrupting system
-- Security: Subscription event validation ensures only valid events are processed
-- Security: Discord notification failures don't interrupt subscription processing
-- Security: Graceful error handling prevents cascading failures
-- Security: Structured logging with full context for audit trails
-
-### 📝 Documentation
-- Added: Comprehensive design document with correctness properties (14 properties)
-- Added: Requirements document with 10 user stories and acceptance criteria
-- Added: Implementation plan with 17 tasks and property-based testing strategy
-- Added: JSDoc documentation for all new modules and functions
-- Added: Inline comments explaining retry logic and validation steps
-
-### 🔄 Correctness Properties Validated
-- **Property 1**: UUID Validation Consistency - All UUIDs validated before processing
-- **Property 2**: Error Notification on Validation Failure - Discord alerts on validation errors
-- **Property 3**: Exponential Backoff Retry Pattern - Correct delays (1s, 2s, 4s, 8s)
-- **Property 4**: Successful Retry Completion - No additional retries after success
-- **Property 5**: Maximum Retry Exhaustion - Critical alerts after max retries
-- **Property 6**: Twitch Whisper Error Propagation - Errors captured and re-thrown
-- **Property 7**: Graceful Discord Notification Failure - Processing continues on Discord failure
-- **Property 8**: Notification Configuration Respect - Respects NOTIFY_UNREGISTERED_SUBS setting
-- **Property 9**: Comprehensive Structured Logging - Logs at all critical points
-- **Property 10**: Health Check Connectivity Verification - Verifies all webhook connectivity
-- **Property 11**: Event Storage Round Trip - Failed events stored and retried identically
-- **Property 12**: Notification Delivery Retry - Notifications retry with backoff
-- **Property 13**: Successful Subscription Confirmation - Discord notifications on success
-- **Property 14**: No Retry on First Success - No retries on immediate success
-
-### 🐛 Bug Fixes
-- Fixed: Subscription detection system that stopped working on 02/02/26
-- Fixed: Discord notifications not being sent for new subscriptions
-- Fixed: Twitch whispers not being delivered to subscribers
-- Fixed: Missing error handling for webhook failures
-- Fixed: No retry logic for transient failures
-- Fixed: Lack of structured logging for debugging
-- Fixed: No event storage for failed operations
-- Fixed: No health check endpoint for monitoring
-
-## [0.3.2] - 2025-01-19
-
-### 🐛 Bug Fixes
-- Fixed: Discord notifications system - added missing `notifyDiscord()` function that was causing import errors
-- Fixed: Subscription notifications now properly send Discord messages for new subs and gifts
-- Fixed: Twitch whisper system restored - now correctly sends private messages to subscribers
-- Fixed: Discord webhook integration for subscription events (sussuro and server notifications)
-
-### 🔧 Improvements
-- Improved: Added generic Discord notification interface for error handling and alerts
-- Improved: Discord notifications now support multiple severity levels (info, warning, error, critical)
-- Improved: Better error context in Discord notifications with formatted metadata
 
 ## [0.3.1] - 2025-01-18
 
@@ -387,12 +269,10 @@
 - Added: API endpoints para Discount Links (generate, list, delete)
 - Added: API endpoints para Coupon Codes (CRUD)
 - Added: API endpoints para validação de descontos (validate, apply)
-- Added: Mercado Pago integration com PreApproval customizado
 - Added: React components para gerenciamento de descontos (DiscountManagementPanel, tabs, forms, stats)
 - Added: Admin page para gerenciamento de descontos (/admin/discounts)
 - Added: Checkout integration para aplicação de descontos
 - Added: Permission checks e audit logging para operações de desconto
-- Added: Error handling com notificações Discord
 - Added: Analytics endpoints com exportação CSV
 
 ### 🧪 Tests - 203 Testes Passando
@@ -401,7 +281,6 @@
 - Added: 4 testes unitários para Discount Links API
 - Added: 4 testes unitários para Coupon Codes API
 - Added: 11 testes de propriedade para Discount Validation (Properties 8, 9, 14)
-- Added: 13 testes de propriedade para Mercado Pago Integration (Properties 8, 9, 10)
 - Added: Testes com edge cases (0, 1, 3, 100 resgates)
 - Added: Testes de precisão decimal e múltiplos tipos de desconto
 
@@ -734,23 +613,6 @@
 - Improved: Feedback visual com cursor pointer e hover effect no badge para admin/streamer
 - Improved: Segurança mantida com verificação server-side no AdminPanel
 
-## [0.0.9] - 2025-01-15
-
-### 🐛 Bug Fixes
-- Fixed: Botão "Assinar Clube" agora não é renderizado para usuários já assinantes
-- Fixed: Botão "Assinar Clube" não carrega no client para usuários com status ativo
-
-### ✨ Features
-- Added: Condicional `{!isClubMember && <Button>}` para ocultar botão de assinatura para membros ativos
-- Added: Condicional de texto dinâmico no badge - muda de "Sem Clube" para "Assinante" baseado no status do Mercado Pago
-- Added: Badge agora exibe status real da assinatura usando `clubOnboardingData?.subscription_status`
-
-### 🔧 Improvements
-- Improved: Performance ao não renderizar botão desnecessário para assinantes
-- Improved: UX ao remover botão de assinatura quando usuário já é membro do clube
-- Improved: Feedback visual ao mostrar "Assinante" quando status é 'active' no Mercado Pago
-- Improved: Badge agora reflete o estado real da assinatura em tempo real
-
 ## [0.0.8] - 2025-01-15
 
 ### ✨ Features
@@ -814,17 +676,15 @@
 - Improved: Mensagens de erro explicativas para cada cenário de falha
 - Improved: YouTube scraping agora valida channelId e nome do canal antes de aceitar live
 - Improved: Logs detalhados no scraping do YouTube para debug
-- Improved: Discord OAuth callback com diagnóstico detalhado para erros 401 (invalid_client) e 400
+  - Improved: Logs detalhados no scraping do YouTube para debug
 
 ### ⏸️ Temporarily Disabled
 - Disabled: Notificações de sub no chat (queueMessage) - aguardando whisper funcionar corretamente
-- Note: Discord notifications e whispers continuam funcionando normalmente
 
 ### 📝 Documentation
 - Updated: TWITCH_WHISPER_FIX.md com informações sobre a função correta
 - Added: Logs explicando cada passo do envio de whisper
 - Added: Logs de validação de canal no YouTube scraping
-- Added: Diagnóstico de erros de OAuth do Discord
 
 ---
 
@@ -888,7 +748,6 @@
 ## [0.0.4] - 2025-01-13
 
 ### 🐛 Bug Fixes
-- Fixed: TypeScript error em `useClubSubscription.ts` - notificationData implicitly has type 'any'
 - Fixed: Duplicate `.env.example` and `env.example` files consolidated into single `.env.example`
 
 ### ✨ Features
@@ -903,27 +762,8 @@
 - Created: `.kiro/steering/VERSIONING.md` with semantic versioning rules
 
 ### 🔧 Improvements
-- Improved: Type safety in `useClubSubscription.ts` with explicit type annotation
 - Improved: Environment configuration documentation
 - Improved: Development workflow documentation
-
----
-
-## [0.0.3] - 2025-01-13
-
-### 🐛 Bug Fixes
-- Fixed: ClubSubscriptionWidget não exibia "Clube Ativo" quando usuário já tinha assinatura
-- Fixed: TypeScript error em useClubSubscription com notificationData
-
-### ✨ Features
-- Added: Comprehensive test suite para ClubSubscriptionWidget (11 tests)
-
-### 📝 Documentation
-- Updated: CHANGELOG.md com novo formato
-- Updated: .env.example consolidado em um único arquivo
-
-### 🔧 Improvements
-- Improved: Type safety em testes com MockEligibilityData interface
 
 ---
 
@@ -939,8 +779,6 @@ Primeira versão completa do sistema WaveIGL com todas as funcionalidades planej
 - ✅ Dashboard com player de vídeo unificado
 - ✅ Chat unificado em tempo real
 - ✅ Sistema de moderação cross-platform
-- ✅ Integração com Mercado Pago (R$9,90/mês)
-- ✅ Bot Discord com cargos automáticos
 - ✅ Sistema de permissões (Owner, Admin, Moderador)
 
 #### Infraestrutura
@@ -959,8 +797,7 @@ Primeira versão completa do sistema WaveIGL com todas as funcionalidades planej
   "@supabase/supabase-js": "^2.45.4",
   "next": "^15.0.3",
   "react": "^18.3.1",
-  "discord.js": "^14.16.3",
-  "mercadopago": "^2.0.15"
+
 }
 ```
 
@@ -992,10 +829,8 @@ waveigl/
 │   │   ├── dashboard/           # Dashboard principal
 │   │   └── api/                 # API Routes
 │   │       ├── auth/            # OAuth handlers
-│   │       ├── subscription/    # Mercado Pago
 │   │       ├── moderation/      # Sistema de moderação
 │   │       ├── chat/            # Chat unificado
-│   │       └── discord/         # Bot Discord
 │   ├── components/              # Componentes React
 │   │   ├── ui/                  # Componentes base
 │   │   ├── VideoPlayer.tsx
@@ -1043,12 +878,10 @@ waveigl/
 #### Gratuito
 - ✅ Vercel (Hobby Plan)
 - ✅ Supabase (Free Tier)
-- ✅ Discord Bot
 - ✅ Next.js
 - ✅ Todas as bibliotecas
 
 #### Com Custos
-- ⚠️ Mercado Pago: ~4-5% por transação (R$0,45 por assinatura)
 - ⚠️ Domínio: ~R$40/ano
 
 ### 📚 Documentação
@@ -1076,9 +909,7 @@ npm run db:push      # Push migrations
 2. Criar projeto no Supabase
 3. Executar migrations
 4. Configurar OAuth nas plataformas
-5. Configurar Mercado Pago
-6. Configurar Bot Discord
-7. Deploy na Vercel
+5. Deploy na Vercel
 8. Testes de integração
 
 ### 👥 Permissões Configuradas

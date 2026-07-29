@@ -64,7 +64,6 @@ supabase db reset
 5. **chat_messages** - Cache de mensagens
 6. **pending_unlinks** - Desvinculações pendentes
 7. **subscriber_benefits** - Benefícios de assinantes
-8. **discord_connections** - Conexões Discord
 
 ## 🔒 Segurança
 

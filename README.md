@@ -1,6 +1,6 @@
-# WaveIGL - Clube Exclusivo
+# WaveIGL - Moderação Multi-Plataforma
 
-Sistema de clube de assinatura com chat unificado multi-plataforma (Twitch, YouTube, Kick) e sistema de moderação cross-platform.
+Sistema de chat unificado multi-plataforma (Twitch, YouTube, Kick) com moderação cross-platform.
 
 ## 📋 Índice
 
@@ -19,17 +19,14 @@ Sistema de clube de assinatura com chat unificado multi-plataforma (Twitch, YouT
 - **Vinculação de Contas**: Sistema para vincular múltiplas contas sem duplicatas
 - **Chat Unificado**: Mensagens em tempo real de todas as plataformas
 - **Sistema de Moderação**: Timeout e ban cross-platform com reaplicação automática
-- **Assinatura Recorrente**: Integração com Mercado Pago (R$9,90/mês)
-- **Integração Discord**: Cargos automáticos para membros completos
 - **Sistema de Permissões**: Owner, Admin, Moderador com sync automático
 
 ## 🛠️ Stack Tecnológica
 
 - **Frontend**: Next.js 16+ (App Router), TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (Auth, PostgreSQL, Realtime)
-- **Pagamentos**: Mercado Pago SDK
 - **Deploy**: Vercel (Serverless Functions + Cron Jobs)
-- **Integrações**: Twitch API, YouTube API, Kick API, Discord.js
+- **Integrações**: Twitch API, YouTube API, Kick API
 - **Testing**: Vitest, Playwright
 
 ## 📋 Pré-requisitos
@@ -37,9 +34,7 @@ Sistema de clube de assinatura com chat unificado multi-plataforma (Twitch, YouT
 - Node.js 18+
 - npm ou yarn
 - Conta no Supabase
-- Conta no Mercado Pago
 - Contas de desenvolvedor nas plataformas (Twitch, YouTube, Kick)
-- Bot Discord configurado
 
 ## ⚙️ Configuração
 
@@ -91,14 +86,7 @@ GOOGLE_CLIENT_SECRET=seu_client_secret
 KICK_CLIENT_ID=seu_client_id
 KICK_CLIENT_SECRET=seu_client_secret
 
-# Discord
-DISCORD_BOT_TOKEN=seu_bot_token
-DISCORD_GUILD_ID=id_do_servidor
-DISCORD_CLIENT_ID=seu_client_id
-DISCORD_CLIENT_SECRET=seu_client_secret
 
-# Mercado Pago (Opcional)
-MERCADOPAGO_ACCESS_TOKEN=seu_token_de_acesso
 ```
 
 Veja `.env.example` para todas as variáveis disponíveis.
@@ -136,16 +124,7 @@ supabase db push
 2. Crie uma nova aplicação
 3. Configure as URLs de callback
 
-#### Discord
-1. Acesse [Discord Developer Portal](https://discord.com/developers/applications)
-2. Crie um bot
-3. Configure as permissões necessárias
 
-### 6. Configure o Mercado Pago
-
-1. Acesse [Mercado Pago Developers](https://www.mercadopago.com.br/developers)
-2. Crie uma aplicação
-3. Configure os webhooks
 
 ## 🚀 Deploy
 
@@ -246,7 +225,6 @@ Veja `.kiro/steering/VERSIONING.md` para detalhes completos.
 
 - `profiles`: Usuários do sistema
 - `linked_accounts`: Contas vinculadas (Twitch, YouTube, Kick)
-- `discord_connections`: Conexões com Discord
 - `subscriber_benefits`: Benefícios de assinante
 - `moderation_actions`: Ações de moderação
 - `active_timeouts`: Timeouts ativos para reaplicação
@@ -256,7 +234,6 @@ Veja `.kiro/steering/VERSIONING.md` para detalhes completos.
 ### Logs
 - Vercel Functions: Dashboard do Vercel
 - Supabase: Dashboard do Supabase
-- Discord: Logs do bot
 
 ### Métricas
 - Assinaturas ativas
@@ -277,10 +254,10 @@ Veja `.kiro/steering/VERSIONING.md` para detalhes completos.
 ### Gratuito (Limites)
 - **Vercel**: 100GB bandwidth/mês, 100 horas serverless
 - **Supabase**: 500MB DB, 2GB storage, 50K MAU
-- **Discord Bot**: Gratuito
+
 
 ### Com Custos
-- **Mercado Pago**: ~4-5% por transação
+
 - **Domínio**: ~R$40/ano
 
 ## 🤝 Contribuição
@@ -299,7 +276,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 📞 Suporte
 
-Para suporte, entre em contato através do Discord do WaveIGL ou abra uma issue no GitHub.
+Para suporte, abra uma issue no GitHub.
 
 ---
 

@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, full_name, phone_number, birth_date, email, username, subscription_status')
+      .select('id, full_name, phone_number, birth_date, email, username')
       .eq('id', session.userId)
       .single()
 
@@ -120,19 +120,8 @@ export async function GET(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // Buscar conexão Discord
-    const { data: discordConnection } = await supabase
-      .from('discord_connections')
-      .select('discord_id, discord_username')
-      .eq('user_id', session.userId)
-      .single()
-
     return NextResponse.json({
-      profile: {
-        ...profile,
-        discord_connected: !!discordConnection,
-        discord_username: discordConnection?.discord_username || null
-      }
+      profile
     })
 
   } catch (error) {

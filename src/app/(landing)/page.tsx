@@ -397,9 +397,6 @@ export default function HomePage() {
             </Link>
             
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="/clube-do-waveigl" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
-                Clube
-              </Link>
               <Link href="/midia-kit" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
                 Mídia Kit
               </Link>
@@ -412,11 +409,6 @@ export default function HomePage() {
                   className="border-[#E38817]/30 text-[#D9D9D9] hover:bg-[#E38817]/10 hover:border-[#E38817] hover:text-[#E38817] transition-all"
                 >
                   Entrar
-                </Button>
-              </Link>
-              <Link href="/clube-do-waveigl">
-                <Button className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white border-none shadow-lg shadow-[#E38817]/25 transition-all">
-                  Assinar Clube
                 </Button>
               </Link>
             </div>
@@ -458,18 +450,18 @@ export default function HomePage() {
                   +35 mil horas de CS • +500k alunos
                 </p>
                 <p className="text-base text-[#D9D9D9]/50 mb-8">
-                  O professor mais conectado e próximo de sua comunidade de Counter-Strike 2 de todo o Brasil.
+                  O professor mais conectado e próximo de Counter-Strike 2 de todo o Brasil.
                 </p>
                 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <Link href="/clube-do-waveigl">
+                  <Link href="/dashboard">
                     <Button 
                       size="lg" 
                       className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105 hover:shadow-[#E38817]/40 group"
                     >
                       <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Conhecer o Clube
+                      Acessar
                     </Button>
                   </Link>
                   <Link href="/dashboard">
@@ -546,33 +538,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Clube CTA Section */}
-      <section className="relative z-10 py-16 border-t border-[#E38817]/10 bg-linear-to-b from-transparent via-[#E38817]/5 to-transparent">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-6 px-4 py-2 bg-[#E38817]/20 text-[#E38817] border border-[#E38817]/30">
-              <Heart className="w-4 h-4 mr-2" />
-              Novidade 2026
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Conheça o <span className="text-[#E38817]">Clube WaveIGL</span>
-            </h2>
-            <p className="text-lg text-[#D9D9D9]/60 mb-8 max-w-2xl mx-auto">
-              O conhecimento das aulas particulares de R$449,90 agora disponível em comunidade compartilhada. 
-              Discord VIP, aulas ao vivo exclusivas e muito mais.
-            </p>
-            <Link href="/clube-do-waveigl">
-              <Button 
-                size="lg" 
-                className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Conhecer o Clube
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+
 
       {/* Trajetória Section */}
       <section className="relative z-10 py-24 border-t border-[#E38817]/10">
@@ -596,7 +562,7 @@ export default function HomePage() {
                 <TimelineItem 
                   year="2005"
                   title="Primeiros alunos de CS profissionalmente"
-                  description="Tinha 2 servidores NetRangers: um pessoal e outro para o grupo de aluno. Organizou 2 grupos de alunos - 'bad' e 'good'. O grupo 'bad' podia usar das 12h às 24h, e o grupo 'good' da meia-noite ao meio-dia. Com 40 mensalistas, eram considerados os melhores servidores da época, mostrando desde cedo sua capacidade de liderança e organização de comunidades. Primeiros alunos vieram nessa época, RicardoLepra"
+                  description="Tinha 2 servidores NetRangers: um pessoal e outro para o grupo de aluno. Organizou 2 grupos de alunos - 'bad' e 'good'. O grupo 'bad' podia usar das 12h às 24h, e o grupo 'good' da meia-noite ao meio-dia. Com 40 mensalistas, eram considerados os melhores servidores da época. Primeiros alunos vieram nessa época, RicardoLepra"
                   icon={Server}
                   highlight
                 />
@@ -642,7 +608,7 @@ export default function HomePage() {
                 <TimelineItem 
                   year="2017"
                   title="Início como Professor de CS - Do Zero ao Topo"
-                  description="Inspirado em sua mãe professora, decidiu começar do zero como professor de CS2. Nunca mencionou sua carreira anterior como DJ. Começou jogando servidores de DM com uma bind, ensinando enquanto jogava. Aos poucos foi conquistando alunos, construindo sua comunidade passo a passo, até estourar e viralizar. Uma jornada de crescimento orgânico e autêntico."
+                  description="Inspirado em sua mãe professora, decidiu começar do zero como professor de CS2. Nunca mencionou sua carreira anterior como DJ. Começou jogando servidores de DM com uma bind, ensinando enquanto jogava. Aos poucos foi conquistando alunos até estourar e viralizar. Uma jornada de crescimento orgânico e autêntico."
                   icon={GraduationCap}
                   highlight
                 />
@@ -658,7 +624,7 @@ export default function HomePage() {
                 <TimelineItem 
                   year="2019-2023"
                   title="Crescimento Contínuo"
-                  description="Realizou diversos sorteios de itens raros, incluindo uma AWP Dragon Lore. Consolidou a comunidade e alcançou 440k+ seguidores só na Twitch, ensinando mais de 500k alunos através das lives gratuitas."
+                  description="Realizou diversos sorteios de itens raros, incluindo uma AWP Dragon Lore. Alcançou 440k+ seguidores só na Twitch, ensinando mais de 500k alunos através das lives gratuitas."
                   icon={Award}
                 />
                 
@@ -671,38 +637,11 @@ export default function HomePage() {
                   proofLink="https://liquipedia.net/counterstrike/IESF/World_Esports_Championships/2023/Female"
                 />
                 
-                <TimelineItem 
-                  year="2025"
-                  title="Clube WaveIGL"
-                  description="Lançamento do projeto Clube WaveIGL: uma plataforma completa com chat unificado, Discord VIP, e aulas gratuitas de CS2 ao vivo na Twitch. O próximo capítulo da comunidade Wave."
-                  icon={Heart}
-                  highlight
-                />
+
               </div>
             </div>
 
-            {/* CTA */}
-            <Card className="bg-linear-to-r from-[#1E202F] to-[#1E202F]/50 border-[#E38817]/20">
-              <CardContent className="p-8 text-center">
-                <h3 className="text-2xl font-bold mb-4">Faça parte da comunidade</h3>
-                <p className="text-[#D9D9D9]/60 mb-6 max-w-lg mx-auto">
-                  Faça parte do lançamento do Clube WaveIGL e aprenda CS2 com quem mais entende
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/clube-do-waveigl">
-                    <Button className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white px-8">
-                      Conhecer o Clube
-                    </Button>
-                  </Link>
-                  <Link href="/dashboard">
-                    <Button variant="outline" className="border-[#E38817]/30 hover:bg-[#E38817]/10 hover:border-[#E38817] px-8">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Logue
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+
           </div>
         </div>
       </section>

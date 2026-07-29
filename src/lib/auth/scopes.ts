@@ -10,10 +10,9 @@ export type { UserRole }
 
 // Versão dos escopos - incrementar quando adicionar novos escopos obrigatórios
 export const SCOPES_VERSION = {
-  twitch: 5, // Incrementado para incluir user:manage:whispers
+  twitch: 5,
   youtube: 1,
-  kick: 1,
-  discord: 1 // Para vinculação (não autenticação)
+  kick: 1
 }
 
 // Escopos necessários para cada plataforma

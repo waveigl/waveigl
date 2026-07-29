@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { hasAllRequiredScopes, getMissingScopes, UserRole } from '@/lib/auth/scopes'
-import { triggerLazyCleanupInBackground } from '@/lib/discord/lazy-check'
 
 export async function GET(request: NextRequest) {
   try {
@@ -95,10 +94,6 @@ export async function GET(request: NextRequest) {
       is_moderator: isModerator,
       role: role
     } : null
-
-    // Verificação lazy de assinaturas expiradas (substitui cron no plano grátis)
-    // Executa em background sem bloquear a resposta
-    triggerLazyCleanupInBackground()
 
     return NextResponse.json({ 
       user: userWithDisplay, 

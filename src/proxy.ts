@@ -33,7 +33,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "img-src 'self' data: blob: https: http: https://www.google-analytics.com https://www.googletagmanager.com https://c.bing.com",
     // Permitir iframes dos players de vídeo
     "frame-src 'self' https://player.twitch.tv https://embed.twitch.tv https://www.youtube.com https://www.youtube-nocookie.com https://kick.com https://player.kick.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twitch.tv https://id.twitch.tv https://www.googleapis.com https://kick.com https://discord.com wss://*.pusher.com https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.twitch.tv https://id.twitch.tv https://www.googleapis.com https://kick.com wss://*.pusher.com https://www.google-analytics.com https://region1.google-analytics.com https://*.clarity.ms",
     "media-src 'self' https:",
     "object-src 'none'",
     "base-uri 'self'",

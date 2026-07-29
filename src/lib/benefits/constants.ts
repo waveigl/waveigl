@@ -10,27 +10,11 @@ export interface SubscriberBenefit {
   tier: string
   subscribed_at: string
   expires_at: string | null
-  whatsapp_code: string | null
-  whatsapp_claimed_at: string | null
-  whatsapp_joined_at: string | null
-  discord_linked: boolean
-  discord_claimed_at: string | null
   onboarding_step: number
   onboarding_dismissed_at: string | null
   is_gift: boolean
   gifter_username: string | null
   created_at: string
-  updated_at: string
-}
-
-export interface DiscordConnection {
-  id: string
-  user_id: string
-  discord_id: string
-  discord_username: string
-  discord_discriminator: string | null
-  discord_avatar: string | null
-  connected_at: string
   updated_at: string
 }
 
@@ -62,18 +46,6 @@ export const SUBSCRIBER_BENEFITS_LIST = [
     description: 'Suas mensagens aparecem destacadas no chat',
     icon: '✨'
   },
-  {
-    id: 'whatsapp_group',
-    title: 'Grupo de WhatsApp',
-    description: 'Acesso ao grupo exclusivo de subs',
-    icon: '📱'
-  },
-  {
-    id: 'discord_role',
-    title: 'Discord exclusivo',
-    description: 'Acesso ao Clã do Wave no Discord',
-    icon: '🎮'
-  }
 ] as const
 
 export type BenefitId = typeof SUBSCRIBER_BENEFITS_LIST[number]['id']

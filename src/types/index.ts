@@ -13,7 +13,6 @@ export interface User {
   email?: string
   subscription_status: SubscriptionStatus
   subscription_id?: string
-  discord_synced: boolean
   created_at: string
   updated_at: string
 }

@@ -28,10 +28,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   phone_number TEXT,
   last_phone_edit_at TIMESTAMPTZ,
   last_profile_edit_at TIMESTAMPTZ,
-  subscription_status TEXT DEFAULT 'inactive' CHECK (subscription_status IN ('active', 'inactive', 'cancelled', 'expired')),
-  subscription_id TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'moderator', 'admin', 'streamer')),
-  discord_synced BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -117,42 +114,13 @@ CREATE TABLE IF NOT EXISTS public.subscriber_benefits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   platform TEXT NOT NULL CHECK (platform IN ('twitch', 'kick', 'youtube')),
-  tier TEXT NOT NULL, -- Tier 1, Tier 2, Tier 3, Member
+  tier TEXT NOT NULL,
   subscribed_at TIMESTAMPTZ DEFAULT NOW(),
   expires_at TIMESTAMPTZ,
-  
-  -- Status dos benefícios
-  whatsapp_code TEXT UNIQUE,
-  whatsapp_claimed_at TIMESTAMPTZ,
-  whatsapp_joined_at TIMESTAMPTZ,
-  discord_linked BOOLEAN DEFAULT FALSE,
-  discord_claimed_at TIMESTAMPTZ,
-  
-  -- Controle do popup de onboarding
-  onboarding_step INTEGER DEFAULT 0, -- 0=não visto, 1=whatsapp, 2=discord, 3=completo
-  onboarding_dismissed_at TIMESTAMPTZ,
-  
-  -- Tipo de assinatura
   is_gift BOOLEAN DEFAULT FALSE,
   gifter_username TEXT,
-  
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 8. DISCORD_CONNECTIONS
--- Conexões Discord (separado de linked_accounts pois não autentica)
-CREATE TABLE IF NOT EXISTS public.discord_connections (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  discord_id TEXT NOT NULL,
-  discord_username TEXT NOT NULL,
-  discord_discriminator TEXT,
-  discord_avatar TEXT,
-  connected_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id),
-  UNIQUE(discord_id)
 );
 
 -- ============================================================================
@@ -179,13 +147,8 @@ CREATE INDEX IF NOT EXISTS idx_pending_unlinks_effective_at ON public.pending_un
 
 -- Subscriber Benefits
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_user ON public.subscriber_benefits(user_id);
-CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_code ON public.subscriber_benefits(whatsapp_code);
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_platform ON public.subscriber_benefits(platform);
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_expires ON public.subscriber_benefits(expires_at);
-
--- Discord Connections
-CREATE INDEX IF NOT EXISTS idx_discord_connections_user ON public.discord_connections(user_id);
-CREATE INDEX IF NOT EXISTS idx_discord_connections_discord_id ON public.discord_connections(discord_id);
 
 -- ============================================================================
 -- TRIGGERS E FUNCTIONS
@@ -217,14 +180,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_discord_connections_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- Triggers para updated_at
 CREATE TRIGGER update_profiles_updated_at 
   BEFORE UPDATE ON public.profiles
@@ -239,11 +194,6 @@ DROP TRIGGER IF EXISTS trigger_subscriber_benefits_updated_at ON public.subscrib
 CREATE TRIGGER trigger_subscriber_benefits_updated_at
   BEFORE UPDATE ON public.subscriber_benefits
   FOR EACH ROW EXECUTE FUNCTION update_subscriber_benefits_updated_at();
-
-DROP TRIGGER IF EXISTS trigger_discord_connections_updated_at ON public.discord_connections;
-CREATE TRIGGER trigger_discord_connections_updated_at
-  BEFORE UPDATE ON public.discord_connections
-  FOR EACH ROW EXECUTE FUNCTION update_discord_connections_updated_at();
 
 -- Trigger para criar perfil automaticamente quando usuário é criado no Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -282,7 +232,6 @@ ALTER TABLE public.active_timeouts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pending_unlinks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriber_benefits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.discord_connections ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================================
 -- POLICIES RLS
@@ -366,16 +315,6 @@ CREATE POLICY "Users can view own benefits"
 
 CREATE POLICY "Service role can manage benefits"
   ON public.subscriber_benefits FOR ALL
-  USING (true)
-  WITH CHECK (true);
-
--- Discord Connections Policies
-CREATE POLICY "Users can view own discord connection"
-  ON public.discord_connections FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Service role can manage discord connections"
-  ON public.discord_connections FOR ALL
   USING (true)
   WITH CHECK (true);
 

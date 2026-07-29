@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 const siteConfig = {
   name: 'WaveIGL',
-  description: 'Entre para o Clube do WaveIGL e tenha acesso a conteúdo exclusivo, chat unificado e comunidade VIP. Aprenda CS2 com quem foi Top 9 nacional.',
+  description: 'Chat unificado multi-plataforma e aulas de CS2. Aprenda CS2 com quem foi Top 9 nacional.',
   url: process.env.NEXT_PUBLIC_BASE_URL || 'https://waveigl.com',
   ogImage: '/og-image.jpg',
   creator: 'Conrado Koerich',
@@ -18,12 +18,12 @@ const siteConfig = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: 'WaveIGL - Clube Exclusivo de Membros | Aprenda CS2',
+    default: 'WaveIGL | Aprenda CS2',
     template: '%s | WaveIGL'
   },
   description: siteConfig.description,
   keywords: [
-    'WaveIGL', 'Wave', 'clube de membros', 'streaming', 'comunidade',
+    'WaveIGL', 'Wave', 'streaming',
     'CS2', 'Counter-Strike 2', 'Counter-Strike', 'aulas CS2', 'professor CS2',
     'Twitch', 'streamer brasileiro', 'gaming', 'esports', 'BlackBelt CSGO'
   ],
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'pt_BR',
     url: siteConfig.url,
-    title: 'WaveIGL - Clube Exclusivo de Membros',
+    title: 'WaveIGL',
     description: siteConfig.description,
     siteName: siteConfig.name,
     images: [
@@ -47,13 +47,13 @@ export const metadata: Metadata = {
         url: siteConfig.ogImage,
         width: 1200,
         height: 630,
-        alt: 'WaveIGL - Clube Exclusivo de CS2',
+        alt: 'WaveIGL - Aprenda CS2',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'WaveIGL - Clube Exclusivo de Membros',
+    title: 'WaveIGL',
     description: siteConfig.description,
     images: [siteConfig.ogImage],
     creator: siteConfig.twitterHandle,
@@ -161,35 +161,6 @@ const websiteSchema = {
   "inLanguage": "pt-BR"
 }
 
-const productSchema = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": "Clube WaveIGL",
-  "description": "Assinatura mensal do Clube WaveIGL com acesso a chat unificado, Discord VIP, aulas de CS2 e sorteios exclusivos",
-  "brand": {
-    "@type": "Brand",
-    "name": "WaveIGL"
-  },
-  "offers": {
-    "@type": "Offer",
-    "price": "9.90",
-    "priceCurrency": "BRL",
-    "availability": "https://schema.org/InStock",
-    "priceValidUntil": "2025-12-31",
-    "url": `${siteConfig.url}/auth/login`,
-    "seller": {
-      "@id": `${siteConfig.url}/#organization`
-    }
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.9",
-    "reviewCount": "400",
-    "bestRating": "5",
-    "worstRating": "1"
-  }
-}
-
 export default function RootLayout({
   children,
 }: {
@@ -231,7 +202,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([organizationSchema, websiteSchema, productSchema])
+            __html: JSON.stringify([organizationSchema, websiteSchema])
           }}
         />
       </head>

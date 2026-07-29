@@ -4,13 +4,10 @@
  */
 
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import { addMemberToServer } from '@/lib/discord/server'
 
-// Re-exportar tipos e constantes do arquivo de constantes
 export * from './constants'
 
-// Importar tipos localmente para uso nas funções
-import type { SubscriberBenefit, DiscordConnection } from './constants'
+import type { SubscriberBenefit } from './constants'
 import { generateWhatsAppCode, calculateExpiryDate } from './constants'
 
 /**
@@ -83,32 +80,6 @@ export async function createOrUpdateBenefit(
   if (error) {
     console.error('[Benefits] Erro ao criar benefício:', error)
     return null
-  }
-  
-  // Se o usuário tem Discord vinculado, adicionar ao servidor automaticamente
-  const { data: discordConn } = await db
-    .from('discord_connections')
-    .select('discord_id')
-    .eq('user_id', userId)
-    .maybeSingle()
-  
-  if (discordConn?.discord_id) {
-    console.log(`[Benefits] Usuário tem Discord vinculado, adicionando ao servidor...`)
-    const addResult = await addMemberToServer(discordConn.discord_id)
-    
-    if (addResult.success) {
-      console.log(`[Benefits] ✅ Usuário ${userId} adicionado ao servidor Clube do WaveIGL`)
-      // Marcar Discord como vinculado no benefício
-      await db
-        .from('subscriber_benefits')
-        .update({ 
-          discord_linked: true,
-          discord_claimed_at: new Date().toISOString()
-        })
-        .eq('id', created.id)
-    } else {
-      console.warn(`[Benefits] ⚠️ Não foi possível adicionar ao servidor: ${addResult.error}`)
-    }
   }
   
   return created
@@ -222,22 +193,4 @@ export async function dismissOnboarding(benefitId: string): Promise<boolean> {
   return true
 }
 
-/**
- * Busca conexão Discord de um usuário
- */
-export async function getDiscordConnection(userId: string): Promise<DiscordConnection | null> {
-  const db = getSupabaseAdmin()
-  
-  const { data, error } = await db
-    .from('discord_connections')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle()
-  
-  if (error) {
-    console.error('[Benefits] Erro ao buscar conexão Discord:', error)
-    return null
-  }
-  
-  return data
-}
+

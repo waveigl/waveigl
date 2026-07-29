@@ -146,13 +146,6 @@ secret = "env(SUPABASE_AUTH_EXTERNAL_BITBUCKET_SECRET)"
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
 
-[auth.external.discord]
-enabled = false
-client_id = ""
-secret = "env(SUPABASE_AUTH_EXTERNAL_DISCORD_SECRET)"
-# Overrides the default auth redirectUrl.
-redirect_uri = ""
-
 [auth.external.facebook]
 enabled = false
 client_id = ""

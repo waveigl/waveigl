@@ -10,7 +10,7 @@ import { PlatformSelector } from '@/components/PlatformSelector'
 import { LiveInfoPanel } from '@/components/LiveInfoPanel'
 import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
-import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, CreditCard, XCircle, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Maximize2, Minimize2, PanelRightClose, PanelRightOpen, PanelBottomClose, PanelBottomOpen, LayoutPanelTop } from 'lucide-react'
+import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop } from 'lucide-react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ProfileEditor } from '@/components/ProfileEditor'
@@ -18,9 +18,6 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ModerationPanel } from '@/components/ModerationPanel'
 import BenefitsIndicator, { SubBadge } from '@/components/BenefitsIndicator'
-import SubscriberBenefitsPopup from '@/components/SubscriberBenefitsPopup'
-import BenefitsPanel from '@/components/BenefitsPanel'
-import ClubOnboardingPopup from '@/components/ClubOnboardingPopup'
 import { AdminPanel } from '@/components/AdminPanel'
 import { DashboardStats } from '@/components/DashboardStats'
 import { getUserRole, isOwner, isAdmin } from '@/lib/permissions'
@@ -227,16 +224,9 @@ export default function DashboardPage() {
 
   // Estados para sistema de benefícios
   const [benefits, setBenefits] = useState<any[]>([])
-  const [discordConnection, setDiscordConnection] = useState<any>(null)
   const [showBenefitsPopup, setShowBenefitsPopup] = useState(false)
   const [showBenefitsPanel, setShowBenefitsPanel] = useState(false)
   const [pendingBenefit, setPendingBenefit] = useState<any>(null)
-
-  // Estados para assinatura do Clube
-  const [showClubOnboarding, setShowClubOnboarding] = useState(false)
-  const [clubOnboardingData, setClubOnboardingData] = useState<any>(null)
-  const [isClubMember, setIsClubMember] = useState<boolean | null>(null)
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
 
   // Estado para painel admin
   const [showAdminPanel, setShowAdminPanel] = useState(false)
@@ -251,9 +241,7 @@ export default function DashboardPage() {
     liveChatId: string | null
   }>({ isLive: false, videoId: null, liveChatId: null })
 
-  // Estados para cancelamento de assinatura
-  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
-  const [isCancelling, setIsCancelling] = useState(false)
+
 
   // Estados para Layout Customizável
   const [chatWidth, setChatWidth] = useState(384) // Padrão: w-96 (384px)
@@ -382,13 +370,6 @@ export default function DashboardPage() {
       setLinkedAccounts(linkedAccounts)
       setAccountsNeedingReauth(data.accounts_needing_reauth || [])
 
-      // Detecção imediata de assinatura baseado na resposta /api/me
-      if (data.user?.subscription_status === 'active') {
-        setIsClubMember(true)
-      } else if (data.user) {
-        setIsClubMember(false)
-      }
-
       // Verificar se é moderador pelo banco de dados ou pelo campo is_moderator
       setIsModerator(!!data.user?.is_moderator || !!data.is_moderator || finalRole === 'moderator' || finalRole === 'admin' || finalRole === 'owner')
     } catch (e) {
@@ -462,117 +443,10 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json()
         setBenefits(data.benefits || [])
-        setDiscordConnection(data.discordConnection)
-
-        // Verificar se há benefício pendente de onboarding
-        if (data.hasPendingOnboarding && data.benefits.length > 0) {
-          const pending = data.benefits.find((b: any) =>
-            b.onboarding_step < 3 && !b.onboarding_dismissed_at
-          )
-          if (pending) {
-            setPendingBenefit(pending)
-            setShowBenefitsPopup(true)
-          }
-        }
       }
     } catch (e) {
       console.error('Erro ao carregar benefícios:', e)
     }
-  }
-
-  // Verificar status de membro do Clube
-  const checkClubStatus = async () => {
-    try {
-      const res = await fetch('/api/subscription/check-eligibility')
-      if (res.ok) {
-        const data = await res.json()
-        setIsClubMember(data.user?.subscription_status === 'active')
-        setClubOnboardingData(data.user)
-      }
-    } catch (e) {
-      console.error('Erro ao verificar status do clube:', e)
-    }
-  }
-
-  // Iniciar processo de assinatura do Clube
-  const handleSubscribeClick = async () => {
-    if (isCheckingEligibility) return
-
-    setIsCheckingEligibility(true)
-    try {
-      const res = await fetch('/api/subscription/check-eligibility')
-      const data = await res.json()
-
-      if (data.eligible) {
-        // Se já tem todos os dados, mostrar confirmação antes de redirecionar
-        const confirmSub = confirm('Você está elegível para assinar o Clube!\n\nClique em OK para ir para o pagamento no Mercado Pago.')
-        if (confirmSub) {
-          await goToCheckout()
-        }
-      } else if (data.reason === 'already_subscribed') {
-        // Casos onde o backend já detecta assinatura ativa no check-eligibility
-        setIsClubMember(true)
-        if (data.user) setClubOnboardingData(data.user)
-        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status será atualizado.')
-        await checkClubStatus() // Forçar refresh do estado
-      } else {
-        // Mostrar popup de onboarding
-        if (data.user) setClubOnboardingData(data.user)
-        setShowClubOnboarding(true)
-      }
-    } catch (e) {
-      console.error('Erro ao iniciar assinatura:', e)
-      alert('Erro ao processar. Tente novamente.')
-    } finally {
-      setIsCheckingEligibility(false)
-    }
-  }
-
-  // Ir para checkout do Mercado Pago
-  const goToCheckout = async () => {
-    try {
-      const res = await fetch('/api/subscription/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id })
-      })
-
-      const data = await res.json()
-
-      if (res.status === 409 && data.already_subscribed) {
-        // Usuário já tem assinatura ativa (detectado pelo backend)
-        setIsClubMember(true)
-        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status foi atualizado.')
-        // Recarregar status do clube
-        await checkClubStatus()
-        return
-      }
-
-      // Se o backend retornou eligible:false com reason:already_subscribed no check-eligibility
-      if (data.eligible === false && data.reason === 'already_subscribed') {
-        setIsClubMember(true)
-        alert('Você já possui uma assinatura ativa do Clube WaveIGL! Seu status foi atualizado.')
-        await checkClubStatus()
-        return
-      }
-
-      if (data.init_point) {
-        // Redirecionar para o checkout do Mercado Pago
-        window.location.href = data.init_point
-      } else {
-        console.error('Erro ao criar assinatura:', data)
-        alert(data.error || 'Erro ao processar pagamento. Tente novamente.')
-      }
-    } catch (e) {
-      console.error('Erro ao criar assinatura:', e)
-      alert('Erro ao processar pagamento. Tente novamente.')
-    }
-  }
-
-  // Callback quando onboarding completo
-  const handleOnboardingComplete = () => {
-    setShowClubOnboarding(false)
-    goToCheckout()
   }
 
   // Carregar ações de moderação
@@ -588,51 +462,15 @@ export default function DashboardPage() {
     }
   }
 
-  // Cancelar Assinatura
-  const handleCancelSubscription = async () => {
-    setIsCancelling(true)
-    try {
-      const res = await fetch('/api/subscription/cancel', { method: 'POST' })
-      const data = await res.json()
-
-      if (res.ok) {
-        alert('Assinatura cancelada com sucesso. Seu status será atualizado em breve.')
-        setIsCancelDialogOpen(false)
-        await loadUser()
-      } else {
-        alert(data.error || 'Erro ao cancelar assinatura')
-      }
-    } catch (error) {
-      console.error('Erro ao cancelar:', error)
-      alert('Erro ao processar o cancelamento')
-    } finally {
-      setIsCancelling(false)
-    }
-  }
-
   // Envolver funções em useCallback para evitar recriação
   const handleInitializeUser = useCallback(async () => {
-    // Carregar dados básicos do usuário primeiro (contém status inicial da sub)
     await loadUser()
 
-    // Carregar o restante em paralelo para otimizar velocidade
     await Promise.all([
       checkModeratorViaAPI(),
       loadBenefits(),
-      checkClubStatus(),
       loadModerationActions()
     ])
-
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('onboarding') === 'continue') {
-      window.history.replaceState({}, '', '/dashboard')
-      const res = await fetch('/api/subscription/check-eligibility')
-      const data = await res.json()
-      if (!data.eligible) {
-        setClubOnboardingData(data.user)
-        setShowClubOnboarding(true)
-      }
-    }
   }, [])
 
   // Efeito para gerenciar a conexão SSE
@@ -915,79 +753,8 @@ export default function DashboardPage() {
     }
   }
 
-  // Vincular Discord
-  const handleLinkDiscord = () => {
-    window.location.href = '/api/auth/discord'
-  }
-
-  // Desvincular Discord
-  const handleUnlinkDiscord = async () => {
-    if (!confirm('Tem certeza que deseja desvincular o Discord?')) return
-
-    try {
-      const res = await fetch('/api/auth/discord', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'disconnect' })
-      })
-
-      if (res.ok) {
-        setDiscordConnection(null)
-        await loadBenefits() // Recarregar benefícios para atualizar status
-      } else {
-        const data = await res.json()
-        alert(data.error || 'Erro ao desvincular Discord')
-      }
-    } catch (error) {
-      alert('Erro ao desvincular Discord')
-    }
-  }
-
   const getLinkedAccount = (platform: string) => {
     return linkedAccounts.find(acc => acc.platform === platform) || null
-  }
-
-  // Helper para verificar se é o usuário específico para sync forçado
-  const isTargetUserForSync = useMemo(() => {
-    if (!user) return false
-    return (
-      (user.email === 'gabrieltothgoncalves@gmail.com') ||
-      linkedAccounts.some(acc =>
-        (acc.platform === 'twitch' && acc.platform_username?.toLowerCase() === 'ogabrieltoth') ||
-        (acc.platform === 'kick' && acc.platform_username?.toLowerCase() === 'ogabrieltoth')
-      )
-    )
-  }, [user, linkedAccounts])
-
-  // Forçar sincronização de assinatura (para Gabriel Toth)
-  const handleForceSync = async () => {
-    if (!isTargetUserForSync) return
-
-    if (!confirm('Dev Mode: Forçar sincronização de assinatura com Mercado Pago?')) return
-
-    try {
-      const res = await fetch('/api/subscription/sync', { method: 'POST' })
-      const data = await res.json()
-
-      if (res.ok) {
-        let msg = `Sincronização realizada!\n`
-        msg += `Status anterior: ${data.db_status_before}\n`
-        msg += `Status novo: ${data.db_status_after}\n`
-        msg += `Mercado Pago (Status): ${data.mp_status}\n`
-        msg += `Mercado Pago (ID): ${data.mp_id}\n`
-        if (data.recovered_via_search) msg += `[Recuperado via Busca por Email]\n`
-        msg += `Atualizado no Banco: ${data.updated ? 'SIM' : 'NÃO'}`
-
-        alert(msg)
-        if (data.updated) {
-          window.location.reload()
-        }
-      } else {
-        alert(`Erro na sincronização: ${data.error}\nDetalhes: ${data.details || ''}\nStatus: ${data.status || ''}`)
-      }
-    } catch (e) {
-      alert('Erro ao chamar API de sincronização')
-    }
   }
 
   // Determinar nome a exibir no header
@@ -1053,56 +820,7 @@ export default function DashboardPage() {
             >
               <ChevronUp className="w-4 h-4" />
             </Button>
-            {/* Indicador de status do Clube + Botão de assinar */}
-            <div className="flex items-center gap-2">
-              {isClubMember === null ? (
-                <Badge className="bg-zinc-700/50 text-zinc-500 border border-zinc-600 animate-pulse">
-                  <div className="w-3 h-3 mr-1 bg-zinc-600 rounded-full" />
-                  Verificando...
-                </Badge>
-              ) : isClubMember ? (
-                <Badge
-                  className="bg-green-500/20 text-green-400 border border-green-500/30 cursor-pointer hover:bg-green-500/30 transition-colors"
-                  onClick={() => setIsCancelDialogOpen(true)}
-                  title="Assinatura Ativa - Clique para gerenciar"
-                >
-                  <Crown className="w-3 h-3 mr-1" />
-                  Clube Ativo
-                </Badge>
-              ) : (
-                <>
-                  <Badge
-                    className={`bg-zinc-700/50 text-zinc-400 border border-zinc-600 ${isTargetUserForSync ? 'cursor-pointer hover:bg-zinc-700' : ''}`}
-                    onClick={isTargetUserForSync ? handleForceSync : undefined}
-                  >
-                    <XCircle className="w-3 h-3 mr-1" />
-                    {/* Condicional: Mudar texto baseado no status de assinatura */}
-                    {clubOnboardingData?.subscription_status === 'active' ? 'Assinante' : 'Sem Clube'}
-                  </Badge>
-                  {/* Botão "Assinar Clube" - Apenas visível para usuários não assinantes */}
-                  {isClubMember === false && (
-                    <Button
-                      onClick={handleSubscribeClick}
-                      size="sm"
-                      disabled={isCheckingEligibility}
-                      className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white shadow-lg shadow-[#E38817]/25 transition-all"
-                    >
-                      {isCheckingEligibility ? (
-                        <>
-                          <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Verificando...
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Assinar Clube
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
+
           </div>
 
           <div className="flex items-center space-x-4">
@@ -1190,42 +908,6 @@ export default function DashboardPage() {
                       onUnlink={handleUnlinkAccount}
                     />
 
-                    {/* Discord - vinculação separada */}
-                    <div className={`border rounded-lg overflow-hidden ${discordConnection ? 'bg-muted/50' : 'bg-muted/50'}`}>
-                      <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 bg-[#5865F2] rounded flex items-center justify-center">
-                            <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
-                            </svg>
-                          </div>
-                          {discordConnection ? (
-                            <>
-                              <span className="text-sm font-medium">{discordConnection.discord_username}</span>
-                              <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            </>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Discord</span>
-                          )}
-                        </div>
-                        {discordConnection ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleUnlinkDiscord}
-                            className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                          >
-                            <Unlink className="w-3 h-3 mr-2" />
-                            Desvincular
-                          </Button>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={handleLinkDiscord}>
-                            <LinkIcon className="w-3 h-3 mr-2" />
-                            Vincular
-                          </Button>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </DialogContent>
@@ -1507,7 +1189,6 @@ export default function DashboardPage() {
             onDismiss={() => {
               setShowBenefitsPopup(false)
             }}
-            discordConnected={!!discordConnection}
           />
         )}
 
@@ -1522,69 +1203,12 @@ export default function DashboardPage() {
           }}
         />
 
-        {/* Popup de onboarding para assinatura do Clube */}
-        {clubOnboardingData && (
-          <ClubOnboardingPopup
-            isOpen={showClubOnboarding}
-            onClose={() => setShowClubOnboarding(false)}
-            userData={{
-              id: clubOnboardingData.id,
-              full_name: clubOnboardingData.full_name || null,
-              phone_number: clubOnboardingData.phone_number || null,
-              birth_date: clubOnboardingData.birth_date || null,
-              discord_connected: !!discordConnection,
-              discord_username: discordConnection?.discord_username || null
-            }}
-            onComplete={handleOnboardingComplete}
-          />
-        )}
 
         {/* Painel Admin - Apenas para Gabriel Toth */}
         {showAdminPanel && (
           <AdminPanel onClose={() => setShowAdminPanel(false)} />
         )}
 
-        {/* Dialog de Cancelamento de Assinatura */}
-        <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-          <DialogContent className="bg-card border-border text-foreground">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500" />
-                Gerenciar Assinatura do Clube
-              </DialogTitle>
-              <CardDescription>
-                Você possui uma assinatura ativa do Clube WaveIGL.
-              </CardDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <Alert className="bg-amber-500/10 border-amber-500/20 text-amber-200">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                <AlertDescription>
-                  Ao cancelar, você perderá acesso aos benefícios exclusivos, chat prioritário e badges especiais ao final do período atual.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex flex-col gap-2">
-                <h4 className="text-sm font-medium">Tem certeza que deseja cancelar?</h4>
-                <p className="text-xs text-muted-foreground">
-                  Sua assinatura no Mercado Pago será interrompida e não haverá novas cobranças.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)} disabled={isCancelling}>
-                Manter Assinatura
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleCancelSubscription}
-                disabled={isCancelling}
-              >
-                {isCancelling ? 'Cancelando...' : 'Confirmar Cancelamento'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   )

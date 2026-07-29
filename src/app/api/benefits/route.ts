@@ -3,8 +3,7 @@ import { parseSessionCookie } from '@/lib/auth/session'
 import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { 
   getUserBenefits, 
-  createOrUpdateBenefit, 
-  getDiscordConnection,
+  createOrUpdateBenefit,
   SUBSCRIBER_BENEFITS_LIST 
 } from '@/lib/benefits'
 
@@ -20,29 +19,19 @@ export async function GET(request: NextRequest) {
     }
 
     const benefits = await getUserBenefits(session.userId)
-    const discordConnection = await getDiscordConnection(session.userId)
     
-    // Verificar se há benefícios pendentes de onboarding
     const pendingOnboarding = benefits.filter(b => 
       b.onboarding_step < 3 && !b.onboarding_dismissed_at
     )
     
-    // Verificar se há benefícios sem código WhatsApp
     const needsWhatsAppCode = benefits.filter(b => 
       !b.whatsapp_code && !b.whatsapp_joined_at
-    )
-    
-    // Verificar se precisa vincular Discord (subs de Kick/YouTube sem Discord vinculado)
-    const needsDiscordLink = !discordConnection && benefits.some(b => 
-      (b.platform === 'kick' || b.platform === 'youtube') && !b.discord_claimed_at
     )
 
     return NextResponse.json({
       benefits,
-      discordConnection,
       hasPendingOnboarding: pendingOnboarding.length > 0,
       needsWhatsAppCode: needsWhatsAppCode.length > 0,
-      needsDiscordLink,
       benefitsList: SUBSCRIBER_BENEFITS_LIST
     })
 
@@ -123,9 +112,6 @@ export async function PUT(request: NextRequest) {
     const allowedUpdates: Record<string, unknown> = {}
     if (updates.onboarding_step !== undefined) {
       allowedUpdates.onboarding_step = updates.onboarding_step
-    }
-    if (updates.discord_claimed_at !== undefined) {
-      allowedUpdates.discord_claimed_at = updates.discord_claimed_at
     }
 
     const { data: updated, error } = await db

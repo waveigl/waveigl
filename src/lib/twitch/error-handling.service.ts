@@ -1,14 +1,8 @@
 /**
  * ErrorHandlingService
- * Handles error logging, Discord notifications, and retry logic
  */
 
-import { notifyDiscord } from '@/lib/notifications/discord'
-
 export class ErrorHandlingService {
-  /**
-   * Log error with context and optionally notify Discord
-   */
   async logError(
     level: 'error' | 'critical',
     title: string,
@@ -16,31 +10,13 @@ export class ErrorHandlingService {
     context: Record<string, unknown>
   ): Promise<void> {
     const timestamp = new Date().toISOString()
-    const logContext = {
+
+    console.error(`[TwitchSubscriberManagement] ${level.toUpperCase()}: ${title}`, {
+      message,
       ...context,
       timestamp,
       environment: process.env.NODE_ENV,
-    }
-
-    // Structured log
-    console.error(`[TwitchSubscriberManagement] ${level.toUpperCase()}: ${title}`, {
-      message,
-      ...logContext,
     })
-
-    // Notify Discord for errors and critical issues
-    if (level === 'error' || level === 'critical') {
-      try {
-        await notifyDiscord({
-          level,
-          title: `[Twitch Subscribers] ${title}`,
-          message,
-          context: logContext,
-        })
-      } catch (discordError) {
-        console.error('[ErrorHandlingService] Failed to notify Discord:', discordError)
-      }
-    }
   }
 
   /**
