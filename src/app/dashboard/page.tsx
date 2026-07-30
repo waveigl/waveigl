@@ -10,7 +10,7 @@ import { PlatformSelector } from '@/components/PlatformSelector'
 import { LiveInfoPanel } from '@/components/LiveInfoPanel'
 import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
-import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop } from 'lucide-react'
+import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop, Tag, BarChart3 } from 'lucide-react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ProfileEditor } from '@/components/ProfileEditor'
@@ -22,6 +22,7 @@ import { AdminPanel } from '@/components/AdminPanel'
 import { DashboardStats } from '@/components/DashboardStats'
 import { getUserRole, isOwner, isAdmin } from '@/lib/permissions'
 import { useSessionProvider } from '@/hooks/use-session-sync'
+import CouponCodesTab from '@/components/CouponCodesTab'
 
 // Configuração visual dos cargos
 const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -221,6 +222,9 @@ export default function DashboardPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [accountsNeedingReauth, setAccountsNeedingReauth] = useState<Array<{ platform: string; missingScopes: string[] }>>([])
   const [isChatEnabled, setIsChatEnabled] = useState(true) // Controle de chat para o streamer
+
+  // Estado para aba ativa do dashboard
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'short-links'>('dashboard')
 
   // Estados para sistema de benefícios
   const [benefits, setBenefits] = useState<any[]>([])
@@ -973,16 +977,54 @@ export default function DashboardPage() {
         </Alert>
       )}
 
+      {/* Navigation Tabs */}
+      <div className="border-b border-border bg-card/50">
+        <nav className="flex items-center px-4 space-x-1 overflow-x-auto scrollbar-hide">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
+              activeTab === 'dashboard'
+                ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            <LayoutPanelTop className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('short-links')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
+              activeTab === 'short-links'
+                ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            Links Curtos
+          </button>
+        </nav>
+      </div>
+
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
 
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* Video Player Section */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="p-6 border-b border-border shrink-0">
-              <PlatformSelector
-                selectedPlatform={selectedPlatform}
+        {activeTab === 'short-links' ? (
+          <div className="flex-1 overflow-auto p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Links Curtos & Cupons</h2>
+              <p className="text-muted-foreground">
+                Crie e gerencie links de desconto, códigos de cupom e descontos diretos para usuários.
+              </p>
+            </div>
+            <CouponCodesTab />
+          </div>
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
+            {/* Video Player Section */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="p-6 border-b border-border shrink-0">
+                <PlatformSelector
+                  selectedPlatform={selectedPlatform}
                 onPlatformChange={setSelectedPlatform}
                 availablePlatforms={['twitch', 'youtube', 'kick']}
               />
@@ -1159,56 +1201,59 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+      </div>
+      )}
 
-        {/* Painel Dev: dados do usuário e contas vinculadas */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="p-6">
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">Dev: Sessão e Contas Vinculadas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
-                  {JSON.stringify(user, null, 2)}
-                  Linked: {JSON.stringify(linkedAccounts, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+      {/* Painel Dev: dados do usuário e contas vinculadas */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="p-6">
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-foreground">Dev: Sessão e Contas Vinculadas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
+                    {JSON.stringify(user, null, 2)}
+                    Linked: {JSON.stringify(linkedAccounts, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-        {/* Popup de onboarding de benefícios para novos subs */}
-        {pendingBenefit && (
-          <SubscriberBenefitsPopup
-            benefit={pendingBenefit}
-            isOpen={showBenefitsPopup}
-            onClose={() => {
-              setShowBenefitsPopup(false)
-              loadBenefits() // Recarregar para atualizar status
-            }}
-            onDismiss={() => {
-              setShowBenefitsPopup(false)
+          {/* Popup de onboarding de benefícios para novos subs */}
+          {pendingBenefit && (
+            <SubscriberBenefitsPopup
+              benefit={pendingBenefit}
+              isOpen={showBenefitsPopup}
+              onClose={() => {
+                setShowBenefitsPopup(false)
+                loadBenefits() // Recarregar para atualizar status
+              }}
+              onDismiss={() => {
+                setShowBenefitsPopup(false)
+              }}
+            />
+          )}
+
+          {/* Painel completo de benefícios */}
+          <BenefitsPanel
+            isOpen={showBenefitsPanel}
+            onClose={() => setShowBenefitsPanel(false)}
+            onOpenOnboarding={(benefit) => {
+              setPendingBenefit(benefit)
+              setShowBenefitsPanel(false)
+              setShowBenefitsPopup(true)
             }}
           />
-        )}
-
-        {/* Painel completo de benefícios */}
-        <BenefitsPanel
-          isOpen={showBenefitsPanel}
-          onClose={() => setShowBenefitsPanel(false)}
-          onOpenOnboarding={(benefit) => {
-            setPendingBenefit(benefit)
-            setShowBenefitsPanel(false)
-            setShowBenefitsPopup(true)
-          }}
-        />
 
 
-        {/* Painel Admin - Apenas para Gabriel Toth */}
-        {showAdminPanel && (
-          <AdminPanel onClose={() => setShowAdminPanel(false)} />
-        )}
+          {/* Painel Admin - Apenas para Gabriel Toth */}
+          {showAdminPanel && (
+            <AdminPanel onClose={() => setShowAdminPanel(false)} />
+          )}
 
+        </div>
       </div>
     </div>
   )
