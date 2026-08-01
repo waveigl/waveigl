@@ -1,19 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Github, Youtube, Twitch } from 'lucide-react'
+import { Github, Youtube, Twitch, Shield } from 'lucide-react'
 import Link from 'next/link'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
+  const [isDev, setIsDev] = useState(false)
+
+  useEffect(() => {
+    setIsDev(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  }, [])
 
   const handleOAuthLogin = async (platform: string) => {
     setIsLoading(platform)
     try {
-      // Redirect para OAuth da plataforma
       window.location.href = `/api/auth/${platform}`
     } catch (error) {
       console.error('Erro no login:', error)
@@ -58,6 +62,17 @@ export default function LoginPage() {
             <Github className="w-5 h-5 mr-2" />
             {isLoading === 'kick' ? 'Conectando...' : 'Entrar com Kick'}
           </Button>
+
+          {isDev && (
+            <Button
+              onClick={() => window.location.href = '/api/auth/dev-login'}
+              disabled={isLoading === 'dev'}
+              className="w-full bg-gradient-to-r from-zinc-700 to-zinc-800 hover:from-zinc-600 hover:to-zinc-700 text-amber-400 border border-amber-600/40"
+            >
+              <Shield className="w-5 h-5 mr-2" />
+              {isLoading === 'dev' ? 'Entrando...' : 'Entrar como Admin (Dev)'}
+            </Button>
+          )}
 
           <div className="text-center pt-4">
             <p className="text-muted-foreground text-sm">

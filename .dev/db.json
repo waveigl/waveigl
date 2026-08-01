@@ -1,0 +1,259 @@
+{
+  "profiles": [
+    {
+      "id": "dev-user-001",
+      "email": "dev@waveigl.local",
+      "username": "waveigl",
+      "avatar_url": null,
+      "full_name": "Dev WaveIGL",
+      "birth_date": null,
+      "birth_date_edits": 0,
+      "phone_number": null,
+      "last_phone_edit_at": null,
+      "last_profile_edit_at": null,
+      "role": "streamer",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "linked_accounts": [
+    {
+      "id": "dev-linked-twitch",
+      "user_id": "dev-user-001",
+      "platform": "twitch",
+      "platform_user_id": "123456789",
+      "platform_username": "waveigl",
+      "access_token": "dev-mock-token",
+      "refresh_token": "dev-mock-refresh",
+      "authorized_scopes": ["channel:read:subscriptions", "channel:manage:moderators", "chat:read", "chat:edit", "moderation:read", "moderator:manage:banned_users", "moderator:read:chatters", "user:read:email", "whispers:read", "whispers:edit"],
+      "needs_reauth": false,
+      "is_moderator": false,
+      "unlinked_at": null,
+      "unlinked_by_user_id": null,
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-linked-youtube",
+      "user_id": "dev-user-001",
+      "platform": "youtube",
+      "platform_user_id": "UCdev123456789",
+      "platform_username": "waveigl",
+      "access_token": "dev-mock-youtube-token",
+      "refresh_token": "dev-mock-youtube-refresh",
+      "authorized_scopes": ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.chat-memberships", "https://www.googleapis.com/auth/yt-analytics.readonly"],
+      "needs_reauth": false,
+      "is_moderator": false,
+      "unlinked_at": null,
+      "unlinked_by_user_id": null,
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-linked-kick",
+      "user_id": "dev-user-001",
+      "platform": "kick",
+      "platform_user_id": "987654321",
+      "platform_username": "waveigl",
+      "access_token": "dev-mock-kick-token",
+      "refresh_token": "dev-mock-kick-refresh",
+      "authorized_scopes": ["chat:write", "channel:read", "user:read"],
+      "needs_reauth": false,
+      "is_moderator": false,
+      "unlinked_at": null,
+      "unlinked_by_user_id": null,
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "subscriber_benefits": [],
+  "moderation_actions": [],
+  "active_timeouts": [],
+  "chat_messages": [],
+  "pending_unlinks": [],
+  "subscribers": [],
+  "streaming_sessions": [
+    {
+      "id": "dev-stream-session-1",
+      "view_count": 42,
+      "platform_breakdown": { "twitch": 30, "youtube": 10, "kick": 2 },
+      "created_at": "2026-07-30T17:00:00.000Z"
+    }
+  ],
+  "discount_links": [
+    {
+      "id": "dev-dl-1",
+      "token": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0",
+      "discount_price": 2.00,
+      "max_redemptions": 50,
+      "current_redemptions": 3,
+      "expiration_date": "2027-12-31T23:59:59.000Z",
+      "is_active": true,
+      "deleted_at": null,
+      "created_at": "2026-06-01T00:00:00.000Z",
+      "updated_at": "2026-06-15T00:00:00.000Z"
+    },
+    {
+      "id": "dev-dl-2",
+      "token": "z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4j3i2h1g0f9e8d7c6b5a4z3y2x1w0v",
+      "discount_price": 5.00,
+      "max_redemptions": 20,
+      "current_redemptions": 0,
+      "expiration_date": "2027-06-30T23:59:59.000Z",
+      "is_active": true,
+      "deleted_at": null,
+      "created_at": "2026-07-01T00:00:00.000Z",
+      "updated_at": "2026-07-01T00:00:00.000Z"
+    }
+  ],
+  "coupon_codes": [
+    {
+      "id": "dev-coupon-1",
+      "code": "DEV10",
+      "discount_price": 1.90,
+      "max_redemptions": 100,
+      "current_redemptions": 0,
+      "expiration_date": "2027-12-31T23:59:59.000Z",
+      "is_active": true,
+      "deleted_at": null,
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "direct_user_discounts": [],
+  "admin_security_config": [],
+  "admin_password_audit": [],
+  "admin_module_settings": [
+    {
+      "id": "dev-module-1",
+      "module_name": "chat_twitch",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Chat da Twitch",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-module-2",
+      "module_name": "chat_kick",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Chat do Kick",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-module-3",
+      "module_name": "chat_youtube",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Chat do YouTube",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-module-4",
+      "module_name": "internal_messages",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens internas",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-module-5",
+      "module_name": "video_player",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Player de vídeo",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "admin_message_settings": [
+    {
+      "id": "dev-msg-1",
+      "message_type": "subscription",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de sub",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-2",
+      "message_type": "gift_subscription",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de gift sub",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-3",
+      "message_type": "raid",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de raid",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-4",
+      "message_type": "follow",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de follow",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-5",
+      "message_type": "cheer",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de cheer",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-6",
+      "message_type": "host",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de host",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-7",
+      "message_type": "system_message",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Mensagens de sistema",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "dev-msg-8",
+      "message_type": "internal_notification",
+      "is_enabled": true,
+      "group_enabled": true,
+      "description": "Notificações internas",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "admin_action_log": [],
+  "user_channel_roles": [],
+  "auth_users": [
+    {
+      "id": "dev-user-001",
+      "email": "dev@waveigl.local",
+      "user_metadata": {
+        "full_name": "Dev WaveIGL",
+        "avatar_url": null
+      }
+    }
+  ]
+}

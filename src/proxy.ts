@@ -49,6 +49,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 }
 
 export async function proxy(request: NextRequest) {
+  // Dev mode: pular verificação de sessão e auth do Supabase
+  const isDevMode = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.DEV_MODE === 'true'
+  if (isDevMode) {
+    const session = await parseSessionCookie(request.headers.get('cookie'))
+    const isLogged = Boolean(session)
+
+    if (request.nextUrl.pathname.startsWith('/dashboard') && !isLogged) {
+      return addSecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+    }
+
+    return addSecurityHeaders(NextResponse.next({ request }))
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

@@ -1,0 +1,1 @@
+export function BenefitsPanel({ isOpen, onClose, onOpenOnboarding }: { isOpen: boolean; onClose: () => void; onOpenOnboarding: (benefit: any) => void }) { return null; }

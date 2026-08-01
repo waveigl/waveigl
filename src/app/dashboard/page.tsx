@@ -19,10 +19,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ModerationPanel } from '@/components/ModerationPanel'
 import BenefitsIndicator, { SubBadge } from '@/components/BenefitsIndicator'
 import { AdminPanel } from '@/components/AdminPanel'
+import { BenefitsPanel } from '@/components/BenefitsPanel'
+import { SubscriberBenefitsPopup } from '@/components/SubscriberBenefitsPopup'
 import { DashboardStats } from '@/components/DashboardStats'
 import { getUserRole, isOwner, isAdmin } from '@/lib/permissions'
 import { useSessionProvider } from '@/hooks/use-session-sync'
-import CouponCodesTab from '@/components/CouponCodesTab'
+import ShortLinksTab from '@/components/ShortLinksTab'
 
 // Configuração visual dos cargos
 const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -781,7 +783,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-background flex flex-col relative overflow-hidden" suppressHydrationWarning>
       {/* Overlay para suavizar redimensionamento (evita problemas com IFrames) */}
       {(isResizingChat.current || isResizingBottom.current) && (
         <div className="fixed inset-0 z-[100] cursor-col-resize select-none" />
@@ -1010,13 +1012,7 @@ export default function DashboardPage() {
 
         {activeTab === 'short-links' ? (
           <div className="flex-1 overflow-auto p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Links Curtos & Cupons</h2>
-              <p className="text-muted-foreground">
-                Crie e gerencie links de desconto, códigos de cupom e descontos diretos para usuários.
-              </p>
-            </div>
-            <CouponCodesTab />
+            <ShortLinksTab />
           </div>
         ) : (
           <div className="flex flex-1 overflow-hidden">
@@ -1143,7 +1139,6 @@ export default function DashboardPage() {
               </>
             )}
           </div>
-        </div>
 
         {/* Resizer Handle Vertical */}
         {(user?.role === 'streamer' || user?.role === 'admin') && isBottomVisible && (
@@ -1204,22 +1199,7 @@ export default function DashboardPage() {
       </div>
       )}
 
-      {/* Painel Dev: dados do usuário e contas vinculadas */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="p-6">
-              <Card className="bg-card border-border">
-                <CardHeader>
-                  <CardTitle className="text-foreground">Dev: Sessão e Contas Vinculadas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words">
-                    {JSON.stringify(user, null, 2)}
-                    Linked: {JSON.stringify(linkedAccounts, null, 2)}
-                  </pre>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+
 
           {/* Popup de onboarding de benefícios para novos subs */}
           {pendingBenefit && (
@@ -1249,12 +1229,7 @@ export default function DashboardPage() {
 
 
           {/* Painel Admin - Apenas para Gabriel Toth */}
-          {showAdminPanel && (
-            <AdminPanel onClose={() => setShowAdminPanel(false)} />
-          )}
-
         </div>
-      </div>
     </div>
   )
 }

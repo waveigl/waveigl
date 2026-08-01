@@ -1,0 +1,1 @@
+export function SubscriberBenefitsPopup({ benefit, isOpen, onClose, onDismiss }: { benefit: any; isOpen: boolean; onClose: () => void; onDismiss: () => void }) { return null; }
