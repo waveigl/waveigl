@@ -114,10 +114,14 @@ export class DirectUserDiscountService {
       id: row.id,
       userId: row.user_id,
       discountPrice: Number(row.discount_price),
+      maxRedemptions: Number(row.max_redemptions ?? 1),
+      currentRedemptions: Number(row.current_redemptions ?? 0),
+      expirationDate: row.expiration_date || row.created_at,
       createdBy: row.created_by,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       isActive: row.is_active,
+      status: row.status || 'active',
       deletedAt: row.deleted_at,
     }
   }

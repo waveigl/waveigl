@@ -136,7 +136,6 @@ export class CouponCodeService {
 
   static async incrementRedemption(id: string): Promise<void> {
     const { error } = await getSupabaseAdmin()
-      .from('coupon_codes')
       .rpc('increment_redemption', { coupon_id: id })
 
     if (error) throw error

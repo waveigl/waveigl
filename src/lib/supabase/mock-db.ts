@@ -42,7 +42,7 @@ function loadDb(): DbSchema {
       return cachedDb
     }
     const raw = fs.readFileSync(DB_PATH, 'utf-8')
-    cachedDb = JSON.parse(raw)
+    cachedDb = JSON.parse(raw) as DbSchema
     return cachedDb
   } catch {
     cachedDb = {}
@@ -87,9 +87,9 @@ function matchesFilter(record: Row, filter: Filter): boolean {
     case 'neq':
       return record[col] !== val
     case 'gte':
-      return record[col] >= val
+      return (record[col] as number) >= (val as number)
     case 'lte':
-      return record[col] <= val
+      return (record[col] as number) <= (val as number)
     case 'ilike': {
       const fieldVal = String(record[col] ?? '')
       const pattern = String(val ?? '')
@@ -214,7 +214,7 @@ function filterSelectedFields(records: Row[], fields: string): Row[] {
 function applySequence(records: Row[], seq: { type: string; fn?: (r: Row) => void }[]): Row[] {
   let result = [...records]
   for (const step of seq) {
-    if (step.fn) step.fn()
+    if (step.fn) step.fn({} as Row)
   }
   return result
 }
@@ -233,9 +233,19 @@ class MockQueryBuilder<T = any> {
   private joinRef: string | null = null
   private joinTable: string | null = null
   private notFilters: Filter[] = []
+  private pending: { op: 'insert' | 'update' | 'delete'; data?: any } | null = null
+  private requireSingle: boolean = false
+  private allowNull: boolean = false
 
   constructor(table: string) {
     this.table = table
+  }
+
+  then<R1 = MockResponse<T>, R2 = never>(
+    onfulfilled?: ((value: MockResponse<T>) => R1 | PromiseLike<R1>) | null,
+    onrejected?: ((reason: any) => R2 | PromiseLike<R2>) | null
+  ): Promise<R1 | R2> {
+    return Promise.resolve(this.resolve()).then(onfulfilled, onrejected) as Promise<R1 | R2>
   }
 
   select(fields?: string, opts?: { count?: 'exact'; head?: boolean }): this {
@@ -307,59 +317,67 @@ class MockQueryBuilder<T = any> {
     return this
   }
 
-  single(): MockResponse<T> & { then: any } {
-    return this.execute(true, false)
+  single(): this {
+    this.requireSingle = true
+    this.allowNull = false
+    return this
   }
 
-  maybeSingle(): MockResponse<T | null> & { then: any } {
-    return this.execute(true, true)
+  maybeSingle(): this {
+    this.requireSingle = true
+    this.allowNull = true
+    return this
   }
 
-  insert(data: any, _opts?: any): MockResponse<T> & { then: any } {
+  insert(data: any, _opts?: any): this {
+    this.pending = { op: 'insert', data }
+    return this
+  }
+
+  update(data: Partial<T>): this {
+    this.pending = { op: 'update', data }
+    return this
+  }
+
+  delete(): this {
+    this.pending = { op: 'delete' }
+    return this
+  }
+
+  private resolve(): MockResponse<T> {
+    if (this.pending) {
+      return this.executeMutation()
+    }
+    return this.executeQuery()
+  }
+
+  private executeMutation(): MockResponse<T> {
     const table = getTable(this.table)
-    const items = Array.isArray(data) ? data : [data]
     const now = new Date().toISOString()
 
-    for (const item of items) {
-      if (!item.id) item.id = generateId()
-      table.push({ ...item, created_at: item.created_at || now, updated_at: item.updated_at || now })
-    }
-    setTable(this.table, table)
-
-    const response: MockResponse<T[]> = {
-      data: items as T[],
-      error: null,
-      count: items.length,
-    }
-    return this.makeThenable(response)
-  }
-
-  update(data: Partial<T>): MockResponse<T> & { then: any } {
-    const table = getTable(this.table)
-    const now = new Date().toISOString()
-    const updated: Row[] = []
-
-    let filtered = table.filter(r => matchesAllFilters(r, this.filters))
-    for (let i = 0; i < table.length; i++) {
-      if (matchesAllFilters(table[i], this.filters)) {
-        table[i] = { ...table[i], ...data, updated_at: now }
-        updated.push(table[i])
+    if (this.pending!.op === 'insert') {
+      const rows = Array.isArray(this.pending!.data) ? this.pending!.data : [this.pending!.data]
+      for (const item of rows) {
+        if (!item.id) item.id = generateId()
+        table.push({ ...item, created_at: item.created_at || now, updated_at: item.updated_at || now })
       }
+      setTable(this.table, table)
+      return this.finalize(rows as T[], rows.length, true)
     }
-    setTable(this.table, table)
 
-    const response: MockResponse<T[]> = {
-      data: updated as T[],
-      error: null,
-      count: updated.length,
+    if (this.pending!.op === 'update') {
+      const updated: Row[] = []
+      for (let i = 0; i < table.length; i++) {
+        if (matchesAllFilters(table[i], this.filters)) {
+          table[i] = { ...table[i], ...this.pending!.data, updated_at: now }
+          updated.push(table[i])
+        }
+      }
+      setTable(this.table, table)
+      return this.finalize(updated as T[], updated.length, false)
     }
-    return this.makeThenable(response)
-  }
 
-  delete(): MockResponse<T> & { then: any } {
-    const table = getTable(this.table)
     const deleted: Row[] = []
-
     const remaining: Row[] = []
     for (const row of table) {
       if (matchesAllFilters(row, this.filters)) {
@@ -369,16 +387,39 @@ class MockQueryBuilder<T = any> {
       }
     }
     setTable(this.table, remaining)
-
-    const response: MockResponse<T[]> = {
-      data: deleted as T[],
-      error: null,
-      count: deleted.length,
-    }
-    return this.makeThenable(response)
+    return this.finalize(deleted as T[], deleted.length, false)
   }
 
-  private execute(requireSingle: boolean, allowNull: boolean): MockResponse<T> & { then: any } {
+  private finalize(data: T | T[], count: number, isArray: boolean): MockResponse<T> {
+    if (this.requireSingle) {
+      const items = Array.isArray(data) ? data : [data]
+      if (items.length === 0) {
+        if (this.allowNull) {
+          return { data: null, error: null, count: null }
+        }
+        return {
+          data: null,
+          error: { message: 'Nenhum registro encontrado', code: 'PGRST116', details: 'The result contains 0 rows' },
+          count: null,
+        }
+      }
+      if (items.length > 1) {
+        return {
+          data: items[0] as T,
+          error: { message: 'Múltiplos registros encontrados', code: 'PGRST117', details: `Expected 1, got ${items.length}` },
+          count: null,
+        }
+      }
+      return { data: items[0] as T, error: null, count: count != null ? 1 : null }
+    }
+
+    if (isArray) {
+      return { data: data as T, error: null, count }
+    }
+    return { data: data as T, error: null, count: null }
+  }
+
+  private executeQuery(): MockResponse<T> {
     const table = getTable(this.table)
     let results: Row[] = table.filter(r => matchesAllFilters(r, this.filters))
 
@@ -407,49 +448,28 @@ class MockQueryBuilder<T = any> {
 
     const selected = filterSelectedFields(results, this.fields)
 
-    if (requireSingle) {
+    if (this.requireSingle) {
       if (selected.length === 0) {
-        if (allowNull) {
-          const response: MockResponse<null> = { data: null, error: null, count: null }
-          return this.makeThenable(response)
+        if (this.allowNull) {
+          return { data: null, error: null, count: null }
         }
-        const response: MockResponse<null> = {
+        return {
           data: null,
           error: { message: 'Nenhum registro encontrado', code: 'PGRST116', details: 'The result contains 0 rows' },
           count: null,
         }
-        return this.makeThenable(response)
       }
       if (selected.length > 1) {
-        const response: MockResponse<T> = {
+        return {
           data: selected[0] as T,
           error: { message: 'Múltiplos registros encontrados', code: 'PGRST117', details: `Expected 1, got ${selected.length}` },
           count: null,
         }
-        return this.makeThenable(response)
       }
-      const response: MockResponse<T> = {
-        data: selected[0] as T,
-        error: null,
-        count: count != null ? 1 : null,
-      }
-      return this.makeThenable(response)
+      return { data: selected[0] as T, error: null, count: count != null ? 1 : null }
     }
 
-    const response: MockResponse<T[]> = {
-      data: selected as T[],
-      error: null,
-      count,
-    }
-    return this.makeThenable(response)
-  }
-
-  private makeThenable(response: MockResponse): MockResponse & { then: any } {
-    const thenable = response as MockResponse & { then: any }
-    thenable.then = (resolve?: (val: MockResponse) => any, _reject?: (err: any) => any) => {
-      return Promise.resolve(response).then(resolve)
-    }
-    return thenable
+    return { data: selected as T, error: null, count }
   }
 
 }

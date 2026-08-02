@@ -109,7 +109,6 @@ export class DiscountLinkService {
 
   static async incrementRedemption(id: string): Promise<void> {
     const { error } = await getSupabaseAdmin()
-      .from('discount_links')
       .rpc('increment_redemption', { link_id: id })
 
     if (error) throw error
