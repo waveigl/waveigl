@@ -77,14 +77,14 @@ function HeroCarousel() {
   }, [images.length])
   
   return (
-    <div className="relative order-2 lg:order-1 flex justify-center">
+    <div className="relative order-2 lg:order-1 flex justify-center w-full">
       {/* Neon glow effects */}
       <div className="absolute -left-20 top-1/4 w-40 h-80 bg-[#E38817]/30 blur-[100px] rounded-full" />
       <div className="absolute -right-20 top-1/3 w-40 h-80 bg-[#3B82F6]/20 blur-[100px] rounded-full" />
       
       {/* Carrossel */}
-      <div className="relative">
-        <div className="relative w-full max-w-[500px] aspect-square overflow-hidden rounded-2xl">
+      <div className="relative w-full max-w-[500px] mx-auto">
+        <div className="relative w-full aspect-square overflow-hidden rounded-2xl">
           {images.map((image, idx) => (
             <div
               key={idx}
