@@ -84,7 +84,7 @@ function HeroCarousel() {
       
       {/* Carrossel */}
       <div className="relative">
-        <div className="relative w-[500px] h-[500px] overflow-hidden rounded-2xl">
+        <div className="relative w-full max-w-[500px] aspect-square overflow-hidden rounded-2xl">
           {images.map((image, idx) => (
             <div
               key={idx}
