@@ -14,6 +14,9 @@ export interface SubscriberBenefit {
   onboarding_dismissed_at: string | null
   is_gift: boolean
   gifter_username: string | null
+  whatsapp_code: string | null
+  whatsapp_joined_at: string | null
+  whatsapp_claimed_at: string | null
   created_at: string
   updated_at: string
 }
