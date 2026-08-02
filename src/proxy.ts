@@ -27,7 +27,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   // Permite recursos do próprio domínio + CDNs necessários para players de vídeo
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://player.twitch.tv https://www.youtube.com https://kick.com https://www.youtube-nocookie.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://player.twitch.tv https://www.youtube.com https://kick.com https://www.youtube-nocookie.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://scripts.clarity.ms",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https: http: https://www.google-analytics.com https://www.googletagmanager.com https://c.bing.com",
