@@ -3,13 +3,8 @@
  * Implementa rate limiting e auditoria
  */
 
-import { createClient } from '@supabase/supabase-js'
 import { verifyPassword, getAccountLockStatus, calculateLockoutTime } from './password'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 interface VerifyPasswordResult {
   success: boolean
@@ -30,7 +25,7 @@ export async function verifyAdminPassword(
 ): Promise<VerifyPasswordResult> {
   try {
     // 1. Buscar configuração de segurança do admin
-    const { data: securityConfig, error: configError } = await supabase
+    const { data: securityConfig, error: configError } = await getSupabaseAdmin()
       .from('admin_security_config')
       .select('*')
       .eq('admin_user_id', userId)
@@ -81,7 +76,7 @@ export async function verifyAdminPassword(
         })
       }
 
-      await supabase
+      await getSupabaseAdmin()
         .from('admin_security_config')
         .update(updateData)
         .eq('admin_user_id', userId)
@@ -96,7 +91,7 @@ export async function verifyAdminPassword(
     }
 
     // 4. Senha correta - resetar contador e desbloquear
-    await supabase
+    await getSupabaseAdmin()
       .from('admin_security_config')
       .update({
         failed_attempts: 0,
@@ -132,7 +127,7 @@ async function logPasswordAttempt(
   userAgent?: string
 ): Promise<void> {
   try {
-    await supabase.from('admin_password_audit').insert({
+    await getSupabaseAdmin().from('admin_password_audit').insert({
       admin_user_id: userId,
       attempt_type: attemptType,
       ip_address: ipAddress,
@@ -151,7 +146,7 @@ export async function getPasswordAuditLog(
   limit: number = 50
 ): Promise<any[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseAdmin()
       .from('admin_password_audit')
       .select('*')
       .eq('admin_user_id', userId)
@@ -175,7 +170,7 @@ export async function getPasswordAuditLog(
  */
 export async function resetAccountLock(userId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseAdmin()
       .from('admin_security_config')
       .update({
         failed_attempts: 0,

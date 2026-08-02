@@ -3,7 +3,7 @@
  * Handles all interactions with Twitch API and subscriber data storage
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import {
   Subscriber,
   SubscriberWithContact,
@@ -20,10 +20,9 @@ const TWITCH_API_BASE = 'https://api.twitch.tv/helix'
 const TWITCH_PAGE_SIZE = 100
 
 export class TwitchSubscriberService {
-  private supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  private get supabase() {
+    return getSupabaseAdmin()
+  }
 
   private errorHandler = new ErrorHandlingService()
 

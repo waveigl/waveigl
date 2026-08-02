@@ -5,12 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
 import { verifyAdminAccess } from '@/lib/admin/verify'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar se a senha está configurada
-    const { data: securityConfig, error } = await supabase
+    const { data: securityConfig, error } = await getSupabaseAdmin()
       .from('admin_security_config')
       .select('id')
       .eq('admin_user_id', session.userId)

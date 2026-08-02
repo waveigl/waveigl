@@ -3,7 +3,7 @@
  * Aggregates live viewer counts from Twitch, YouTube, and Kick
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import { getCurrentYouTubeLive } from '../youtube/live'
 
 const TWITCH_API_BASE = 'https://api.twitch.tv/helix'
@@ -11,10 +11,9 @@ const KICK_API_BASE = 'https://kick.com/api/v2'
 const UPDATE_LOCK_TIMEOUT_MIN = 1 // Prevent concurrent updates within 1 minute
 
 export class ViewerStatsService {
-    private supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    private get supabase() {
+        return getSupabaseAdmin()
+    }
 
     /**
      * Fetches viewer count from Twitch

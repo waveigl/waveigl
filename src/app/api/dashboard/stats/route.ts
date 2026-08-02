@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { verifyDashboardAccess } from '@/lib/auth/access'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,10 +13,7 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
+        const supabase = getSupabaseAdmin()
 
         // 2. Buscar contagem de Membros do Clube (profiles ativos)
         const { count: clubMembersCount, error: clubError } = await supabase

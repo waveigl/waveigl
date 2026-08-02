@@ -3,7 +3,7 @@
  * Handles message sending, tracking, and retry logic for Twitch whispers
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase/server'
 import {
   ContactStatus,
   MessageSendResult,
@@ -18,10 +18,9 @@ const BASE_DELAY = 1000 // 1 second
 const MESSAGE_DELAY = 100 // 100ms between messages
 
 export class MessageService {
-  private supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  private get supabase() {
+    return getSupabaseAdmin()
+  }
 
   private errorHandler = new ErrorHandlingService()
   private validator = new ValidationService()
