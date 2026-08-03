@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Política de Privacidade | WaveIGL',
-  description: 'Política de Privacidade do Clube WaveIGL em conformidade com a LGPD - Lei Geral de Proteção de Dados.',
+  description: 'Política de Privacidade do WaveIGL em conformidade com a LGPD - Lei Geral de Proteção de Dados.',
 }
 
 export default function PoliticaPrivacidadePage() {
@@ -99,7 +99,7 @@ export default function PoliticaPrivacidadePage() {
               </div>
               <div className="space-y-4 pl-9">
                 <p>
-                  Esta Política de Privacidade descreve como o <strong className="text-[#E38817]">Clube WaveIGL</strong> 
+                  Esta Política de Privacidade descreve como o <strong className="text-[#E38817]">WaveIGL</strong> 
                   ("nós", "nosso" ou "WaveIGL") coleta, usa, armazena e protege suas informações pessoais em conformidade 
                   com a <strong>Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018)</strong> e demais legislações aplicáveis.
                 </p>
@@ -354,13 +354,12 @@ export default function PoliticaPrivacidadePage() {
               </div>
               <div className="space-y-4 pl-9">
                 <p>
-                  Nossos serviços são destinados a maiores de 13 anos. O tratamento de dados de menores 
-                  entre 13 e 18 anos requer consentimento de pelo menos um dos pais ou responsável legal, 
-                  conforme Art. 14 da LGPD.
+                  Nossos serviços são destinados exclusivamente a maiores de 18 anos.
                 </p>
                 <p>
-                  Se você é pai ou responsável e acredita que seu filho menor forneceu dados pessoais 
-                  sem consentimento adequado, entre em contato conosco para que possamos tomar as medidas necessárias.
+                  Não coletamos intencionalmente dados de menores de 18 anos. Se você é responsável 
+                  e acredita que um menor forneceu dados pessoais, entre em contato conosco para que 
+                  possamos tomar as medidas necessárias.
                 </p>
               </div>
             </section>

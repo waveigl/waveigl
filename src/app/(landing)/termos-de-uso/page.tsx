@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Termos de Uso | WaveIGL',
-  description: 'Termos de Uso e Condições do Clube WaveIGL. Leia atentamente antes de utilizar nossos serviços.',
+  description: 'Termos de Uso e Condições do WaveIGL. Leia atentamente antes de utilizar nossos serviços.',
 }
 
 export default function TermosDeUsoPage() {
@@ -64,7 +64,7 @@ export default function TermosDeUsoPage() {
                 <div>
                   <p className="font-semibold text-[#E38817] mb-2">Leia com atenção</p>
                   <p className="text-sm text-[#D9D9D9]/80">
-                    Ao utilizar o Clube WaveIGL, você concorda com estes Termos de Uso. Se você não concordar 
+                    Ao utilizar o WaveIGL, você concorda com estes Termos de Uso. Se você não concordar 
                     com qualquer parte destes termos, não utilize nossos serviços.
                   </p>
                 </div>
@@ -115,10 +115,10 @@ export default function TermosDeUsoPage() {
               <div className="space-y-4 pl-9">
                 <p>Para os fins destes Termos de Uso, considera-se:</p>
                 <ul className="space-y-3">
-                  <li><strong className="text-[#E38817]">"WaveIGL" ou "nós":</strong> Refere-se ao Clube WaveIGL, operado por Conrado Koerich.</li>
-                  <li><strong className="text-[#E38817]">"Usuário" ou "você":</strong> Pessoa física que utiliza os serviços do Clube WaveIGL.</li>
+                  <li><strong className="text-[#E38817]">"WaveIGL" ou "nós":</strong> Refere-se ao WaveIGL, operado por Conrado Koerich.</li>
+                  <li><strong className="text-[#E38817]">"Usuário" ou "você":</strong> Pessoa física que utiliza os serviços do WaveIGL.</li>
                   <li><strong className="text-[#E38817]">"Serviços":</strong> Plataforma web, chat unificado, acesso ao Discord VIP e demais funcionalidades.</li>
-                  <li><strong className="text-[#E38817]">"Assinatura":</strong> Inscrição paga em qualquer das plataformas parceiras (Twitch, YouTube, Kick).</li>
+                  <li><strong className="text-[#E38817]">"Assinatura" ou "Sub":</strong> Inscrição paga ativa em uma das plataformas parceiras (Twitch, YouTube ou Kick).</li>
                   <li><strong className="text-[#E38817]">"Conteúdo":</strong> Textos, imagens, vídeos, mensagens e qualquer material disponibilizado na plataforma.</li>
                 </ul>
               </div>
@@ -131,13 +131,12 @@ export default function TermosDeUsoPage() {
                 <h2 className="text-2xl font-bold text-[#D9D9D9]">2. Descrição dos Serviços</h2>
               </div>
               <div className="space-y-4 pl-9">
-                <p>O Clube WaveIGL oferece os seguintes serviços para assinantes:</p>
+                <p>O WaveIGL oferece os seguintes serviços para assinantes:</p>
                 <ul className="list-disc list-inside space-y-2">
                   <li><strong>Chat Unificado:</strong> Interface que integra mensagens de Twitch, YouTube e Kick</li>
                   <li><strong>Discord VIP:</strong> Acesso a canais exclusivos no servidor Discord</li>
                   <li><strong>WhatsApp:</strong> Acesso ao grupo exclusivo mediante código único</li>
                   <li><strong>Aulas de CS2:</strong> Conteúdo educacional transmitido ao vivo</li>
-                  <li><strong>Sorteios:</strong> Participação em sorteios exclusivos para membros</li>
                 </ul>
                 <p className="text-sm text-[#D9D9D9]/60">
                   Os serviços podem ser modificados, expandidos ou descontinuados a qualquer momento, 
@@ -155,7 +154,7 @@ export default function TermosDeUsoPage() {
               <div className="space-y-4 pl-9">
                 <h3 className="font-semibold text-[#D9D9D9]">3.1. Requisitos</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  <li>Ter pelo menos 13 anos de idade (menores de 18 anos necessitam consentimento dos responsáveis)</li>
+                  <li>Ter pelo menos 18 anos de idade</li>
                   <li>Fornecer informações verdadeiras e atualizadas</li>
                   <li>Vincular pelo menos uma conta de plataforma de streaming (Twitch, YouTube ou Kick)</li>
                 </ul>
@@ -179,7 +178,7 @@ export default function TermosDeUsoPage() {
               <div className="space-y-4 pl-9">
                 <h3 className="font-semibold text-[#D9D9D9]">4.1. Formas de Acesso</h3>
                 <p>
-                  O acesso aos benefícios do Clube WaveIGL é concedido através de assinatura ativa em 
+                  O acesso aos benefícios do WaveIGL é concedido através de assinatura ativa em 
                   uma das seguintes plataformas:
                 </p>
                 <ul className="list-disc list-inside space-y-2">

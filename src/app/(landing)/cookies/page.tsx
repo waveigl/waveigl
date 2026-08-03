@@ -8,7 +8,7 @@ const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://waveigl.com'
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
-  description: 'Política de Cookies do Clube WaveIGL. Saiba quais cookies utilizamos (apenas essenciais para autenticação) e como gerenciá-los.',
+  description: 'Política de Cookies do WaveIGL. Saiba quais cookies utilizamos (apenas essenciais para autenticação) e como gerenciá-los.',
   keywords: ['política de cookies', 'cookies', 'LGPD', 'WaveIGL cookies', 'Supabase'],
   openGraph: {
     title: 'Política de Cookies | WaveIGL',
