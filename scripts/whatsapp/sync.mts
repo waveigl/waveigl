@@ -23,11 +23,22 @@ import pino from 'pino'
 
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, type WASocket } from '@whiskeysockets/baileys'
 import qrcode from 'qrcode-terminal'
+import QRCode from 'qrcode'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || '.dev/whatsapp-auth'
 
 const GROUP_NAME = process.env.WHATSAPP_GROUP_NAME || 'Clão do WaveIGL'
+
+// Tempo de espera pela conexão (QR). Padrão: 5 min — celular lento precisa de tempo.
+const CONNECT_TIMEOUT_MS = parseInt(process.env.WHATSAPP_CONNECT_TIMEOUT_MS || '300000', 10)
+
+// Caminho do arquivo PNG do QR (para facilitar o scan com celular lento)
+const QR_PNG_PATH = process.env.WHATSAPP_QR_PNG || '.dev/whatsapp-qr.png'
+
+// Número do WhatsApp para usar "Pairing Code" em vez de QR (sem +, formato E.164: DDI+DDD+número).
+// Ex.: Brasil 5511999998888. Se vazio, usa QR Code.
+const PAIRING_PHONE = (process.env.WHATSAPP_PHONE_NUMBER || '').replace(/\D/g, '')
 
 // ---------------------------------------------------------------
 // Supabase (produção)
@@ -222,43 +233,87 @@ async function sync() {
   const supabase = getSupabase()
   console.log(`[WhatsApp Sync] Conectando (auth dir: ${AUTH_DIR})...`)
 
+  // Garantir que a pasta .dev exista (para o PNG do QR)
+  const fs = await import('node:fs')
+  const path = await import('node:path')
+  const devDir = path.resolve(process.cwd(), '.dev')
+  if (!fs.existsSync(devDir)) fs.mkdirSync(devDir, { recursive: true })
+
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
   const { version } = await fetchLatestBaileysVersion()
-
   const logger = pino({ level: 'warn' })
 
-  const sock = makeWASocket({
-    version,
-    auth: state,
-    logger,
-    browser: ['WaveIGL', 'Chrome', 'Desktop'],
-  })
+  // Loop de conexão: cria socket, aguarda 'open'. Se o WhatsApp pedir
+  // restart (após parear/escaneado), recria o socket com as creds salvas.
+  let sock: WASocket | null = null
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    if (sock) { try { sock.end(undefined) } catch { /* ignore */ } }
 
-  sock.ev.on('creds.update', saveCreds)
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update
-    if (qr) {
-      console.log('\n[WhatsApp] Escaneie o QR Code abaixo no celular (WhatsApp > Aparelhos conectados):\n')
-      qrcode.generate(qr, { small: true })
-    }
-    if (connection === 'open') {
-      console.log('[WhatsApp] Conectado!')
-    }
-    if (connection === 'close') {
-      const reason = (lastDisconnect?.error as any)?.output?.statusCode
-      console.log(`[WhatsApp] Conexão fechada. Reason: ${reason} (${DisconnectReason[reason] || 'desconhecido'})`)
-      // Não encerrar aqui se qr/reauth ainda pendente
-    }
-  })
-
-  // Aguarda a conexão abrir (até 60s)
-  const connected = new Promise<void>((resolve) => {
-    const t = setTimeout(() => resolve(), 60000)
-    sock.ev.on('connection.update', (u) => {
-      if (u.connection === 'open') { clearTimeout(t); resolve() }
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger,
+      browser: ['WaveIGL', 'Chrome', 'Desktop'],
     })
-  })
-  await connected
+
+    let openResolve: (() => void) | null = null
+    const opened = new Promise<void>((resolve) => { openResolve = resolve })
+
+    sock.ev.on('creds.update', saveCreds)
+    let pairingRequested = false
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update
+      if (qr) {
+        if (PAIRING_PHONE && !pairingRequested) {
+          pairingRequested = true
+          try {
+            const code = await sock!.requestPairingCode(PAIRING_PHONE)
+            const formatted = code?.match(/.{1,4}/g)?.join('-') || code
+            console.log(`\n[WhatsApp] CÓDIGO DE PAREAMENTO: ${formatted} (válido ~60s, estável)\n`)
+            console.log('No celular: WhatsApp > Aparelhos conectados > Conectar um aparelho > "conectar com número de telefone em vez de código QR" > digite o código acima.')
+            try {
+              const fs = await import('node:fs')
+              fs.writeFileSync(QR_PNG_PATH.replace(/\.png$/, '') + '-pairing-code.txt', `Código: ${formatted}\n`)
+            } catch { /* ignore */ }
+          } catch (e) {
+            console.warn('[WhatsApp] Falha ao solicitar pairing code:', e)
+            pairingRequested = false
+          }
+        } else {
+          console.log('\n[WhatsApp] Escaneie o QR Code abaixo no celular (WhatsApp > Aparelhos conectados):\n')
+          qrcode.generate(qr, { small: true })
+          try {
+            await QRCode.toFile(QR_PNG_PATH, qr, { width: 400, margin: 2 })
+            console.log(`[WhatsApp] QR também salvo em ${QR_PNG_PATH} — abra a imagem para escanear com mais facilidade.`)
+          } catch (e) {
+            console.warn('[WhatsApp] Não foi possível salvar o QR como imagem:', e)
+          }
+        }
+      }
+      if (connection === 'open') {
+        console.log('[WhatsApp] Conectado!')
+        openResolve?.()
+      }
+      if (connection === 'close') {
+        const reason = (lastDisconnect?.error as any)?.output?.statusCode
+        console.log(`[WhatsApp] Conexão fechada. Reason: ${reason} (${DisconnectReason[reason] || 'desconhecido'})`)
+      }
+    })
+
+    // Aguarda a conexão abrir (até 5 min por padrão — celular lento)
+    const t = setTimeout(() => openResolve?.(), CONNECT_TIMEOUT_MS)
+    await opened
+    clearTimeout(t)
+
+    if (sock.user?.id) break // autenticado (creds existentes ou pareamento concluído)
+    // se não autenticou ainda (timeout), tenta de novo (QR/código atualiza)
+    console.log('[WhatsApp] Sem autenticação ainda — tentando novamente...')
+  }
+
+  if (!sock?.user?.id) {
+    console.error('[WhatsApp] Não foi possível autenticar após várias tentativas. Verifique o QR/código e rode novamente.')
+    process.exit(1)
+  }
 
   // Buscar subs ativos (expires_at no futuro) com telefone
   const now = new Date().toISOString()
