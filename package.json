@@ -11,8 +11,8 @@
     "test:unit": "vitest --run tests/unit",
     "test:integration": "vitest --run tests/integration",
     "test:e2e": "playwright test",
-    "whatsapp:sync": "tsx scripts/whatsapp/sync.ts",
-    "whatsapp:sync:dry": "tsx scripts/whatsapp/sync.ts --dry-run",
+    "whatsapp:sync": "tsx scripts/whatsapp/sync.mts",
+    "whatsapp:sync:dry": "tsx scripts/whatsapp/sync.mts --dry-run",
     "e2e:ui": "playwright test --ui",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push"

@@ -16,6 +16,9 @@
  */
 
 import 'dotenv/config'
+import { config as loadEnv } from 'dotenv'
+loadEnv({ path: '.env.local' })
+
 import pino from 'pino'
 
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, type WASocket } from '@whiskeysockets/baileys'
@@ -46,6 +49,7 @@ interface Signup {
   display_name: string | null
   phone_number: string | null
   consent_google_contacts: boolean | null
+  google_contact_id: string | null
   expires_at: string | null
   platform: string
 }
@@ -109,7 +113,7 @@ async function syncUserToGoogleContacts(supabase: SupabaseClient, signup: Signup
 
     const { data: adminAccount, error: adminError } = await supabase
       .from('linked_accounts')
-      .select('access_token, refresh_token, google_contact_id')
+      .select('access_token, refresh_token')
       .eq('platform', 'google_contacts_admin')
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -123,7 +127,7 @@ async function syncUserToGoogleContacts(supabase: SupabaseClient, signup: Signup
     const givenName = `${signup.display_name || signup.full_name || signup.user_id} (Wave)`
     const familyName = signup.full_name || ''
     const formattedPhone = formatPhoneForGoogle(signup.phone_number)
-    const existingContactId = adminAccount.google_contact_id || null
+    const existingContactId = signup.google_contact_id || null
 
     const performRequest = async (token: string, isRetry = false): Promise<any> => {
       let url = 'https://people.googleapis.com/v1/people:createContact'
@@ -169,9 +173,9 @@ async function syncUserToGoogleContacts(supabase: SupabaseClient, signup: Signup
     const result = await response.json()
     if (result.resourceName && result.resourceName !== existingContactId) {
       await supabase
-        .from('linked_accounts')
+        .from('profiles')
         .update({ google_contact_id: result.resourceName, updated_at: new Date().toISOString() })
-        .eq('platform', 'google_contacts_admin')
+        .eq('id', signup.user_id)
     }
     console.log(`  [Google] Contato OK para ${givenName}: ${result.resourceName}`)
     return { ok: true }
@@ -228,6 +232,7 @@ async function sync() {
     auth: state,
     logger,
     browser: ['WaveIGL', 'Chrome', 'Desktop'],
+  })
 
   sock.ev.on('creds.update', saveCreds)
   sock.ev.on('connection.update', async (update) => {
@@ -263,7 +268,7 @@ async function sync() {
       user_id,
       platform,
       expires_at,
-      profiles ( full_name, display_name, phone_number, consent_google_contacts )
+      profiles ( full_name, display_name, phone_number, consent_google_contacts, google_contact_id )
     `)
     .gte('expires_at', now)
     .order('subscribed_at', { ascending: false })
@@ -284,6 +289,7 @@ async function sync() {
         display_name: p.display_name || null,
         phone_number: p.phone_number || null,
         consent_google_contacts: p.consent_google_contacts ?? false,
+        google_contact_id: p.google_contact_id || null,
       } as Signup
     })
     .filter((s) => s.phone_number)
@@ -356,8 +362,9 @@ async function sync() {
   }
 
   console.log('\n[WhatsApp Sync] Concluído.')
-  await sock.logout().catch(() => {})
-  process.exit(0)
+  // IMPORTANTE: apenas encerrar a conexão, NÃO deslogar (logout apagaria a sessão e forçaria novo QR a cada execução)
+  sock.end(undefined)
+  setTimeout(() => process.exit(0), 1000)
 }
 
 sync().catch((e) => {
