@@ -516,6 +516,37 @@ class MockSupabaseClient {
   from(table: string): MockQueryBuilder {
     return new MockQueryBuilder(table)
   }
+
+  async rpc(fn: string, params: Record<string, unknown> = {}): Promise<MockResponse> {
+    if (fn === 'increment_redemption') {
+      const db = loadDb()
+      const id = params.link_id ?? params.coupon_id
+      let affected = 0
+
+      for (const tableName of ['discount_links', 'coupon_codes']) {
+        const rows = db[tableName] || []
+        for (const row of rows) {
+          if (row.id === id) {
+            row.current_redemptions = (Number(row.current_redemptions) || 0) + 1
+            affected++
+          }
+        }
+      }
+
+      if (affected > 0) {
+        cachedDb = db
+        saveDb()
+      }
+
+      return { data: null, error: null, count: affected }
+    }
+
+    return {
+      data: null,
+      error: { message: `RPC ${fn} not supported in mock`, code: '42501', details: 'mock' },
+      count: null,
+    }
+  }
 }
 
 let mockInstance: MockSupabaseClient | null = null
