@@ -115,11 +115,11 @@ export default function TermosDeUsoPage() {
               <div className="space-y-4 pl-9">
                 <p>Para os fins destes Termos de Uso, considera-se:</p>
                 <ul className="space-y-3">
-                  <li><strong className="text-[#E38817]">"WaveIGL" ou "nós":</strong> Refere-se ao WaveIGL, operado por Conrado Koerich.</li>
+                  <li><strong className="text-[#E38817]">"WaveIGL" ou "nós":</strong> Apelido da persona/criador de conteúdo Conrado Koerich.</li>
                   <li><strong className="text-[#E38817]">"Usuário" ou "você":</strong> Pessoa física que utiliza os serviços do WaveIGL.</li>
                   <li><strong className="text-[#E38817]">"Serviços":</strong> Plataforma web, chat unificado, acesso ao Discord VIP e demais funcionalidades.</li>
                   <li><strong className="text-[#E38817]">"Assinatura" ou "Sub":</strong> Inscrição paga ativa em uma das plataformas parceiras (Twitch, YouTube ou Kick).</li>
-                  <li><strong className="text-[#E38817]">"Conteúdo":</strong> Textos, imagens, vídeos, mensagens e qualquer material disponibilizado na plataforma.</li>
+                  <li><strong className="text-[#E38817]">"Conteúdo":</strong> Textos, imagens, vídeos, mensagens e qualquer material disponibilizado nas plataformas parceiras.</li>
                 </ul>
               </div>
             </section>
@@ -131,9 +131,16 @@ export default function TermosDeUsoPage() {
                 <h2 className="text-2xl font-bold text-[#D9D9D9]">2. Descrição dos Serviços</h2>
               </div>
               <div className="space-y-4 pl-9">
-                <p>O WaveIGL oferece os seguintes serviços para assinantes:</p>
+                <p>O WaveIGL oferece serviços gratuitos, disponíveis a todos, e benefícios exclusivos para assinantes:</p>
+
+                <h3 className="font-semibold text-[#D9D9D9]">2.1. Serviços Gratuitos</h3>
                 <ul className="list-disc list-inside space-y-2">
-                  <li><strong>Chat Unificado:</strong> Interface que integra mensagens de Twitch, YouTube e Kick</li>
+                  <li><strong>Chat Unificado:</strong> Visualização e acompanhamento das mensagens de Twitch, YouTube e Kick, sem necessidade de cadastro ou conta</li>
+                  <li><strong>Envio de mensagens no chat:</strong> Requer cadastro e conta no WaveIGL</li>
+                </ul>
+
+                <h3 className="font-semibold text-[#D9D9D9] mt-6">2.2. Benefícios para Assinantes</h3>
+                <ul className="list-disc list-inside space-y-2">
                   <li><strong>Discord VIP:</strong> Acesso a canais exclusivos no servidor Discord</li>
                   <li><strong>WhatsApp:</strong> Acesso ao grupo exclusivo mediante código único</li>
                   <li><strong>Aulas de CS2:</strong> Conteúdo educacional transmitido ao vivo</li>
