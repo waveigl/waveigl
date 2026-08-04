@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Copy, ExternalLink, BarChart3, CheckCircle2 } from 'lucide-react'
+import { Copy, ExternalLink, Plus, CheckCircle2 } from 'lucide-react'
+import DiscountForm from '@/components/DiscountForm'
 
 interface ShortLink {
   id: string
@@ -19,10 +20,25 @@ export default function ShortLinksTab() {
   const [links, setLinks] = useState<ShortLink[]>([])
   const [loading, setLoading] = useState(true)
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string>('dev-user-001')
 
   useEffect(() => {
     fetchLinks()
+    fetchCurrentUserId()
   }, [])
+
+  const fetchCurrentUserId = async () => {
+    try {
+      const response = await fetch('/api/me')
+      const data = await response.json()
+      if (data.user?.id) {
+        setCurrentUserId(data.user.id)
+      }
+    } catch (error) {
+      console.error('[ShortLinksTab] Error fetching current user:', error)
+    }
+  }
 
   const fetchLinks = async () => {
     try {
@@ -46,6 +62,26 @@ export default function ShortLinksTab() {
     setTimeout(() => setCopiedToken(null), 2000)
   }
 
+  const handleFormSubmit = async (formData: any) => {
+    try {
+      const response = await fetch('/api/discounts/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          createdBy: currentUserId,
+        }),
+      })
+
+      if (response.ok) {
+        setShowForm(false)
+        await fetchLinks()
+      }
+    } catch (error) {
+      console.error('[ShortLinksTab] Error creating link:', error)
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Carregando links...</div>
   }
@@ -54,7 +90,19 @@ export default function ShortLinksTab() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-foreground">Links Curtos</h2>
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-1" />
+          Adicionar Link
+        </Button>
       </div>
+
+      {showForm && (
+        <DiscountForm
+          type="link"
+          onSubmit={handleFormSubmit}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
 
       {links.length === 0 ? (
         <Card className="bg-card/50 border border-border">
