@@ -41,3 +41,9 @@ next-env.d.ts
 
 # whatsapp session (baileys auth)
 /.dev/whatsapp-auth
+/.dev/*.log
+/.dev/*-pid
+/.dev/vercel-*.txt
+/.env.local
+/.env.*.local
+supabase/.temp/

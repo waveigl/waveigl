@@ -45,15 +45,34 @@ A sessão fica salva em `.dev/whatsapp-auth/` (gitignorado). Execuções futuras
 
 ## Passo 2 — Vincular a conta Google Contacts (uma vez)
 
-A sessão do Google do admin ainda precisa ser criada via OAuth:
-1. Rode o site localmente: `npm run dev` (ou use `https://www.waveigl.com`).
-2. Logue com a conta de **admin/owner** do WaveIGL.
-3. Acesse `/api/auth/google-contacts` — isso abre o fluxo OAuth do Google (conta `gabrieltothgoncalves@gmail.com`).
-4. Autorize com escopo de contatos. Os tokens ficam salvos em `linked_accounts` (plataforma `google_contacts_admin`).
+A sessão do Google do admin é criada via OAuth **no site de produção** (`https://www.waveigl.com`) — o site roda na Vercel, não neste PC:
+1. Acesse `https://www.waveigl.com/login` e entre com a conta de **admin/owner** do WaveIGL (`csgoblackbelt@gmail.com`).
+2. Acesse `https://www.waveigl.com/api/auth/google-contacts` — abre o fluxo OAuth do Google.
+3. Na tela do Google, escolha **`gabrieltothgoncalves@gmail.com`** e autorize o acesso a contatos.
+4. Voltará para `/dashboard?success=google_contacts_linked`. Os tokens ficam salvos no Supabase (`linked_accounts`, plataforma `google_contacts_admin`).
 
-> O projeto OAuth `waveigl-phone-contacts-to-toth` deve ter estas **redirect URIs autorizadas**:
-> - `http://localhost:3000/api/auth/google-contacts`
+> Pré-requisito: a Vercel (produção) deve ter `ADMIN_GOOGLE_CLIENT_ID` / `ADMIN_GOOGLE_CLIENT_SECRET` apontando para o projeto **`waveigl-phone-contacts-to-toth`** (NÃO o client antigo do YouTube/csgoblackbelt). Confirmado e aplicado por CLI (ver seção abaixo).
+
+> O projeto OAuth `waveigl-phone-contacts-to-toth` deve ter estas **redirect URIs autorizadas** no Google Cloud Console:
 > - `https://www.waveigl.com/api/auth/google-contacts`
+> - `http://localhost:3000/api/auth/google-contacts`
+> - `http://localhost:3001/api/auth/google-contacts`
+
+> A redirect URI é montada dinamicamente pelo app a partir da origin da requisição (`NEXT_PUBLIC_APP_URL` na Vercel = `https://www.waveigl.com`).
+
+## Atualizar env vars de produção (Vercel CLI)
+
+Para trocar as credenciais do Google Contacts na Vercel (quando mudar de projeto OAuth):
+
+```bash
+# requer login: vercel login  (ou token em VERCEL_TOKEN)
+vercel link --yes --project waveigl
+vercel env rm ADMIN_GOOGLE_CLIENT_ID production --yes
+vercel env rm ADMIN_GOOGLE_CLIENT_SECRET production --yes
+echo "SEU_CLIENT_ID" | vercel env add ADMIN_GOOGLE_CLIENT_ID production
+echo "SEU_CLIENT_SECRET" | vercel env add ADMIN_GOOGLE_CLIENT_SECRET production
+vercel --prod --yes   # redeploy para aplicar
+```
 
 ## Execução manual
 
