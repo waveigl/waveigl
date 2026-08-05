@@ -159,7 +159,7 @@ export const AdminPasswordModal: FC<AdminPasswordModalProps> = ({
         {/* Security Info */}
         <div className="mt-6 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
           <p className="text-xs text-slate-600 dark:text-slate-400">
-            🔒 <strong>Segurança:</strong> Sua senha é protegida com bcrypt e nunca é armazenada em texto plano.
+            🔒 <strong>Segurança:</strong> Sua senha é protegida com Argon2 e nunca é armazenada em texto plano.
             Máximo de 5 tentativas antes de bloqueio de 15 minutos.
           </p>
         </div>

@@ -14,14 +14,14 @@ import {
 
 describe('Admin Password Security', () => {
   describe('hashPassword', () => {
-    it('deve gerar hash bcrypt válido', async () => {
+    it('deve gerar hash argon2 válido', async () => {
       const password = 'SecurePass123!@#'
       const hash = await hashPassword(password)
 
       expect(hash).toBeDefined()
       expect(hash).not.toBe(password)
-      expect(hash.length).toBeGreaterThan(20) // Bcrypt hash é longo
-      expect(hash.startsWith('$2')).toBe(true) // Bcrypt começa com $2
+      expect(hash.length).toBeGreaterThan(20) // Argon2 hash é longo
+      expect(hash.startsWith('$argon2id$')).toBe(true) // Argon2id começa com $argon2id$
     })
 
     it('deve lançar erro se senha for muito curta', async () => {
@@ -38,7 +38,7 @@ describe('Admin Password Security', () => {
       const hash1 = await hashPassword(password)
       const hash2 = await hashPassword(password)
 
-      expect(hash1).not.toBe(hash2) // Bcrypt usa salt aleatório
+      expect(hash1).not.toBe(hash2) // Argon2 usa salt aleatório
     })
   })
 
@@ -222,7 +222,9 @@ describe('Admin Password Security', () => {
 
   describe('PASSWORD_CONFIG', () => {
     it('deve ter configurações corretas', () => {
-      expect(PASSWORD_CONFIG.SALT_ROUNDS).toBe(12)
+      expect(PASSWORD_CONFIG.MEMORY_COST).toBe(65536)
+      expect(PASSWORD_CONFIG.TIME_COST).toBe(3)
+      expect(PASSWORD_CONFIG.PARALLELISM).toBe(4)
       expect(PASSWORD_CONFIG.MAX_FAILED_ATTEMPTS).toBe(5)
       expect(PASSWORD_CONFIG.LOCKOUT_DURATION_MS).toBe(15 * 60 * 1000)
       expect(PASSWORD_CONFIG.MIN_LENGTH).toBe(8)

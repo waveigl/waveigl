@@ -1,5 +1,5 @@
 /**
- * POST /api/admin/generate-password-hash - Gera hash bcrypt da senha
+ * POST /api/admin/generate-password-hash - Gera hash argon2 da senha
  * Usado pelo assistente de setup
  */
 

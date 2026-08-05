@@ -1,15 +1,18 @@
 /**
  * Funções de proteção por senha do painel admin
- * Usa bcrypt para hash seguro e implementa rate limiting
+ * Usa argon2 para hash seguro e implementa rate limiting
  */
 
-import bcrypt from 'bcrypt'
+import argon2 from 'argon2'
 
 /**
  * Configurações de segurança de senha
  */
 export const PASSWORD_CONFIG = {
-  SALT_ROUNDS: 12,
+  ARGON2_TYPE: 'argon2id',
+  MEMORY_COST: 65536, // 64 MiB
+  TIME_COST: 3,
+  PARALLELISM: 4,
   MAX_FAILED_ATTEMPTS: 5,
   LOCKOUT_DURATION_MS: 15 * 60 * 1000, // 15 minutos
   MIN_LENGTH: 8,
@@ -22,9 +25,9 @@ export const PASSWORD_CONFIG = {
 } as const
 
 /**
- * Gera hash bcrypt seguro da senha
+ * Gera hash argon2 seguro da senha
  * @param password - Senha em texto plano
- * @returns Hash bcrypt da senha
+ * @returns Hash argon2 da senha
  * @throws Error se senha for inválida
  */
 export async function hashPassword(password: string): Promise<string> {
@@ -36,14 +39,19 @@ export async function hashPassword(password: string): Promise<string> {
     throw new Error(`Senha deve ter no mínimo ${PASSWORD_CONFIG.MIN_LENGTH} caracteres`)
   }
 
-  const hash = await bcrypt.hash(password, PASSWORD_CONFIG.SALT_ROUNDS)
+  const hash = await argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: PASSWORD_CONFIG.MEMORY_COST,
+    timeCost: PASSWORD_CONFIG.TIME_COST,
+    parallelism: PASSWORD_CONFIG.PARALLELISM,
+  })
   return hash
 }
 
 /**
  * Verifica se a senha corresponde ao hash
  * @param password - Senha em texto plano
- * @param hash - Hash bcrypt armazenado
+ * @param hash - Hash argon2 armazenado
  * @returns true se a senha está correta, false caso contrário
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -52,7 +60,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   }
 
   try {
-    const isValid = await bcrypt.compare(password, hash)
+    const isValid = await argon2.verify(hash, password)
     return isValid
   } catch (error) {
     return false

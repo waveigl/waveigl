@@ -26,8 +26,8 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "argon2": "^0.45.1",
     "axios": "^1.13.5",
-    "bcrypt": "^6.0.0",
     "bufferutil": "^4.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -57,7 +57,6 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
-    "@types/bcrypt": "^6.0.0",
     "@types/estree": "^1.0.8",
     "@types/node": "^25.0.8",
     "@types/qrcode": "^1.5.6",
@@ -80,12 +79,12 @@
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
-    "bcrypt@6.0.0": true,
     "bufferutil@4.1.0": true,
     "utf-8-validate": true,
     "@whiskeysockets/baileys@7.0.0-rc14": true,
     "msw@2.12.10": true,
     "protobufjs@7.6.5": true,
-    "unrs-resolver": true
+    "unrs-resolver": true,
+    "argon2@0.45.1": true
   }
 }

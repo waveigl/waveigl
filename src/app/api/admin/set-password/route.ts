@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         .insert({
           admin_user_id: session.userId,
           password_hash: passwordHash,
-          password_salt: 'bcrypt' // bcrypt já inclui salt no hash
+          password_salt: 'argon2' // argon2 já inclui salt no hash
         })
 
       if (error) {
