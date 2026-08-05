@@ -47,7 +47,6 @@
     "utf-8-validate": "^6.0.6",
     "ws": "^8.19.0",
     "youtube-chat": "^2.2.0",
-    "zlib-sync": "^0.1.10",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -78,5 +77,15 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "bcrypt@6.0.0": true,
+    "bufferutil@4.1.0": true,
+    "utf-8-validate": true,
+    "@whiskeysockets/baileys@7.0.0-rc14": true,
+    "msw@2.12.10": true,
+    "protobufjs@7.6.5": true,
+    "unrs-resolver": true
   }
 }

@@ -28,10 +28,14 @@ describe('Direct User Discount API Endpoints', () => {
     id: 'discount-1',
     userId: 'user-1',
     discountPrice: 5.0,
+    maxRedemptions: 10,
+    currentRedemptions: 0,
+    expirationDate: '2025-12-31T10:00:00Z',
     createdBy: 'admin-1',
     createdAt: '2025-01-01T10:00:00Z',
     updatedAt: '2025-01-01T10:00:00Z',
     isActive: true,
+    status: 'active',
   }
 
   describe('POST /api/discounts/direct-user', () => {

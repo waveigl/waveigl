@@ -19,7 +19,7 @@ describe('Twitch Whisper Error Handling', () => {
       })
 
       // Import after mocking
-      const { sendTwitchWhisper } = await import('@/lib/notifications/subscription')
+      await import('@/lib/notifications/subscription')
       
       // Note: sendTwitchWhisper is not exported, so we test through handleSubscriptionEvent
       // This is a limitation of the current implementation

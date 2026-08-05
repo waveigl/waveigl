@@ -95,7 +95,7 @@ describe('YouTube Live Validation', () => {
 
     it('deve rejeitar live de outro canal', () => {
       // Arrange
-      const channelId = 'UCOtherChannelId'
+      const channelId: string = 'UCOtherChannelId'
       const WAVEIGL_CHANNEL_ID = 'UCYourChannelId'
 
       // Act

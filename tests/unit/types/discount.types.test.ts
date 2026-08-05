@@ -17,10 +17,14 @@ describe('Discount Types', () => {
         id: 'test-id',
         userId: 'user-123',
         discountPrice: 5.0,
+        maxRedemptions: 10,
+        currentRedemptions: 0,
+        expirationDate: new Date(Date.now() + 86400000).toISOString(),
         createdBy: 'admin-123',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isActive: true,
+        status: 'active',
       }
 
       expect(discount.id).toBeDefined()
@@ -35,11 +39,15 @@ describe('Discount Types', () => {
         id: 'test-id',
         userId: 'user-123',
         discountPrice: 5.0,
+        maxRedemptions: 10,
+        currentRedemptions: 0,
+        expirationDate: new Date(Date.now() + 86400000).toISOString(),
         createdBy: 'admin-123',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isActive: false,
         deletedAt: new Date().toISOString(),
+        status: 'inactive',
       }
 
       expect(discount.deletedAt).toBeDefined()
@@ -50,10 +58,14 @@ describe('Discount Types', () => {
         id: 'test-id',
         userId: 'user-123',
         discountPrice: 5.0,
+        maxRedemptions: 10,
+        currentRedemptions: 0,
+        expirationDate: new Date(Date.now() + 86400000).toISOString(),
         createdBy: 'admin-123',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isActive: true,
+        status: 'active',
         user: {
           id: 'user-123',
           email: 'user@example.com',
