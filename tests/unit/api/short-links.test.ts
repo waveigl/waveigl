@@ -1,10 +1,10 @@
 /**
  * Unit Tests for Short Links API Endpoints
- * Tests link creation, listing, deletion, and error handling
+ * Tests link creation, editing, listing, deletion, and error handling
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { POST, GET, DELETE } from '@/app/api/short-links/route'
+import { POST, GET, PATCH, DELETE } from '@/app/api/short-links/route'
 import type { ShortLink } from '@/types/short-link.types'
 
 // Mock services
@@ -12,8 +12,10 @@ vi.mock('@/lib/short-links/short-link.service', () => ({
   ShortLinkService: {
     createLink: vi.fn(),
     listLinks: vi.fn(),
+    updateLink: vi.fn(),
     deleteLink: vi.fn(),
   },
+  SHORT_LINK_DUPLICATE_URL: 'SHORT_LINK_DUPLICATE_URL',
 }))
 
 vi.mock('@/lib/notifications/discord', () => ({
@@ -106,6 +108,51 @@ describe('Short Links API Endpoints', () => {
       expect(data.success).toBe(false)
     })
 
+    it('should return 400 if originalUrl contains whitespace', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl: 'https://example.com /pagina', createdBy: 'admin-1' }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.createLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 if originalUrl points to the site itself', async () => {
+      const request = new Request('https://www.waveigl.com/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl: 'https://waveigl.com/links', createdBy: 'admin-1' }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.createLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 409 if originalUrl already exists', async () => {
+      const error = new Error('Já existe outro link curto apontando para essa URL') as any
+      error.code = 'SHORT_LINK_DUPLICATE_URL'
+      vi.mocked(ShortLinkService.createLink).mockRejectedValue(error)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl: 'https://example.com', createdBy: 'admin-1' }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.success).toBe(false)
+    })
+
     it('should return 500 if service throws', async () => {
       vi.mocked(ShortLinkService.createLink).mockRejectedValue(new Error('DB error'))
 
@@ -138,6 +185,123 @@ describe('Short Links API Endpoints', () => {
       vi.mocked(ShortLinkService.listLinks).mockRejectedValue(new Error('DB error'))
 
       const response = await GET()
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+    })
+  })
+
+  describe('PATCH /api/short-links', () => {
+    it('should update a short link URL and description', async () => {
+      const updatedLink: ShortLink = { ...mockLink, originalUrl: 'https://example.com/nova', description: 'Novo link', updatedBy: 'admin-1' }
+      vi.mocked(ShortLinkService.updateLink).mockResolvedValue(updatedLink)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com/nova', description: 'Novo link', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data).toEqual(updatedLink)
+      expect(ShortLinkService.updateLink).toHaveBeenCalledWith('link-1', {
+        originalUrl: 'https://example.com/nova',
+        description: 'Novo link',
+        updatedBy: 'admin-1',
+      })
+    })
+
+    it('should allow editing only the description', async () => {
+      vi.mocked(ShortLinkService.updateLink).mockResolvedValue(mockLink)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', description: 'Descrição nova', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(ShortLinkService.updateLink).toHaveBeenCalledWith('link-1', {
+        originalUrl: undefined,
+        description: 'Descrição nova',
+        updatedBy: 'admin-1',
+      })
+    })
+
+    it('should return 400 if id is missing', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 if updated URL contains whitespace', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com /pagina', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 400 if updated URL is invalid', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', originalUrl: 'not-a-url', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 409 if updated URL already exists on another link', async () => {
+      const error = new Error('Já existe outro link curto apontando para essa URL') as any
+      error.code = 'SHORT_LINK_DUPLICATE_URL'
+      vi.mocked(ShortLinkService.updateLink).mockRejectedValue(error)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.success).toBe(false)
+    })
+
+    it('should return 500 if service throws', async () => {
+      vi.mocked(ShortLinkService.updateLink).mockRejectedValue(new Error('DB error'))
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
       const data = await response.json()
 
       expect(response.status).toBe(500)

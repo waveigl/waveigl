@@ -6,6 +6,8 @@ export interface ShortLink {
   clicks: number
   createdBy: string
   createdAt: string
+  updatedAt?: string | null
+  updatedBy?: string | null
   isActive: boolean
   deletedAt?: string | null
 }

@@ -10,7 +10,7 @@ import { PlatformSelector } from '@/components/PlatformSelector'
 import { LiveInfoPanel } from '@/components/LiveInfoPanel'
 import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
-import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop, Tag, BarChart3 } from 'lucide-react'
+import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop, Tag, BarChart3, Tv } from 'lucide-react'
 import Image from 'next/image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ProfileEditor } from '@/components/ProfileEditor'
@@ -25,6 +25,7 @@ import { DashboardStats } from '@/components/DashboardStats'
 import { getUserRole, isOwner, isAdmin } from '@/lib/permissions'
 import { useSessionProvider } from '@/hooks/use-session-sync'
 import ShortLinksTab from '@/components/ShortLinksTab'
+import ShortLinksDashboard from '@/components/ShortLinksDashboard'
 
 // Configuração visual dos cargos
 const ROLE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
@@ -226,7 +227,7 @@ export default function DashboardPage() {
   const [isChatEnabled, setIsChatEnabled] = useState(true) // Controle de chat para o streamer
 
   // Estado para aba ativa do dashboard
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'short-links'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'live' | 'short-links' | 'dashboard'>('live')
 
   // Estados para sistema de benefícios
   const [benefits, setBenefits] = useState<any[]>([])
@@ -983,15 +984,15 @@ export default function DashboardPage() {
       <div className="border-b border-border bg-card/50">
         <nav className="flex items-center px-4 space-x-1 overflow-x-auto scrollbar-hide">
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab('live')}
             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
-              activeTab === 'dashboard'
+              activeTab === 'live'
                 ? 'bg-primary text-primary-foreground border-b-2 border-primary'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             }`}
           >
-            <LayoutPanelTop className="w-4 h-4" />
-            Dashboard
+            <Tv className="w-4 h-4" />
+            Live
           </button>
           <button
             onClick={() => setActiveTab('short-links')}
@@ -1004,6 +1005,17 @@ export default function DashboardPage() {
             <Tag className="w-4 h-4" />
             Links Curtos
           </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
+              activeTab === 'dashboard'
+                ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Dashboard
+          </button>
         </nav>
       </div>
 
@@ -1013,6 +1025,10 @@ export default function DashboardPage() {
         {activeTab === 'short-links' ? (
           <div className="flex-1 overflow-auto p-6">
             <ShortLinksTab />
+          </div>
+        ) : activeTab === 'dashboard' ? (
+          <div className="flex-1 overflow-auto p-6">
+            <ShortLinksDashboard />
           </div>
         ) : (
           <div className="flex flex-1 overflow-hidden">

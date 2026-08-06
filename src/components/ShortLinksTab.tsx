@@ -6,17 +6,22 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Copy, ExternalLink, Plus, CheckCircle2, Trash2, Link2 } from 'lucide-react'
-
-interface ShortLink {
-  id: string
-  token: string
-  originalUrl: string
-  description?: string | null
-  clicks: number
-  createdAt: string
-  isActive: boolean
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Copy,
+  ExternalLink,
+  Plus,
+  CheckCircle2,
+  Trash2,
+  Link2,
+  Pencil,
+} from 'lucide-react'
+import type { ShortLink } from '@/types/short-link.types'
 
 export default function ShortLinksTab() {
   const [links, setLinks] = useState<ShortLink[]>([])
@@ -28,6 +33,12 @@ export default function ShortLinksTab() {
   const [urlError, setUrlError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string>('dev-user-001')
+
+  const [editingLink, setEditingLink] = useState<ShortLink | null>(null)
+  const [editUrl, setEditUrl] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     fetchLinks()
@@ -119,6 +130,46 @@ export default function ShortLinksTab() {
       }
     } catch (error) {
       console.error('[ShortLinksTab] Error deleting link:', error)
+    }
+  }
+
+  const openEdit = (link: ShortLink) => {
+    setEditingLink(link)
+    setEditUrl(link.originalUrl)
+    setEditDescription(link.description || '')
+    setEditError(null)
+  }
+
+  const handleUpdate = async () => {
+    if (!editingLink) return
+
+    try {
+      setIsEditing(true)
+      setEditError(null)
+      const response = await fetch('/api/short-links', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingLink.id,
+          originalUrl: editUrl.trim(),
+          description: editDescription.trim() || undefined,
+          updatedBy: currentUserId,
+        }),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        setEditError(data.error || 'Erro ao atualizar link')
+        return
+      }
+
+      setEditingLink(null)
+      await fetchLinks()
+    } catch (error) {
+      console.error('[ShortLinksTab] Error updating link:', error)
+      setEditError('Erro ao atualizar link')
+    } finally {
+      setIsEditing(false)
     }
   }
 
@@ -215,6 +266,14 @@ export default function ShortLinksTab() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        title="Editar"
+                        onClick={() => openEdit(link)}
+                      >
+                        <Pencil className="w-4 h-4 text-yellow-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         title="Copiar"
                         onClick={() => copyToClipboard(link.token)}
                       >
@@ -251,6 +310,54 @@ export default function ShortLinksTab() {
           })}
         </div>
       )}
+
+      <Dialog open={!!editingLink} onOpenChange={(open) => !open && setEditingLink(null)}>
+        <DialogContent className="sm:max-w-md bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Editar Link Curto</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-original-url">URL original</Label>
+              <Input
+                id="edit-original-url"
+                placeholder="https://example.com/pagina-longa..."
+                value={editUrl}
+                onChange={(e) => {
+                  setEditUrl(e.target.value)
+                  setEditError(null)
+                }}
+              />
+              {editError && <p className="text-sm text-red-500">{editError}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-short-link-description">Descrição (opcional)</Label>
+              <Textarea
+                id="edit-short-link-description"
+                placeholder="Identifique onde esse link será usado..."
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A URL não pode conter espaços nem se repetir em outro link.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingLink(null)}
+              disabled={isEditing}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdate} disabled={isEditing}>
+              {isEditing ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
