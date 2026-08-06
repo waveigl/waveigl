@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,11 +22,17 @@ import {
   Activity,
   User,
   CalendarClock,
+  Smartphone,
+  Monitor,
+  Globe,
+  MapPin,
+  ExternalLink,
+  History,
 } from 'lucide-react'
-import type { ShortLink } from '@/types/short-link.types'
+import type { ShortLink, ShortLinkStats } from '@/types/short-link.types'
 
 function formatDate(value?: string | null): string {
-  if (!value) return '—'
+  if (!value) return 'â€”'
   return new Date(value).toLocaleString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -36,15 +42,84 @@ function formatDate(value?: string | null): string {
   })
 }
 
+function Breakdown({
+  title,
+  icon,
+  counts,
+  total,
+}: {
+  title: string
+  icon: React.ReactNode
+  counts: Record<string, number>
+  total: number
+}) {
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  if (entries.length === 0) {
+    return null
+  }
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        {icon}
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
+      </div>
+      <div className="space-y-1.5">
+        {entries.map(([label, count]) => {
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0
+          return (
+            <div key={label}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground truncate">{label}</span>
+                <span className="text-muted-foreground ml-2 shrink-0">
+                  {count} ({pct}%)
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function ShortLinksDashboard() {
   const [links, setLinks] = useState<ShortLink[]>([])
   const [loading, setLoading] = useState(true)
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [detailLink, setDetailLink] = useState<ShortLink | null>(null)
+  const [stats, setStats] = useState<ShortLinkStats | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
 
   useEffect(() => {
     fetchLinks()
   }, [])
+
+  useEffect(() => {
+    if (!detailLink) {
+      setStats(null)
+      return
+    }
+    let cancelled = false
+    setStatsLoading(true)
+    fetch(`/api/short-links/stats?id=${detailLink.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.success) setStats(data.data)
+      })
+      .catch((error) => console.error('[ShortLinksDashboard] Error fetching stats:', error))
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detailLink])
 
   const fetchLinks = async () => {
     try {
@@ -67,7 +142,7 @@ export default function ShortLinksDashboard() {
     setTimeout(() => setCopiedToken(null), 2000)
   }
 
-  const stats = useMemo(() => {
+  const summary = useMemo(() => {
     const totalLinks = links.length
     const totalClicks = links.reduce((sum, link) => sum + (link.clicks || 0), 0)
     const mostClicked = [...links].sort((a, b) => (b.clicks || 0) - (a.clicks || 0))[0]
@@ -84,7 +159,7 @@ export default function ShortLinksDashboard() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Dashboard de Links</h2>
         <p className="text-sm text-muted-foreground">
-          Visão geral e detalhes de cada link curto.
+          VisÃ£o geral e detalhes de cada link curto.
         </p>
       </div>
 
@@ -97,7 +172,7 @@ export default function ShortLinksDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de links</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalLinks}</p>
+                <p className="text-2xl font-bold text-foreground">{summary.totalLinks}</p>
               </div>
             </div>
           </CardContent>
@@ -111,7 +186,7 @@ export default function ShortLinksDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de cliques</p>
-                <p className="text-2xl font-bold text-foreground">{stats.totalClicks}</p>
+                <p className="text-2xl font-bold text-foreground">{summary.totalClicks}</p>
               </div>
             </div>
           </CardContent>
@@ -125,15 +200,15 @@ export default function ShortLinksDashboard() {
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-muted-foreground">Mais acessado</p>
-                {stats.mostClicked ? (
+                {summary.mostClicked ? (
                   <p className="text-sm font-semibold text-foreground break-all">
-                    /r/{stats.mostClicked.token}
+                    /r/{summary.mostClicked.token}
                     <span className="text-muted-foreground font-normal ml-1">
-                      ({stats.mostClicked.clicks} cliques)
+                      ({summary.mostClicked.clicks} cliques)
                     </span>
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">—</p>
+                  <p className="text-sm text-muted-foreground">â€”</p>
                 )}
               </div>
             </div>
@@ -147,8 +222,8 @@ export default function ShortLinksDashboard() {
                 <Activity className="w-5 h-5 text-green-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Média de cliques</p>
-                <p className="text-2xl font-bold text-foreground">{stats.avgClicks}</p>
+                <p className="text-sm text-muted-foreground">MÃ©dia de cliques</p>
+                <p className="text-2xl font-bold text-foreground">{summary.avgClicks}</p>
               </div>
             </div>
           </CardContent>
@@ -221,7 +296,7 @@ export default function ShortLinksDashboard() {
                       Criado em: {formatDate(link.createdAt)}
                     </span>
                     <span>
-                      Por {link.createdBy || 'anonymous'} • Cliques: {link.clicks}
+                      Por {link.createdBy || 'anonymous'} â€¢ Cliques: {link.clicks}
                     </span>
                   </div>
                 </CardContent>
@@ -273,8 +348,8 @@ export default function ShortLinksDashboard() {
                   </a>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Descrição</p>
-                  <p className="text-foreground">{detailLink.description || '—'}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">DescriÃ§Ã£o</p>
+                  <p className="text-foreground">{detailLink.description || 'â€”'}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -302,7 +377,7 @@ export default function ShortLinksDashboard() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Atualizado por</p>
-                    <p className="text-foreground text-sm">{detailLink.updatedBy || '—'}</p>
+                    <p className="text-foreground text-sm">{detailLink.updatedBy || 'â€”'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wide">Cliques</p>
@@ -314,6 +389,94 @@ export default function ShortLinksDashboard() {
                   </div>
                 </div>
               </div>
+
+              {statsLoading ? (
+                <p className="text-sm text-muted-foreground mt-6">Carregando analytics...</p>
+              ) : stats ? (
+                <div className="mt-6 pt-6 border-t border-border">
+                  <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-primary" />
+                    Analytics de cliques
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Breakdown
+                      title="Dispositivo"
+                      icon={<Smartphone className="w-3.5 h-3.5 text-muted-foreground" />}
+                      counts={stats.clicksByDevice}
+                      total={stats.totalClicks}
+                    />
+                    <Breakdown
+                      title="Sistema & Navegador"
+                      icon={<Monitor className="w-3.5 h-3.5 text-muted-foreground" />}
+                      counts={{ ...stats.clicksByOs, ...Object.fromEntries(Object.entries(stats.clicksByBrowser).map(([k, v]) => [`${k} (browser)`, v])) }}
+                      total={stats.totalClicks}
+                    />
+                    <Breakdown
+                      title="LocalizaÃ§Ã£o"
+                      icon={<MapPin className="w-3.5 h-3.5 text-muted-foreground" />}
+                      counts={stats.clicksByCountry}
+                      total={stats.totalClicks}
+                    />
+                    <Breakdown
+                      title="Origem"
+                      icon={<ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />}
+                      counts={stats.clicksByReferrer}
+                      total={stats.totalClicks}
+                    />
+                  </div>
+
+                  {stats.recentClicks.length > 0 && (
+                    <div className="mt-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <History className="w-4 h-4 text-muted-foreground" />
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Ãšltimos cliques
+                        </p>
+                      </div>
+                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        {stats.recentClicks.map((click) => (
+                          <div
+                            key={click.id}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {click.deviceType === 'mobile' ? (
+                                <Smartphone className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              ) : click.deviceType === 'tablet' ? (
+                                <Globe className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              ) : (
+                                <Monitor className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              <span className="text-foreground truncate">
+                                {click.deviceType || 'desconhecido'}
+                                {click.country ? ` â€¢ ${click.country}` : ''}
+                                {click.city ? ` â€¢ ${click.city}` : ''}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                              {click.referrer && (
+                                <span className="truncate max-w-[120px]">
+                                  {(() => {
+                                    try {
+                                      return new URL(click.referrer).hostname.replace(/^www\./, '')
+                                    } catch {
+                                      return click.referrer
+                                    }
+                                  })()}
+                                </span>
+                              )}
+                              <Clock className="w-3 h-3" />
+                              <span>{formatDate(click.createdAt)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-6">Nenhum clique registrado ainda.</p>
+              )}
             </div>
           )}
         </DialogContent>

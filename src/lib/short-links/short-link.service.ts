@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server'
-import type { ShortLink } from '@/types/short-link.types'
+import type { ShortLink, ShortLinkClick, ShortLinkStats } from '@/types/short-link.types'
 import { notifyDiscord } from '@/lib/notifications/discord'
 
 const TOKEN_LENGTH = 8
@@ -121,6 +121,111 @@ export class ShortLinkService {
       .rpc('increment_clicks', { link_id: id })
 
     if (error) throw error
+  }
+
+  static async recordClick(
+    linkId: string,
+    meta: {
+      ip?: string | null
+      userAgent?: string | null
+      referrer?: string | null
+      deviceType?: string | null
+      os?: string | null
+      browser?: string | null
+      country?: string | null
+      region?: string | null
+      city?: string | null
+      utmSource?: string | null
+    }
+  ): Promise<void> {
+    const { error } = await getSupabaseAdmin()
+      .from('short_link_clicks')
+      .insert({
+        link_id: linkId,
+        ip: meta.ip || null,
+        user_agent: meta.userAgent || null,
+        referrer: meta.referrer || null,
+        device_type: meta.deviceType || null,
+        os: meta.os || null,
+        browser: meta.browser || null,
+        country: meta.country || null,
+        region: meta.region || null,
+        city: meta.city || null,
+        utm_source: meta.utmSource || null,
+        created_at: new Date().toISOString(),
+      })
+
+    if (error) throw error
+  }
+
+  static async getLinkStats(linkId: string): Promise<ShortLinkStats> {
+    const { data, error } = await getSupabaseAdmin()
+      .from('short_link_clicks')
+      .select('*')
+      .eq('link_id', linkId)
+      .order('created_at', { ascending: false })
+      .limit(500)
+
+    if (error) throw error
+
+    const rows: any[] = data || []
+    const totalClicks = rows.length
+
+    const groupBy = (key: string): Record<string, number> => {
+      const result: Record<string, number> = {}
+      for (const row of rows) {
+        const value = (row[key] || 'Desconhecido').trim() || 'Desconhecido'
+        result[value] = (result[value] || 0) + 1
+      }
+      return result
+    }
+
+    const referrerHost = (referrer?: string | null): string => {
+      if (!referrer) return 'Direto/desconhecido'
+      try {
+        return new URL(referrer).hostname.replace(/^www\./, '') || 'Direto/desconhecido'
+      } catch {
+        return 'Direto/desconhecido'
+      }
+    }
+
+    const clicksByReferrer: Record<string, number> = {}
+    const clicksByUtm: Record<string, number> = {}
+    for (const row of rows) {
+      const host = referrerHost(row.referrer)
+      clicksByReferrer[host] = (clicksByReferrer[host] || 0) + 1
+      const utm = row.utm_source || 'Sem origem'
+      clicksByUtm[utm] = (clicksByUtm[utm] || 0) + 1
+    }
+
+    return {
+      totalClicks,
+      clicksByDevice: groupBy('device_type'),
+      clicksByOs: groupBy('os'),
+      clicksByBrowser: groupBy('browser'),
+      clicksByCountry: groupBy('country'),
+      clicksByReferrer,
+      clicksByUtm,
+      recentClicks: rows.map(this.mapClickFromDb),
+    }
+  }
+
+  private static mapClickFromDb(row: any): ShortLinkClick {
+    return {
+      id: row.id,
+      linkId: row.link_id,
+      ip: row.ip,
+      userAgent: row.user_agent,
+      referrer: row.referrer,
+      deviceType: row.device_type,
+      os: row.os,
+      browser: row.browser,
+      country: row.country,
+      region: row.region,
+      city: row.city,
+      utmSource: row.utm_source,
+      createdAt: row.created_at,
+    }
   }
 
   private static async ensureOriginalUrlUnique(originalUrl: string, excludeId?: string): Promise<void> {

@@ -139,6 +139,24 @@ CREATE TABLE IF NOT EXISTS public.short_links (
   deleted_at TIMESTAMPTZ DEFAULT NULL
 );
 
+-- 9. SHORT_LINK_CLICKS
+-- Analytics de cada clique em links curtos (dispositivo, localização e origem)
+CREATE TABLE IF NOT EXISTS public.short_link_clicks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  link_id UUID NOT NULL REFERENCES public.short_links(id) ON DELETE CASCADE,
+  ip TEXT,
+  user_agent TEXT,
+  referrer TEXT,
+  device_type TEXT,
+  os TEXT,
+  browser TEXT,
+  country TEXT,
+  region TEXT,
+  city TEXT,
+  utm_source TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================================================
 -- ÍNDICES
 -- ============================================================================
@@ -169,6 +187,9 @@ CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_expires ON public.subscriber_
 -- Short Links
 CREATE INDEX IF NOT EXISTS idx_short_links_token ON public.short_links(token);
 CREATE INDEX IF NOT EXISTS idx_short_links_created_at ON public.short_links(created_at DESC) WHERE deleted_at IS NULL;
+
+-- Short Link Clicks
+CREATE INDEX IF NOT EXISTS idx_short_link_clicks_link ON public.short_link_clicks(link_id, created_at DESC);
 
 -- ============================================================================
 -- TRIGGERS E FUNCTIONS
@@ -361,6 +382,12 @@ CREATE POLICY "Service role can manage short links"
   USING (true)
   WITH CHECK (true);
 
+-- Short Link Clicks Policies
+CREATE POLICY "Service role can manage short link clicks"
+  ON public.short_link_clicks FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ============================================================================
 -- COMENTÁRIOS
 -- ============================================================================
@@ -372,6 +399,9 @@ COMMENT ON COLUMN public.linked_accounts.unlinked_at IS 'Data/hora em que a cont
 COMMENT ON COLUMN public.linked_accounts.unlinked_by_user_id IS 'ID do usuário que desvinculou a conta';
 COMMENT ON COLUMN public.short_links.token IS 'Código curto do link (estilo bit.ly)';
 COMMENT ON COLUMN public.short_links.original_url IS 'URL de destino que o link curto redireciona';
+COMMENT ON COLUMN public.short_link_clicks.device_type IS 'Tipo de dispositivo do clique: mobile, tablet ou desktop';
+COMMENT ON COLUMN public.short_link_clicks.country IS 'País de origem do clique (via headers da Vercel)';
+COMMENT ON COLUMN public.short_link_clicks.referrer IS 'URL de referência de onde o clique veio';
 
 -- ============================================================================
 -- FIM DO SCHEMA
