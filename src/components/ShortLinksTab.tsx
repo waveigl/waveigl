@@ -280,14 +280,16 @@ export default function ShortLinksTab() {
                         <p className="mt-1 text-xs text-muted-foreground">{link.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex flex-wrap items-center gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         title="Editar"
                         onClick={() => openEdit(link)}
+                        className="text-yellow-500 hover:text-yellow-400"
                       >
-                        <Pencil className="w-4 h-4 text-yellow-500" />
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Editar
                       </Button>
                       <Button
                         variant="ghost"
@@ -296,14 +298,16 @@ export default function ShortLinksTab() {
                         onClick={() => copyToClipboard(link.token)}
                       >
                         {copiedToken === link.token ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 mr-1 text-green-500" />
                         ) : (
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-4 h-4 mr-1" />
                         )}
+                        {copiedToken === link.token ? 'Copiado' : 'Copiar'}
                       </Button>
                       <Button variant="ghost" size="sm" title="Abrir" asChild>
                         <a href={shortUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-4 h-4" />
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Abrir
                         </a>
                       </Button>
                       <Button
@@ -311,8 +315,10 @@ export default function ShortLinksTab() {
                         size="sm"
                         title="Excluir"
                         onClick={() => handleDelete(link.id)}
+                        className="text-red-500 hover:text-red-400"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir
                       </Button>
                     </div>
                   </div>
