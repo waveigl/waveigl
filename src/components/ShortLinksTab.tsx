@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Copy, ExternalLink, Plus, CheckCircle2 } from 'lucide-react'
-import DiscountForm from '@/components/DiscountForm'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Copy, ExternalLink, Plus, CheckCircle2, Trash2, Link2 } from 'lucide-react'
 
 interface ShortLink {
   id: string
   token: string
-  maxRedemptions: number
-  currentRedemptions: number
-  expirationDate: string
-  isActive: boolean
+  originalUrl: string
+  description?: string | null
+  clicks: number
   createdAt: string
+  isActive: boolean
 }
 
 export default function ShortLinksTab() {
@@ -21,6 +23,10 @@ export default function ShortLinksTab() {
   const [loading, setLoading] = useState(true)
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [originalUrl, setOriginalUrl] = useState('')
+  const [description, setDescription] = useState('')
+  const [urlError, setUrlError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string>('dev-user-001')
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export default function ShortLinksTab() {
   const fetchLinks = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/discounts/links')
+      const response = await fetch('/api/short-links')
       const data = await response.json()
       if (data.success) {
         setLinks(data.data)
@@ -62,23 +68,57 @@ export default function ShortLinksTab() {
     setTimeout(() => setCopiedToken(null), 2000)
   }
 
-  const handleFormSubmit = async (formData: any) => {
+  const handleCreate = async () => {
+    if (!originalUrl.trim()) {
+      setUrlError('Informe a URL original')
+      return
+    }
+
     try {
-      const response = await fetch('/api/discounts/links', {
+      setIsSubmitting(true)
+      setUrlError(null)
+      const response = await fetch('/api/short-links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          originalUrl: originalUrl.trim(),
+          description: description.trim() || undefined,
           createdBy: currentUserId,
         }),
       })
+      const data = await response.json()
 
+      if (!response.ok) {
+        setUrlError(data.error || 'Erro ao criar link')
+        return
+      }
+
+      setOriginalUrl('')
+      setDescription('')
+      setShowForm(false)
+      await fetchLinks()
+    } catch (error) {
+      console.error('[ShortLinksTab] Error creating link:', error)
+      setUrlError('Erro ao criar link')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Excluir este link curto?')) return
+
+    try {
+      const response = await fetch('/api/short-links', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, deletedBy: currentUserId }),
+      })
       if (response.ok) {
-        setShowForm(false)
         await fetchLinks()
       }
     } catch (error) {
-      console.error('[ShortLinksTab] Error creating link:', error)
+      console.error('[ShortLinksTab] Error deleting link:', error)
     }
   }
 
@@ -90,83 +130,125 @@ export default function ShortLinksTab() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-foreground">Links Curtos</h2>
-        <Button onClick={() => setShowForm(true)}>
+        <Button onClick={() => setShowForm((v) => !v)}>
           <Plus className="w-4 h-4 mr-1" />
-          Adicionar Link
+          {showForm ? 'Cancelar' : 'Encurtar URL'}
         </Button>
       </div>
 
       {showForm && (
-        <DiscountForm
-          type="link"
-          onSubmit={handleFormSubmit}
-          onCancel={() => setShowForm(false)}
-        />
+        <Card className="bg-card border-border mb-6">
+          <CardContent className="pt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="original-url">URL original</Label>
+              <Input
+                id="original-url"
+                placeholder="https://example.com/pagina-longa..."
+                value={originalUrl}
+                onChange={(e) => {
+                  setOriginalUrl(e.target.value)
+                  setUrlError(null)
+                }}
+              />
+              {urlError && <p className="text-sm text-red-500">{urlError}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="short-link-description">Descrição (opcional)</Label>
+              <Textarea
+                id="short-link-description"
+                placeholder="Identifique onde esse link será usado..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowForm(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleCreate} disabled={isSubmitting}>
+                {isSubmitting ? 'Criando...' : 'Criar link curto'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {links.length === 0 ? (
         <Card className="bg-card/50 border border-border">
           <CardContent className="pt-6">
-            <p className="text-muted-foreground text-center">Nenhum link curto criado ainda.</p>
+            <p className="text-muted-foreground text-center">
+              Nenhum link curto criado ainda.
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {links.map((link) => (
-            <Card key={link.id} className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="font-mono text-sm break-all">
-                    {window.location.origin}/r/{link.token.slice(0, 16)}...
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(link.token)}
-                  >
-                    {copiedToken === link.token ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Resgates:</span>
-                    <span className="ml-2 font-medium">
-                      {link.currentRedemptions}/{link.maxRedemptions}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className={`ml-2 font-medium ${link.isActive ? 'text-green-500' : 'text-red-500'}`}>
-                      {link.isActive ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Expira:</span>
-                    <span className="ml-2 font-medium">
-                      {new Date(link.expirationDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-border">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Criado em: {new Date(link.createdAt).toLocaleDateString()}</span>
-                    <Button variant="link" size="sm" asChild>
-                      <a href={`/r/${link.token}`} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        Abrir link
+          {links.map((link) => {
+            const shortUrl = `${window.location.origin}/r/${link.token}`
+            return (
+              <Card key={link.id} className="bg-card border-border">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={shortUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 font-mono text-primary text-sm break-all hover:underline"
+                      >
+                        <Link2 className="w-4 h-4 shrink-0" />
+                        {shortUrl}
                       </a>
-                    </Button>
+                      <p className="mt-1 text-sm text-muted-foreground break-all">
+                        {link.originalUrl}
+                      </p>
+                      {link.description && (
+                        <p className="mt-1 text-xs text-muted-foreground">{link.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Copiar"
+                        onClick={() => copyToClipboard(link.token)}
+                      >
+                        {copiedToken === link.token ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="sm" title="Abrir" asChild>
+                        <a href={shortUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Excluir"
+                        onClick={() => handleDelete(link.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {link.clicks} clique{link.clicks === 1 ? '' : 's'}
+                    </span>
+                    <span>Criado em: {new Date(link.createdAt).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>

@@ -44,6 +44,7 @@ next-env.d.ts
 /.dev/*.log
 /.dev/*-pid
 /.dev/vercel-*.txt
+/.dev/whatsapp-qr*
 /.env.local
 /.env.*.local
 supabase/.temp/

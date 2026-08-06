@@ -518,18 +518,16 @@ class MockSupabaseClient {
   }
 
   async rpc(fn: string, params: Record<string, unknown> = {}): Promise<MockResponse> {
-    if (fn === 'increment_redemption') {
+    if (fn === 'increment_clicks') {
       const db = loadDb()
-      const id = params.link_id ?? params.coupon_id
+      const id = params.link_id
       let affected = 0
 
-      for (const tableName of ['discount_links', 'coupon_codes']) {
-        const rows = db[tableName] || []
-        for (const row of rows) {
-          if (row.id === id) {
-            row.current_redemptions = (Number(row.current_redemptions) || 0) + 1
-            affected++
-          }
+      const rows = db['short_links'] || []
+      for (const row of rows) {
+        if (row.id === id) {
+          row.clicks = (Number(row.clicks) || 0) + 1
+          affected++
         }
       }
 
