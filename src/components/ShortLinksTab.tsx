@@ -29,13 +29,14 @@ export default function ShortLinksTab() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [originalUrl, setOriginalUrl] = useState('')
+  const [customToken, setCustomToken] = useState('')
   const [description, setDescription] = useState('')
   const [urlError, setUrlError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string>('dev-user-001')
 
   const [editingLink, setEditingLink] = useState<ShortLink | null>(null)
-  const [editUrl, setEditUrl] = useState('')
+  const [editToken, setEditToken] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -95,6 +96,7 @@ export default function ShortLinksTab() {
           originalUrl: originalUrl.trim(),
           description: description.trim() || undefined,
           createdBy: currentUserId,
+          token: customToken.trim() || undefined,
         }),
       })
       const data = await response.json()
@@ -105,6 +107,7 @@ export default function ShortLinksTab() {
       }
 
       setOriginalUrl('')
+      setCustomToken('')
       setDescription('')
       setShowForm(false)
       await fetchLinks()
@@ -135,7 +138,7 @@ export default function ShortLinksTab() {
 
   const openEdit = (link: ShortLink) => {
     setEditingLink(link)
-    setEditUrl(link.originalUrl)
+    setEditToken(link.token)
     setEditDescription(link.description || '')
     setEditError(null)
   }
@@ -151,7 +154,7 @@ export default function ShortLinksTab() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: editingLink.id,
-          originalUrl: editUrl.trim(),
+          token: editToken.trim(),
           description: editDescription.trim() || undefined,
           updatedBy: currentUserId,
         }),
@@ -202,6 +205,21 @@ export default function ShortLinksTab() {
                 }}
               />
               {urlError && <p className="text-sm text-red-500">{urlError}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="short-link-token">Código personalizado (opcional)</Label>
+              <Input
+                id="short-link-token"
+                placeholder="ex.: hltv-waveigl"
+                value={customToken}
+                onChange={(e) => {
+                  setCustomToken(e.target.value)
+                  setUrlError(null)
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Se vazio, um código aleatório será gerado. Ex.: {typeof window !== 'undefined' ? `${window.location.origin}/r/${customToken.trim() || 'hltv-waveigl'}` : '/r/hltv-waveigl'}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="short-link-description">Descrição (opcional)</Label>
@@ -318,16 +336,25 @@ export default function ShortLinksTab() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-original-url">URL original</Label>
+              <Label>URL de destino (não editável)</Label>
+              <div className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground break-all">
+                {editingLink?.originalUrl}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-short-link-token">Código do link</Label>
               <Input
-                id="edit-original-url"
-                placeholder="https://example.com/pagina-longa..."
-                value={editUrl}
+                id="edit-short-link-token"
+                placeholder="ex.: hltv-waveigl"
+                value={editToken}
                 onChange={(e) => {
-                  setEditUrl(e.target.value)
+                  setEditToken(e.target.value)
                   setEditError(null)
                 }}
               />
+              <p className="text-xs text-muted-foreground break-all">
+                Link: {typeof window !== 'undefined' ? `${window.location.origin}/r/${editToken.trim() || '...'}` : '/r/...'}
+              </p>
               {editError && <p className="text-sm text-red-500">{editError}</p>}
             </div>
             <div className="space-y-2">
@@ -341,7 +368,7 @@ export default function ShortLinksTab() {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              A URL não pode conter espaços nem se repetir em outro link.
+              O código muda apenas a URL gerada ({'/r/seu-codigo'}); o destino continua o mesmo. Deve ter 3–32 caracteres, sem espaços (apenas letras, números, hífen e sublinhado) e não pode se repetir.
             </p>
           </div>
           <div className="flex justify-end gap-2">

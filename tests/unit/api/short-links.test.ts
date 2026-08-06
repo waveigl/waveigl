@@ -16,6 +16,7 @@ vi.mock('@/lib/short-links/short-link.service', () => ({
     deleteLink: vi.fn(),
   },
   SHORT_LINK_DUPLICATE_URL: 'SHORT_LINK_DUPLICATE_URL',
+  SHORT_LINK_DUPLICATE_TOKEN: 'SHORT_LINK_DUPLICATE_TOKEN',
 }))
 
 vi.mock('@/lib/notifications/discord', () => ({
@@ -65,6 +66,65 @@ describe('Short Links API Endpoints', () => {
         description: 'Link de teste',
         createdBy: 'admin-1',
       })
+    })
+
+    it('should create a short link with a custom token', async () => {
+      const customLink: ShortLink = { ...mockLink, token: 'hltv-waveigl' }
+      vi.mocked(ShortLinkService.createLink).mockResolvedValue(customLink)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({
+          originalUrl: 'https://example.com/pagina-longa',
+          description: 'Link de teste',
+          createdBy: 'admin-1',
+          token: 'hltv-waveigl',
+        }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(data.data).toEqual(customLink)
+      expect(ShortLinkService.createLink).toHaveBeenCalledWith({
+        originalUrl: 'https://example.com/pagina-longa',
+        description: 'Link de teste',
+        createdBy: 'admin-1',
+        token: 'hltv-waveigl',
+      })
+    })
+
+    it('should return 400 if custom token has invalid characters', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl: 'https://example.com', token: 'ola mundo', createdBy: 'admin-1' }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.createLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 409 if custom token already exists', async () => {
+      const error = new Error('Já existe outro link curto usando esse código') as any
+      error.code = 'SHORT_LINK_DUPLICATE_TOKEN'
+      vi.mocked(ShortLinkService.createLink).mockRejectedValue(error)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl: 'https://example.com', token: 'hltv-waveigl', createdBy: 'admin-1' }),
+      })
+
+      const response = await POST(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.success).toBe(false)
     })
 
     it('should return 400 if originalUrl is missing', async () => {
@@ -193,13 +253,13 @@ describe('Short Links API Endpoints', () => {
   })
 
   describe('PATCH /api/short-links', () => {
-    it('should update a short link URL and description', async () => {
-      const updatedLink: ShortLink = { ...mockLink, originalUrl: 'https://example.com/nova', description: 'Novo link', updatedBy: 'admin-1' }
+    it('should update the short link token and description', async () => {
+      const updatedLink: ShortLink = { ...mockLink, token: 'hltv-waveigl', description: 'Novo link', updatedBy: 'admin-1' }
       vi.mocked(ShortLinkService.updateLink).mockResolvedValue(updatedLink)
 
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com/nova', description: 'Novo link', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ id: 'link-1', token: 'hltv-waveigl', description: 'Novo link', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)
@@ -209,7 +269,7 @@ describe('Short Links API Endpoints', () => {
       expect(data.success).toBe(true)
       expect(data.data).toEqual(updatedLink)
       expect(ShortLinkService.updateLink).toHaveBeenCalledWith('link-1', {
-        originalUrl: 'https://example.com/nova',
+        token: 'hltv-waveigl',
         description: 'Novo link',
         updatedBy: 'admin-1',
       })
@@ -228,7 +288,7 @@ describe('Short Links API Endpoints', () => {
 
       expect(response.status).toBe(200)
       expect(ShortLinkService.updateLink).toHaveBeenCalledWith('link-1', {
-        originalUrl: undefined,
+        token: undefined,
         description: 'Descrição nova',
         updatedBy: 'admin-1',
       })
@@ -237,7 +297,7 @@ describe('Short Links API Endpoints', () => {
     it('should return 400 if id is missing', async () => {
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ token: 'hltv-waveigl', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)
@@ -248,10 +308,10 @@ describe('Short Links API Endpoints', () => {
       expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
     })
 
-    it('should return 400 if updated URL contains whitespace', async () => {
+    it('should return 400 if token contains whitespace', async () => {
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com /pagina', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ id: 'link-1', token: 'hltv waveigl', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)
@@ -262,10 +322,10 @@ describe('Short Links API Endpoints', () => {
       expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
     })
 
-    it('should return 400 if updated URL is invalid', async () => {
+    it('should return 400 if token has invalid characters', async () => {
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ id: 'link-1', originalUrl: 'not-a-url', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ id: 'link-1', token: 'hltv/waveigl', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)
@@ -276,14 +336,28 @@ describe('Short Links API Endpoints', () => {
       expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
     })
 
-    it('should return 409 if updated URL already exists on another link', async () => {
-      const error = new Error('Já existe outro link curto apontando para essa URL') as any
-      error.code = 'SHORT_LINK_DUPLICATE_URL'
+    it('should return 400 if token is too short', async () => {
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', token: 'ab', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(ShortLinkService.updateLink).not.toHaveBeenCalled()
+    })
+
+    it('should return 409 if token already exists on another link', async () => {
+      const error = new Error('Já existe outro link curto usando esse código') as any
+      error.code = 'SHORT_LINK_DUPLICATE_TOKEN'
       vi.mocked(ShortLinkService.updateLink).mockRejectedValue(error)
 
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ id: 'link-1', token: 'hltv-waveigl', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)
@@ -298,7 +372,7 @@ describe('Short Links API Endpoints', () => {
 
       const request = new Request('http://localhost/api/short-links', {
         method: 'PATCH',
-        body: JSON.stringify({ id: 'link-1', originalUrl: 'https://example.com', updatedBy: 'admin-1' }),
+        body: JSON.stringify({ id: 'link-1', token: 'hltv-waveigl', updatedBy: 'admin-1' }),
       })
 
       const response = await PATCH(request as any)

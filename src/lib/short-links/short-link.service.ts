@@ -6,16 +6,20 @@ const TOKEN_LENGTH = 8
 const TOKEN_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 export const SHORT_LINK_DUPLICATE_URL = 'SHORT_LINK_DUPLICATE_URL'
+export const SHORT_LINK_DUPLICATE_TOKEN = 'SHORT_LINK_DUPLICATE_TOKEN'
 
 export class ShortLinkService {
   static async createLink(data: {
     originalUrl: string
     description?: string
     createdBy: string
+    token?: string
   }): Promise<ShortLink> {
     await this.ensureOriginalUrlUnique(data.originalUrl)
 
-    const token = this.generateToken()
+    const token = data.token
+      ? await this.ensureTokenAvailable(data.token)
+      : this.generateToken()
     const now = new Date().toISOString()
 
     const { data: link, error } = await getSupabaseAdmin()
@@ -71,20 +75,20 @@ export class ShortLinkService {
   static async updateLink(
     id: string,
     data: {
-      originalUrl?: string
+      token?: string
       description?: string | null
       updatedBy: string
     }
   ): Promise<ShortLink> {
-    if (data.originalUrl !== undefined) {
-      await this.ensureOriginalUrlUnique(data.originalUrl, id)
+    if (data.token !== undefined) {
+      await this.ensureTokenAvailable(data.token, id)
     }
 
     const patch: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
       updated_by: data.updatedBy,
     }
-    if (data.originalUrl !== undefined) patch.original_url = data.originalUrl
+    if (data.token !== undefined) patch.token = data.token
     if (data.description !== undefined) patch.description = data.description
 
     const { data: link, error } = await getSupabaseAdmin()
@@ -96,7 +100,7 @@ export class ShortLinkService {
 
     if (error) throw error
 
-    await notifyDiscord('short_link_updated', { id, originalUrl: data.originalUrl, description: data.description })
+    await notifyDiscord('short_link_updated', { id, token: data.token, description: data.description })
 
     return this.mapFromDb(link)
   }
@@ -246,6 +250,28 @@ export class ShortLinkService {
       err.code = SHORT_LINK_DUPLICATE_URL
       throw err
     }
+  }
+
+  private static async ensureTokenAvailable(token: string, excludeId?: string): Promise<string> {
+    let query = getSupabaseAdmin()
+      .from('short_links')
+      .select('id')
+      .eq('token', token)
+      .is('deleted_at', null)
+    if (excludeId) {
+      query = query.neq('id', excludeId)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+
+    if (data && data.length > 0) {
+      const err: any = new Error('Já existe outro link curto usando esse código')
+      err.code = SHORT_LINK_DUPLICATE_TOKEN
+      throw err
+    }
+
+    return token
   }
 
   private static generateToken(): string {
