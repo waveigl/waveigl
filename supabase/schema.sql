@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS public.subscriber_benefits (
 -- Encurtador de URLs (estilo bit.ly)
 CREATE TABLE IF NOT EXISTS public.short_links (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  token TEXT NOT NULL UNIQUE,
+  token TEXT NOT NULL,
   original_url TEXT NOT NULL,
   description TEXT,
   clicks INTEGER DEFAULT 0,
@@ -185,6 +185,8 @@ CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_platform ON public.subscriber
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_expires ON public.subscriber_benefits(expires_at);
 
 -- Short Links
+-- Unicidade do token só entre links ativos (links soft-deleted liberam o código)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_short_links_token_active ON public.short_links(token) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_short_links_token ON public.short_links(token);
 CREATE INDEX IF NOT EXISTS idx_short_links_created_at ON public.short_links(created_at DESC) WHERE deleted_at IS NULL;
 

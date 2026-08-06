@@ -49,7 +49,18 @@ function normalizeAndValidateUrl(
 }
 
 function isDuplicateError(error: any): boolean {
-  return error?.code === SHORT_LINK_DUPLICATE_URL || error?.code === SHORT_LINK_DUPLICATE_TOKEN
+  return (
+    error?.code === SHORT_LINK_DUPLICATE_URL ||
+    error?.code === SHORT_LINK_DUPLICATE_TOKEN ||
+    error?.code === '23505'
+  )
+}
+
+function duplicateErrorMessage(error: any): string {
+  if (error?.code === '23505') {
+    return 'Já existe outro link ativo usando esse código'
+  }
+  return error?.message || 'Erro de duplicidade'
 }
 
 const TOKEN_PATTERN = /^[a-zA-Z0-9_-]+$/
@@ -121,7 +132,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: link }, { status: 201 })
   } catch (error: any) {
     if (isDuplicateError(error)) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 409 })
+      return NextResponse.json({ success: false, error: duplicateErrorMessage(error) }, { status: 409 })
     }
     return NextResponse.json(
       { success: false, error: error.message },
@@ -160,7 +171,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, data: link }, { status: 200 })
   } catch (error: any) {
     if (isDuplicateError(error)) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 409 })
+      return NextResponse.json({ success: false, error: duplicateErrorMessage(error) }, { status: 409 })
     }
     return NextResponse.json(
       { success: false, error: error.message },
@@ -191,3 +202,4 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+

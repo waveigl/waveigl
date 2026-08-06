@@ -367,6 +367,24 @@ describe('Short Links API Endpoints', () => {
       expect(data.success).toBe(false)
     })
 
+    it('should return 409 with friendly message on raw Postgres unique violation', async () => {
+      const error = new Error('duplicate key value violates unique constraint') as any
+      error.code = '23505'
+      vi.mocked(ShortLinkService.updateLink).mockRejectedValue(error)
+
+      const request = new Request('http://localhost/api/short-links', {
+        method: 'PATCH',
+        body: JSON.stringify({ id: 'link-1', token: 'hltv-waveigl', updatedBy: 'admin-1' }),
+      })
+
+      const response = await PATCH(request as any)
+      const data = await response.json()
+
+      expect(response.status).toBe(409)
+      expect(data.success).toBe(false)
+      expect(data.error).toBe('Já existe outro link ativo usando esse código')
+    })
+
     it('should return 500 if service throws', async () => {
       vi.mocked(ShortLinkService.updateLink).mockRejectedValue(new Error('DB error'))
 
