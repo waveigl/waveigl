@@ -123,6 +123,22 @@ CREATE TABLE IF NOT EXISTS public.subscriber_benefits (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. SHORT_LINKS
+-- Encurtador de URLs (estilo bit.ly)
+CREATE TABLE IF NOT EXISTS public.short_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token TEXT NOT NULL UNIQUE,
+  original_url TEXT NOT NULL,
+  description TEXT,
+  clicks INTEGER DEFAULT 0,
+  created_by TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_by TEXT,
+  is_active BOOLEAN DEFAULT TRUE,
+  deleted_at TIMESTAMPTZ DEFAULT NULL
+);
+
 -- ============================================================================
 -- ÍNDICES
 -- ============================================================================
@@ -149,6 +165,10 @@ CREATE INDEX IF NOT EXISTS idx_pending_unlinks_effective_at ON public.pending_un
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_user ON public.subscriber_benefits(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_platform ON public.subscriber_benefits(platform);
 CREATE INDEX IF NOT EXISTS idx_subscriber_benefits_expires ON public.subscriber_benefits(expires_at);
+
+-- Short Links
+CREATE INDEX IF NOT EXISTS idx_short_links_token ON public.short_links(token);
+CREATE INDEX IF NOT EXISTS idx_short_links_created_at ON public.short_links(created_at DESC) WHERE deleted_at IS NULL;
 
 -- ============================================================================
 -- TRIGGERS E FUNCTIONS
@@ -194,6 +214,19 @@ DROP TRIGGER IF EXISTS trigger_subscriber_benefits_updated_at ON public.subscrib
 CREATE TRIGGER trigger_subscriber_benefits_updated_at
   BEFORE UPDATE ON public.subscriber_benefits
   FOR EACH ROW EXECUTE FUNCTION update_subscriber_benefits_updated_at();
+
+-- RPC para incrementar o contador de cliques de um link curto
+CREATE OR REPLACE FUNCTION public.increment_clicks(link_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  UPDATE public.short_links
+  SET clicks = clicks + 1
+  WHERE id = link_id;
+END;
+$$;
 
 -- Trigger para criar perfil automaticamente quando usuário é criado no Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -318,6 +351,16 @@ CREATE POLICY "Service role can manage benefits"
   USING (true)
   WITH CHECK (true);
 
+-- Short Links Policies
+CREATE POLICY "Public read active short links"
+  ON public.short_links FOR SELECT
+  USING (is_active = true AND deleted_at IS NULL);
+
+CREATE POLICY "Service role can manage short links"
+  ON public.short_links FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ============================================================================
 -- COMENTÁRIOS
 -- ============================================================================
@@ -327,6 +370,8 @@ COMMENT ON COLUMN public.linked_accounts.authorized_scopes IS 'Escopos OAuth aut
 COMMENT ON COLUMN public.linked_accounts.needs_reauth IS 'Indica se o usuário precisa reautenticar para novos escopos';
 COMMENT ON COLUMN public.linked_accounts.unlinked_at IS 'Data/hora em que a conta foi desvinculada. NULL = conta ativa';
 COMMENT ON COLUMN public.linked_accounts.unlinked_by_user_id IS 'ID do usuário que desvinculou a conta';
+COMMENT ON COLUMN public.short_links.token IS 'Código curto do link (estilo bit.ly)';
+COMMENT ON COLUMN public.short_links.original_url IS 'URL de destino que o link curto redireciona';
 
 -- ============================================================================
 -- FIM DO SCHEMA
