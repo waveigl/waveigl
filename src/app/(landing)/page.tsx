@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Briefcase,
-  Server,
   Play
 } from 'lucide-react'
 import Link from 'next/link'
@@ -557,14 +556,6 @@ export default function HomePage() {
                   title="Início no Counter-Strike"
                   description="Começou a jogar Counter-Strike aos 17 anos, iniciando uma jornada que duraria mais de duas décadas. O início de uma paixão que definiria toda sua trajetória profissional."
                   icon={Gamepad2}
-                />
-                
-                <TimelineItem 
-                  year="2005"
-                  title="Primeiros alunos de CS profissionalmente"
-                  description="Tinha 2 servidores NetRangers: um pessoal e outro para o grupo de aluno. Organizou 2 grupos de alunos - 'bad' e 'good'. O grupo 'bad' podia usar das 12h às 24h, e o grupo 'good' da meia-noite ao meio-dia. Com 40 mensalistas, eram considerados os melhores servidores da época. Primeiros alunos vieram nessa época, RicardoLepra"
-                  icon={Server}
-                  highlight
                 />
                 
                 <TimelineItem 
