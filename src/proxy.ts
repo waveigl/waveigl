@@ -102,7 +102,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirecionar usuários autenticados da página de login
-  if ((request.nextUrl.pathname.startsWith('/auth/login') || request.nextUrl.pathname === '/') && isLogged) {
+  if (request.nextUrl.pathname.startsWith('/auth/login') && isLogged) {
     return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)))
   }
 
