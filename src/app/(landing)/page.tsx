@@ -396,6 +396,9 @@ export default function HomePage() {
             </Link>
             
             <div className="hidden md:flex items-center space-x-8">
+              <Link href="/live" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
+                Live
+              </Link>
               <Link href="/midia-kit" className="text-[#D9D9D9]/70 hover:text-[#E38817] transition-colors">
                 Mídia Kit
               </Link>
@@ -454,16 +457,16 @@ export default function HomePage() {
                 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                  <Link href="/dashboard">
+                  <Link href="/live">
                     <Button 
                       size="lg" 
                       className="bg-linear-to-r from-[#E38817] to-[#B86A10] hover:from-[#F59928] hover:to-[#E38817] text-white text-lg px-10 h-14 shadow-xl shadow-[#E38817]/30 transition-all hover:scale-105 hover:shadow-[#E38817]/40 group"
                     >
                       <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                      Acessar
+                      Assistir ao vivo
                     </Button>
                   </Link>
-                  <Link href="/dashboard">
+                  <Link href="/auth/login">
                     <Button 
                       variant="outline" 
                       size="lg" 

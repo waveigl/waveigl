@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   // Se houver erro do OAuth
   if (error) {
     console.error('[Kick Auth] OAuth error:', error)
-    return NextResponse.redirect(`${appUrl}/dashboard?error=kick_auth_denied`)
+    return NextResponse.redirect(`${appUrl}/auth/login?error=kick_auth_denied`)
   }
 
   const clientId = process.env.KICK_CLIENT_ID
@@ -87,12 +87,12 @@ export async function GET(request: NextRequest) {
     // Validar state
     if (!storedState || storedState !== state) {
       console.error('[Kick Auth] State mismatch')
-      return NextResponse.redirect(`${appUrl}/dashboard?error=kick_state_mismatch`)
+      return NextResponse.redirect(`${appUrl}/auth/login?error=kick_state_mismatch`)
     }
 
     if (!storedVerifier) {
       console.error('[Kick Auth] Code verifier não encontrado')
-      return NextResponse.redirect(`${appUrl}/dashboard?error=kick_verifier_missing`)
+      return NextResponse.redirect(`${appUrl}/auth/login?error=kick_verifier_missing`)
     }
 
     // Verificar sessão existente para vincular conta adicional
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
     if (existingLink) {
       // Esta conta Kick já está vinculada
       if (currentUserId && existingLink.user_id !== currentUserId) {
-        const response = NextResponse.redirect(`${appUrl}/dashboard?error=account_already_linked`)
+        const response = NextResponse.redirect(`${appUrl}/auth/login?error=account_already_linked`)
         response.cookies.delete('kick_code_verifier')
         response.cookies.delete('kick_oauth_state')
         return response
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
       .is('avatar_url', null)
 
     // Limpar cookies de PKCE
-    const response = NextResponse.redirect(`${appUrl}/dashboard?success=kick_linked`)
+    const response = NextResponse.redirect(`${appUrl}/live?success=kick_linked`)
     response.cookies.delete('kick_code_verifier')
     response.cookies.delete('kick_oauth_state')
 
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
     console.error('[Kick Auth] Erro:', error)
 
     // Limpar cookies em caso de erro
-    const response = NextResponse.redirect(`${appUrl}/dashboard?error=kick_auth_failed`)
+    const response = NextResponse.redirect(`${appUrl}/auth/login?error=kick_auth_failed`)
     response.cookies.delete('kick_code_verifier')
     response.cookies.delete('kick_oauth_state')
     return response

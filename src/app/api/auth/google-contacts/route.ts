@@ -102,10 +102,10 @@ export async function GET(request: NextRequest) {
 
         if (upsertError) throw upsertError
 
-        return NextResponse.redirect(`${appUrl}/dashboard?success=google_contacts_linked`)
+        return NextResponse.redirect(`${appUrl}/live?success=google_contacts_linked`)
 
     } catch (error) {
         console.error('[GoogleContactsAuth] Erro na autenticação:', error)
-        return NextResponse.redirect(`${appUrl}/dashboard?error=google_contacts_auth_failed`)
+        return NextResponse.redirect(`${appUrl}/auth/login?error=google_contacts_auth_failed`)
     }
 }

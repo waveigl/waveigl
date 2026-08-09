@@ -15,10 +15,20 @@ export const ADMIN_ACCOUNT_IDS: Record<string, string> = {
 }
 
 // Fallback: usernames (caso IDs não batam)
-export const OWNER_ACCOUNTS = {
+export const OWNER_ACCOUNTS: Record<string, string> = {
   twitch: 'waveigl',
   youtube: '@waveigl',
   kick: 'waveigl'
+}
+
+// Email do owner no YouTube (csgoblackbelt@gmail.com) para verificação extra
+export const OWNER_EMAIL = 'csgoblackbelt@gmail.com'
+
+export function isOwnerLinkedAccounts(linkedAccounts: Array<{ platform: string; platform_user_id: string; platform_username?: string }>): boolean {
+  return linkedAccounts.some(a =>
+    OWNER_ACCOUNT_IDS[a.platform] === a.platform_user_id ||
+    (OWNER_ACCOUNTS[a.platform] && OWNER_ACCOUNTS[a.platform].toLowerCase() === String(a.platform_username || '').toLowerCase())
+  )
 }
 
 export const ADMIN_ACCOUNTS = {
@@ -27,7 +37,7 @@ export const ADMIN_ACCOUNTS = {
   kick: 'OGabrielToth'
 }
 
-export function getUserRole(linkedAccounts: LinkedAccount[]): UserRole {
+export function getUserRole(linkedAccounts: Array<Pick<LinkedAccount, 'platform' | 'platform_user_id'> & { is_moderator?: boolean }>): UserRole {
   // 1. OWNER (WaveIgl) - Strict check by Platform ID
   // WaveIgl is the ONLY owner of this platform.
   const isWaveIgl = linkedAccounts.some(a =>

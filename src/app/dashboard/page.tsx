@@ -354,6 +354,9 @@ export default function DashboardPage() {
     isModerator
   }), [user, linkedAccounts, isModerator])
 
+  // Só o owner waveigl vê as seções de Links Curtos e Dashboard
+  const isOwnerUser = getUserRole(linkedAccounts) === 'owner' || user?.email?.toLowerCase() === 'csgoblackbelt@gmail.com'
+
   // Hook que responde às solicitações de sessão do popup
   useSessionProvider(sessionData)
 
@@ -994,28 +997,32 @@ export default function DashboardPage() {
             <Tv className="w-4 h-4" />
             Live
           </button>
-          <button
-            onClick={() => setActiveTab('short-links')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
-              activeTab === 'short-links'
-                ? 'bg-primary text-primary-foreground border-b-2 border-primary'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            Links Curtos
-          </button>
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
-              activeTab === 'dashboard'
-                ? 'bg-primary text-primary-foreground border-b-2 border-primary'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Dashboard
-          </button>
+          {isOwnerUser && (
+            <button
+              onClick={() => setActiveTab('short-links')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
+                activeTab === 'short-links'
+                  ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              <Tag className="w-4 h-4" />
+              Links Curtos
+            </button>
+          )}
+          {isOwnerUser && (
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all whitespace-nowrap ${
+                activeTab === 'dashboard'
+                  ? 'bg-primary text-primary-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </button>
+          )}
         </nav>
       </div>
 

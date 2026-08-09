@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       // Esta conta Twitch já está vinculada
       if (currentUserId && existingLink.user_id !== currentUserId) {
         // Tentando vincular a uma conta diferente - erro
-        return NextResponse.redirect(`${appUrl}/dashboard?error=account_already_linked`)
+        return NextResponse.redirect(`${appUrl}/auth/login?error=account_already_linked`)
       }
       // Login na conta existente (ou já está logado nela)
       userId = existingLink.user_id
@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
     console.log('[Twitch Auth] Criando sessão para userId:', userId)
     const sessionCookie = await createSessionCookie(userId)
     
-    const res = NextResponse.redirect(`${appUrl}/dashboard`)
+    const res = NextResponse.redirect(`${appUrl}/live`)
     res.headers.append('Set-Cookie', sessionCookie)
     return res
 

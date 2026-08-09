@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
+import { isOwnerLinkedAccounts, OWNER_EMAIL } from '@/lib/permissions'
+
+// Rotas privadas (só o owner waveigl pode acessar)
+function isProtectedPath(pathname: string): boolean {
+  return pathname.startsWith('/dashboard') || pathname.startsWith('/links')
+}
 
 /**
  * Adiciona headers de segurança à resposta
@@ -55,8 +61,14 @@ export async function proxy(request: NextRequest) {
     const session = await parseSessionCookie(request.headers.get('cookie'))
     const isLogged = Boolean(session)
 
-    if (request.nextUrl.pathname.startsWith('/dashboard') && !isLogged) {
+    // Seções privadas exigem login
+    if (isProtectedPath(request.nextUrl.pathname) && !isLogged) {
       return addSecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+    }
+
+    // Usuário logado na página de login vai direto para a Live
+    if (request.nextUrl.pathname.startsWith('/auth/login') && isLogged) {
+      return addSecurityHeaders(NextResponse.redirect(new URL('/live', request.url)))
     }
 
     return addSecurityHeaders(NextResponse.next({ request }))
@@ -95,15 +107,35 @@ export async function proxy(request: NextRequest) {
   // Suporte a sessão custom via cookie assinado
   const session = await parseSessionCookie(request.headers.get('cookie'))
   const isLogged = Boolean(user) || Boolean(session)
+  const userId = user?.id || session?.userId || null
 
-  // Proteger rotas do dashboard
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !isLogged) {
-    return addSecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+  // Seções privadas (/dashboard e /links): exigem login E só o owner waveigl pode acessar.
+  // Qualquer outro usuário é redirecionado para a Live sem nunca saber que essas seções existem.
+  if (isProtectedPath(request.nextUrl.pathname)) {
+    if (!isLogged) {
+      return addSecurityHeaders(NextResponse.redirect(new URL('/auth/login', request.url)))
+    }
+
+    let isOwner = false
+    if (userId) {
+      const { data: accounts } = await supabase
+        .from('linked_accounts')
+        .select('platform, platform_user_id, platform_username')
+        .eq('user_id', userId)
+
+      isOwner =
+        user?.email?.toLowerCase() === OWNER_EMAIL ||
+        isOwnerLinkedAccounts((accounts || []) as Array<{ platform: string; platform_user_id: string; platform_username?: string }>)
+    }
+
+    if (!isOwner) {
+      return addSecurityHeaders(NextResponse.redirect(new URL('/live', request.url)))
+    }
   }
 
-  // Redirecionar usuários autenticados da página de login
+  // Redirecionar usuários autenticados da página de login para a Live
   if (request.nextUrl.pathname.startsWith('/auth/login') && isLogged) {
-    return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)))
+    return addSecurityHeaders(NextResponse.redirect(new URL('/live', request.url)))
   }
 
   // Adicionar headers de segurança a todas as respostas

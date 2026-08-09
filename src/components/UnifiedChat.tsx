@@ -82,9 +82,11 @@ interface ExtendedUnifiedChatProps extends UnifiedChatProps {
   isPopup?: boolean
   onOpenPopup?: () => void
   defaultCompact?: boolean
+  // Modo leitura pública: mostra as mensagens mesmo sem login
+  publicReadOnly?: boolean
 }
 
-export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser, isPopup = false, onOpenPopup, defaultCompact = false }: ExtendedUnifiedChatProps) {
+export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, isLogged = false, youtubeStatusFromSSE, currentUser, isPopup = false, onOpenPopup, defaultCompact = false, publicReadOnly = false }: ExtendedUnifiedChatProps) {
   const [newMessage, setNewMessage] = useState('')
   const [sendPlatform, setSendPlatform] = useState<Platform | 'all'>('all')
   const [showModerationMenu, setShowModerationMenu] = useState<string | null>(null)
@@ -1038,7 +1040,7 @@ export function UnifiedChat({ messages, onSendMessage, isModerator, onModerate, 
       )}
 
       {/* Messages - Só mostra para usuários logados (economiza quota) */}
-      {!isLogged ? (
+      {!isLogged && !publicReadOnly ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center text-muted-foreground">
             <Lock className="w-8 h-8 mx-auto mb-2 opacity-50" />

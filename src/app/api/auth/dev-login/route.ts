@@ -6,7 +6,7 @@ export async function GET() {
   const cookie = await createSessionCookie(userId)
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3456'
-  const response = NextResponse.redirect(new URL('/dashboard', baseUrl))
+  const response = NextResponse.redirect(new URL('/live', baseUrl))
   response.headers.set('Set-Cookie', cookie)
 
   return response

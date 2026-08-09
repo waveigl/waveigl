@@ -36,7 +36,7 @@ export default function LinkKickPage() {
 
       setSuccess(true)
       setTimeout(() => {
-        router.push('/dashboard?success=kick_linked')
+        router.push('/live?success=kick_linked')
       }, 1500)
 
     } catch (err) {
@@ -99,7 +99,7 @@ export default function LinkKickPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push('/live')}
                   disabled={loading}
                   className="flex-1"
                 >
