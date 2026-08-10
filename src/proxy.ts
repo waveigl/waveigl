@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { parseSessionCookie } from '@/lib/auth/session'
 import { isOwnerLinkedAccounts, OWNER_EMAIL } from '@/lib/permissions'
@@ -6,6 +7,18 @@ import { isOwnerLinkedAccounts, OWNER_EMAIL } from '@/lib/permissions'
 // Rotas privadas (só o owner waveigl pode acessar)
 function isProtectedPath(pathname: string): boolean {
   return pathname.startsWith('/dashboard') || pathname.startsWith('/links')
+}
+
+// Cliente com service role para checagens no middleware (compatível com edge runtime)
+// A sessão do app é o cookie customizado (wvg_session), então a query via RLS do SSR client
+// não enxerga as contas vinculadas (auth.uid() vazio). O service role ignora RLS.
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_LOCAL_SERVICE_KEY
+  if (!url || !key) return null
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 }
 
 /**
@@ -118,14 +131,20 @@ export async function proxy(request: NextRequest) {
 
     let isOwner = false
     if (userId) {
-      const { data: accounts } = await supabase
-        .from('linked_accounts')
-        .select('platform, platform_user_id, platform_username')
-        .eq('user_id', userId)
+      const adminClient = getAdminClient()
+      let accounts: Array<{ platform: string; platform_user_id: string; platform_username?: string }> | null = null
+
+      if (adminClient) {
+        const { data } = await adminClient
+          .from('linked_accounts')
+          .select('platform, platform_user_id, platform_username')
+          .eq('user_id', userId)
+        accounts = data
+      }
 
       isOwner =
         user?.email?.toLowerCase() === OWNER_EMAIL ||
-        isOwnerLinkedAccounts((accounts || []) as Array<{ platform: string; platform_user_id: string; platform_username?: string }>)
+        isOwnerLinkedAccounts(accounts || [])
     }
 
     if (!isOwner) {
