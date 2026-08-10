@@ -10,7 +10,7 @@ import { PlatformSelector } from '@/components/PlatformSelector'
 import { LiveInfoPanel } from '@/components/LiveInfoPanel'
 import { ModerationStats } from '@/components/ModerationStats'
 import { Platform, UnifiedMessage } from '@/types'
-import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Minimize2, PanelRightOpen, PanelBottomOpen, LayoutPanelTop, Tag, BarChart3, Tv } from 'lucide-react'
+import { LogOut, LogIn, Settings, Twitch, Youtube, Link as LinkIcon, Unlink, CheckCircle2, AlertTriangle, Crown, Zap, Shield, User, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, PanelRightOpen, LayoutPanelTop, Tag, BarChart3, Tv } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -250,14 +250,12 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
 
   // Estados para Layout Customizável
   const [chatWidth, setChatWidth] = useState(384) // Padrão: w-96 (384px)
-  const [bottomHeight, setBottomHeight] = useState(400) // Padrão
   const [isChatVisible, setIsChatVisible] = useState(true)
-  const [isBottomVisible, setIsBottomVisible] = useState(true)
   const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+  const [showInfoPanel, setShowInfoPanel] = useState(false) // Painel Infos & Stats substitui os players
 
   // Refs para controle de redimensionamento
   const isResizingChat = useRef(false)
-  const isResizingBottom = useRef(false)
   const dashboardRef = useRef<HTMLDivElement>(null)
   const rafId = useRef<number | null>(null)
 
@@ -271,30 +269,16 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
     document.body.classList.add('resizing')
   }, [])
 
-  const startResizingBottom = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    isResizingBottom.current = true
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', stopResizing)
-    document.body.style.cursor = 'row-resize'
-    document.body.classList.add('resizing')
-  }, [])
-
   const stopResizing = useCallback(() => {
-    if (isResizingChat.current || isResizingBottom.current) {
-      // Salvar valores finais no estado quando terminar o ajuste
+    if (isResizingChat.current) {
+      // Salvar valor final no estado quando terminar o ajuste
       if (dashboardRef.current) {
         const style = window.getComputedStyle(dashboardRef.current)
-        if (isResizingChat.current) {
-          setChatWidth(parseInt(style.getPropertyValue('--chat-width'), 10))
-        } else if (isResizingBottom.current) {
-          setBottomHeight(parseInt(style.getPropertyValue('--bottom-height'), 10))
-        }
+        setChatWidth(parseInt(style.getPropertyValue('--chat-width'), 10))
       }
     }
 
     isResizingChat.current = false
-    isResizingBottom.current = false
     document.removeEventListener('mousemove', handleMouseMove)
     document.removeEventListener('mouseup', stopResizing)
     document.body.style.cursor = 'default'
@@ -318,11 +302,6 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
         if (newWidth >= 300 && newWidth <= 800) {
           dashboardRef.current.style.setProperty('--chat-width', `${newWidth}px`)
         }
-      } else if (isResizingBottom.current) {
-        const newHeight = window.innerHeight - e.clientY
-        if (newHeight >= 150 && newHeight <= 600) {
-          dashboardRef.current.style.setProperty('--bottom-height', `${newHeight}px`)
-        }
       }
     })
   }, [])
@@ -331,7 +310,6 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
   useEffect(() => {
     if (dashboardRef.current) {
       dashboardRef.current.style.setProperty('--chat-width', `${chatWidth}px`)
-      dashboardRef.current.style.setProperty('--bottom-height', `${bottomHeight}px`)
     }
   }, [])
 
@@ -790,7 +768,7 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
   return (
     <div className="h-screen bg-background flex flex-col relative overflow-hidden" suppressHydrationWarning>
       {/* Overlay para suavizar redimensionamento (evita problemas com IFrames) */}
-      {(isResizingChat.current || isResizingBottom.current) && (
+      {isResizingChat.current && (
         <div className="fixed inset-0 z-[100] cursor-col-resize select-none" />
       )}
 
@@ -1038,25 +1016,56 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
           </div>
         ) : (
           <div className="flex flex-1 overflow-hidden">
-            {/* Video Player Section */}
+            {/* Área principal: players ou Painel de Infos & Stats */}
             <div className="flex-1 flex flex-col min-w-0">
-              <div className="p-6 border-b border-border shrink-0">
+              <div className="p-6 border-b border-border shrink-0 flex items-center justify-between gap-4">
                 <PlatformSelector
                   selectedPlatform={selectedPlatform}
-                onPlatformChange={setSelectedPlatform}
-                availablePlatforms={['twitch', 'youtube', 'kick']}
-              />
-            </div>
+                  onPlatformChange={setSelectedPlatform}
+                  availablePlatforms={['twitch', 'youtube', 'kick']}
+                />
+                {isLiveManager && (
+                  <Button
+                    variant={showInfoPanel ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setShowInfoPanel(!showInfoPanel)}
+                    className={showInfoPanel ? 'bg-primary text-primary-foreground' : 'text-foreground border-border hover:bg-muted'}
+                    title={showInfoPanel ? 'Voltar aos players' : 'Abrir Painel Infos & Stats no lugar dos players'}
+                  >
+                    <LayoutPanelTop className="w-4 h-4 mr-2" />
+                    {showInfoPanel ? 'Assistir Live' : 'Painel Infos & Stats'}
+                  </Button>
+                )}
+              </div>
 
-            <div className="flex-1 p-6 min-h-0">
-              <VideoPlayer
-                platform={selectedPlatform}
-                channelId="waveigl"
-                className="w-full h-full rounded-lg shadow-2xl"
-                youtubeStatusFromSSE={youtubeStatus}
-              />
+              {showInfoPanel ? (
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-border">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-yellow-500" />
+                      Gerenciamento da Live
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <DashboardStats />
+                    <LiveInfoPanel
+                      isStreamer={isOwner(user?.role)}
+                      isAdmin={isAdmin(user?.role)}
+                      onRefresh={loadModerationActions}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 p-6 min-h-0">
+                  <VideoPlayer
+                    platform={selectedPlatform}
+                    channelId="waveigl"
+                    className="w-full h-full rounded-lg shadow-2xl"
+                    youtubeStatusFromSSE={youtubeStatus}
+                  />
+                </div>
+              )}
             </div>
-          </div>
 
           {/* Resizer Handle Horizontal */}
           {isChatVisible && (
@@ -1072,8 +1081,7 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
             ref={dashboardRef}
             style={{
               width: isChatVisible ? 'var(--chat-width, 384px)' : '48px',
-              '--chat-width': `${chatWidth}px`,
-              '--bottom-height': `${bottomHeight}px`
+              '--chat-width': `${chatWidth}px`
             } as any}
             className="border-l border-border bg-card flex flex-col h-full shrink-0 transition-[width] duration-300 relative group overflow-hidden"
           >
@@ -1162,64 +1170,7 @@ export default function MainApp({ view }: { view: 'live' | 'links' | 'dashboard'
               </>
             )}
           </div>
-
-        {/* Resizer Handle Vertical */}
-        {isLiveManager && isBottomVisible && (
-          <div
-            onMouseDown={startResizingBottom}
-            className="h-1.5 cursor-row-resize bg-border/40 hover:bg-primary/50 transition-colors z-10"
-            title="Arraste para redimensionar o painel inferior"
-          />
-        )}
-
-        {/* Painel de Estatísticas e Informações de Live */}
-        {isLiveManager && (
-          <div
-            style={{ height: isBottomVisible ? 'var(--bottom-height, 400px)' : '40px' }}
-            className={`border-t border-border bg-card relative transition-[height] duration-300 group ${!isBottomVisible ? 'overflow-hidden' : ''}`}
-          >
-            {/* Botão Shelve Bottom Panel */}
-            <button
-              onClick={() => setIsBottomVisible(!isBottomVisible)}
-              className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 bg-card border border-border rounded-full p-1 shadow-md hover:bg-muted transition-all opacity-0 group-hover:opacity-100"
-              title={isBottomVisible ? "Recolher Painel" : "Expandir Painel"}
-            >
-              {isBottomVisible ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
-
-            {!isBottomVisible ? (
-              <div
-                className="h-full flex items-center justify-center gap-3 cursor-pointer"
-                onClick={() => setIsBottomVisible(true)}
-              >
-                <LayoutPanelTop className="w-4 h-4 text-muted-foreground" />
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Painel de Infos & Stats</span>
-              </div>
-            ) : (
-              <div className="h-full overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-border">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-500" />
-                    Gerenciamento da Live
-                  </h3>
-                  <Button variant="ghost" size="sm" onClick={() => setIsBottomVisible(false)}>
-                    <Minimize2 className="w-4 h-4 mr-2" />
-                    Ocultar
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                  <DashboardStats />
-                  <LiveInfoPanel
-                    isStreamer={isOwner(user?.role)}
-                    isAdmin={isAdmin(user?.role)}
-                    onRefresh={loadModerationActions}
-                  />
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </div>
       )}
 
 
